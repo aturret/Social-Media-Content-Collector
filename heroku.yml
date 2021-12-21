@@ -1,3 +1,5 @@
 build:
   docker:
     web: Dockerfile
+run:
+  web: pipenv run gunicorn -w 4 -b 0.0.0.0:1045 wsgi:app
