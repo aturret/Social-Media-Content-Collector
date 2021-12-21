@@ -1,7 +1,7 @@
 FROM python:3.8
 COPY ./ /app
 WORKDIR /app
-EXPOSE 1045
+# EXPOSE 1045
 RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
     && python get-pip.py \
     && pip install pyTelegramBotAPI \
