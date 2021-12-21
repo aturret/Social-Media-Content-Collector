@@ -1,0 +1,55 @@
+{
+    "content" : "<<<{{Inoreader.newBroadcastedArticle.ArticleContent}}>>>",
+    "title" : "<<<{{Inoreader.newBroadcastedArticle.ArticleTitle}}>>>",
+    "message" : "<<<{{Inoreader.newBroadcastedArticle.BroadcastMessage}}>>>",
+    "timestamp" : "<<<{{Inoreader.newBroadcastedArticle.BroadcastedAt}}>>>",
+    "author" : "<<<{{Inoreader.newBroadcastedArticle.ArticleAuthor}}>>>",
+    "image":"<<<{{Inoreader.newBroadcastedArticle.ArticleCoverImage}}>>>",
+    "aurl":"<<<{{Inoreader.newBroadcastedArticle.ArticleCanonicalURL}}>>>",
+    "iurl": "<<<{{Inoreader.newBroadcastedArticle.ArticleInoreaderURL}}>>>",
+    "origin" : "<<<{{Inoreader.newBroadcastedArticle.ArticleFeedTitle}}>>>",
+    "originurl": "<<<{{Inoreader.newBroadcastedArticle.ArticleFeedURL}}>>>",
+    "rss" : "<<<{{Inoreader.newBroadcastedArticle.ArticleFeedRSSURL}}>>>",
+    "tag" : "<<<{{Inoreader.newBroadcastedArticle.ArticleTags}}>>>",
+    "date" : "<<<{{Inoreader.newBroadcastedArticle.ArticleDate}}>>>"
+}
+
+<<<{
+    "content" : "{{Inoreader.newBroadcastedArticle.ArticleContent}}",
+    "title" : "{{Inoreader.newBroadcastedArticle.ArticleTitle}}",
+    "message" : "{{Inoreader.newBroadcastedArticle.BroadcastMessage}}",
+    "timestamp" : "{{Inoreader.newBroadcastedArticle.BroadcastedAt}}",
+    "author" : "{{Inoreader.newBroadcastedArticle.ArticleAuthor}}",
+    "image":"{{Inoreader.newBroadcastedArticle.ArticleCoverImage}}",
+    "aurl":"{{Inoreader.newBroadcastedArticle.ArticleCanonicalURL}}",
+    "iurl": "{{Inoreader.newBroadcastedArticle.ArticleInoreaderURL}}",
+    "origin" : "{{Inoreader.newBroadcastedArticle.ArticleFeedTitle}}",
+    "originurl": "{{Inoreader.newBroadcastedArticle.ArticleFeedURL}}",
+    "rss" : "{{Inoreader.newBroadcastedArticle.ArticleFeedRSSURL}}",
+    "tag" : "{{Inoreader.newBroadcastedArticle.ArticleTags}}",
+    "date" : "{{Inoreader.newBroadcastedArticle.ArticleDate}}"
+}>>>
+
+{
+    "secret": "surprisesbShelley",
+    "expected_receive_period_in_days": 1,
+    "payload_path": [
+      "{{url}}",
+      "{{content}}",
+      "{{title}}",
+      "{{message}}",
+      "{{timestamp}}",
+      "{{author}}",
+      "{{image}}",
+      "{{aurl}}",
+      "{{iurl}}",
+      "{{origin}}",
+      "{{originurl}}",
+      "{{rss}}",
+      "{{tag}}",
+      "{{date}}"
+    ],
+    "event_headers": "",
+    "event_headers_key": "headers",
+    "score_threshold": 0.5
+  }

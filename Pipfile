@@ -1,0 +1,18 @@
+[[source]]
+url = 'https://pypi.python.org/simple'
+verify_ssl = true
+
+[requires]
+python_version = '3.8'
+
+[packages]
+flask = "*"
+gunicorn = "*"
+html-telegraph-poster = "*"
+waitress = "*"
+lxml = "*"
+requests = "*"
+tqdm = "*"
+absl-py = "*"
+
+[dev-packages]

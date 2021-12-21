@@ -1,0 +1,16 @@
+{
+    "name": "html2telegraph",
+    "url": "https://api.aturret.top/telegraphConvert",
+    "type": "POST",
+    "fmt": "html",
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "body": {
+        "aurl": "{{url}}",
+        "origin": "简悦-稍后读",
+        "content":""{{content}}"",
+        "title":"{{title}}"
+    }
+}
+{"name":"huginnSimpread","url":"https://huginn.aturret.top/users/2/web_requests/46/shelleymustdie","type":"POST","headers":{"Content-Type":"application/json"},"body":{"message":"{{note}}","category":"{{tags}}","aurl":"{{url}}","origin":"网络冲浪","title":"{{title}}","originurl":"{{url}}"}}

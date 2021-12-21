@@ -1,0 +1,37 @@
+{
+    "instructions": {
+      "text": "<a href=\"{{aurl}}\"><b>{{title}}</b></a> \\n via #{{category_a.0}} - <a href=\"{{originurl}}\">{{origin}}</a> \n\n <a href=\"{{url}}\">阅读原文</a>",
+      "test": "{{category_a}}"
+    },
+    "matchers": [
+      {
+        "path": "{{category}}",
+        "regexp": "(?<=(label\\/)).[^\",]*",
+        "to": "category_a"
+      }
+    ],
+    "mode": "clean"
+  }
+
+
+
+  "events": [
+    {
+      "telegraph": {
+        "url": "http://telegra.ph/限电的游戏-09-27-3"
+      }
+    },
+    {
+      "inoreader": {
+        "category": "ChineseNews",
+        "title": "限电的游戏",
+        "aurl": "http://mp.weixin.qq.com/s?__biz=MzAwMzU1ODAwOQ==&mid=2650356601&idx=1&sn=2f7984bb91504b3e824105744926186c&chksm=8334c46fb4434d7919563a585eb5471d6710e4fe9a47ec1e1928f3ee46b99981795b3981d094#rd",
+        "originurl": "https://werss.app/?name=%E6%94%BF%E4%BA%8B%E5%A0%822019",
+        "origin": "公众号「政事堂2019」"
+      }
+    }
+  ]
+
+  {
+    "text": "<a href=\""+events[0].payload.events[1].inoreader.aurl + "\"><b>" + events[0].payload.events[1].inoreader.title + "</b></a> \n via #" + events[0].payload.events[1].inoreader.category + " - <a href=\"" + events[0].payload.events[1].inoreader.originurl + "\">" + events[0].payload.events[1].inoreader.origin + "</a> \n\n <a href=\"" + events[0].payload.events[0].telegraph.url + "\">阅读原文</a>"            
+    }
