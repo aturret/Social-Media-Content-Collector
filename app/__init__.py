@@ -37,6 +37,25 @@ def create_app():
         # if re.match(pattern=r'weibo\.com', string=wurl):
         #     re.sub(pattern=r'weibo\.com', repl='m.weibo.cn', string=wurl)
         print(wurl)
+        class Weibo(object):
+            def __init__(self, url):
+                self.headers = {
+                    'User_Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',
+                    'Cookie': ''}
+                self.url = url
+
+            def get_weibo(self):
+                html = requests.get(self.url, headers=self.headers, verify=False).text
+                html = html[html.find('"status":'):]
+                html = html[:html.rfind('"hotScheme"')]
+                html = html[:html.rfind(',')]
+                html = '{' + html + '}'
+                js = json.loads(html, strict=False)
+                weibo_info = js.get('status')
+                return weibo_info
+
+        wb = Weibo(wurl)
+        print(wb.get_weibo())
         return '1'
 
     @server.route('/weiboConvert', methods=['get', 'post'])
