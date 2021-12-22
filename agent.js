@@ -15,6 +15,12 @@ Agent.receive = function () {
 				});
 				break;
 			}
+			case "weibo": {
+				this.createEvent({
+					"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].weibo.title + "</b></a>\nvia #Weibo - <a href=\"" + events[0].payload.events[0].weibo.originurl + "\">" + events[0].payload.events[0].weibo.origin + "</a>\n<a href=\"" + events[0].payload.events[0].weibo.aurl + "\">阅读原文</a>"
+				});
+				break;
+			}
 			case "blog": {
 				this.createEvent({
 					"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].blog.title + "</b></a>\nvia #blog - <a href=\"" + events[0].payload.events[0].blog.originurl + "\">" + events[0].payload.events[0].blog.origin + "</a>\n<a href=\"" + events[0].payload.events[0].blog.aurl + "\">阅读原文</a>"
@@ -53,6 +59,12 @@ Agent.receive = function () {
 				var zhihuAuthor = events[0].payload.events[1].zhihu.origin || "匿名用户";
 				this.createEvent({
 					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].zhihu.title + "</b></a>\nvia #Zhihu - <a href=\"" + events[0].payload.events[1].zhihu.originurl + "\">" + events[0].payload.events[1].zhihu.origin + "</a>\n<a href=\"" + events[0].payload.events[1].zhihu.aurl + "\">阅读原文</a>"
+				});
+				break;
+			}
+			case "weibo": {
+				this.createEvent({
+					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].weibo.title + "</b></a>\nvia #weibo - <a href=\"" + events[0].payload.events[1].weibo.originurl + "\">" + events[0].payload.events[1].weibo.origin + "</a>\n<a href=\"" + events[0].payload.events[1].weibo.aurl + "\">阅读原文</a>"
 				});
 				break;
 			}

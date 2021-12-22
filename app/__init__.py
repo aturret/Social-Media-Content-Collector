@@ -32,9 +32,12 @@ def create_app():
         wdict = json.loads(weiboData)
         print(wdict['url'])
         wurl = wdict['url']
-        re.sub(pattern=r'weibo\.com', repl='m.weibo.cn', string=wurl)
+        if wurl.find('weibo.com'):
+            wurl=wurl.replace('weibo.com','m.weibo.cn')
+        # if re.match(pattern=r'weibo\.com', string=wurl):
+        #     re.sub(pattern=r'weibo\.com', repl='m.weibo.cn', string=wurl)
         print(wurl)
-        return (wurl)
+        return '1'
 
     @server.route('/weiboConvert', methods=['get', 'post'])
     def weiboConvert():
@@ -43,8 +46,8 @@ def create_app():
         wdict = json.loads(weiboData)
         print(wdict['url'])
         wurl = wdict['url']
-        if re.match(pattern=r'weibo\.com', string=wurl):
-            re.sub(pattern=r'weibo\.com', repl='m.weibo.cn', string=wurl)
+        if wurl.find('weibo.com'):
+            wurl=wurl.replace('weibo.com','m.weibo.cn')
 
         class Weibo(object):
             def __init__(self, url):
