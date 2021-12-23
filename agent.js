@@ -21,6 +21,12 @@ Agent.receive = function () {
 				});
 				break;
 			}
+			case "twitter": {
+				this.createEvent({
+					"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].twitter.title + "</b></a>\nvia #Twitter - <a href=\"" + events[0].payload.events[0].twitter.originurl + "\">" + events[0].payload.events[0].twitter.origin + "</a>\n<a href=\"" + events[0].payload.events[0].twitter.aurl + "\">阅读原文</a>"
+				});
+				break;
+			}
 			case "blog": {
 				this.createEvent({
 					"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].blog.title + "</b></a>\nvia #blog - <a href=\"" + events[0].payload.events[0].blog.originurl + "\">" + events[0].payload.events[0].blog.origin + "</a>\n<a href=\"" + events[0].payload.events[0].blog.aurl + "\">阅读原文</a>"
@@ -65,6 +71,12 @@ Agent.receive = function () {
 			case "weibo": {
 				this.createEvent({
 					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].weibo.title + "</b></a>\nvia #weibo - <a href=\"" + events[0].payload.events[1].weibo.originurl + "\">" + events[0].payload.events[1].weibo.origin + "</a>\n<a href=\"" + events[0].payload.events[1].weibo.aurl + "\">阅读原文</a>"
+				});
+				break;
+			}
+			case "twitter": {
+				this.createEvent({
+					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].twitter.title + "</b></a>\nvia #Twitter - <a href=\"" + events[0].payload.events[1].twitter.originurl + "\">" + events[0].payload.events[1].twitter.origin + "</a>\n<a href=\"" + events[0].payload.events[1].twitter.aurl + "\">阅读原文</a>"
 				});
 				break;
 			}
