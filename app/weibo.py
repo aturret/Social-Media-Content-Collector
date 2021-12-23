@@ -199,8 +199,9 @@ class Weibo(object):
         if weibo['video_url'] != '':
             videoformat = '<video><source src="' + weibo['video_url'] + '" type="video/mp4">youcannotwatchthevideo</video>'
         #处理头条文章
-        if weibo['article_url'] != '':
-            aurl=weibo['article_url'].replace('weibo.com','m.weibo.cn')
+        # if weibo['article_url'] != '':
+            # aurl=weibo['article_url']
+            # aurl.replace('weibo.com','m.weibo.cn')
         weibo['content'] = weibo['text'] + '<br />' + picsformat + videoformat
         weibo['title'] = weibo['screen_name'] + '的微博'
         weibo['origin'] = weibo['screen_name']
