@@ -46,13 +46,20 @@ class Douban(object):
         print('dict='+douban['aurl'])
         print('self='+self.aurl)
         if douban['aurl'] == self.aurl:  # 如果重复就不干了
+            print('弹出')
             return '1'
         else:
             self.aurl = douban['aurl']
             # url = 'https://www.douban.com/group/topic/253423326/?_i=0339993ZD7VEW1'  # 测试语句
             url=self.aurl
-            douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath(
-                'string(//*[@class="doulist-item"][1]//*[@class="ft"])')).group()
+            # print(selector.xpath('//*[@class="doulist-item"][1]//blockquote'))
+            # print(selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()'))
+            if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
+                douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
+                print(douban['comment'])
+            else:
+                douban['comment'] = ''
+                print('没有评语')
             if url.find('note') != -1:
                 self.get_douban_note(url)
             elif url.find('book.douban.com/review') != -1:
@@ -69,7 +76,7 @@ class Douban(object):
             douban['origin'] = self.origin
             douban['originurl'] = self.originurl
             #发送给huginn
-            # requests.post(url=huginnUrl,data=douban)
+            requests.post(url=huginnUrl,data=douban)
             print('ticks')
             return '1'
 
