@@ -40,34 +40,38 @@ class Douban(object):
     def get_fav_list(self):
         douban = OrderedDict()
         selector = get_selector(url=self.url, headers=self.headers)
+        print('self='+self.aurl)
         douban['aurl'] = selector.xpath(
             'string(//*[@class="doulist-item"][1]//*[@class="title"]/a/@href|//*[@class="doulist-item"][1]//*[@class="status-content"]/a/@href)')
+        print('dict='+douban['aurl'])
+        print('self='+self.aurl)
         if douban['aurl'] == self.aurl:  # 如果重复就不干了
             return '1'
-        self.aurl = douban['aurl']
-        # url = 'https://www.douban.com/group/topic/253423326/?_i=0339993ZD7VEW1'  # 测试语句
-        url=self.aurl
-        douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath(
-            'string(//*[@class="doulist-item"][1]//*[@class="ft"])')).group()
-        if url.find('note') != -1:
-            self.get_douban_note(url)
-        elif url.find('book.douban.com/review') != -1:
-            self.get_douban_book_review(url)
-        elif url.find('movie.douban.com/review') != -1:
-            self.get_douban_movie_review(url)
-        elif url.find('status') != -1:
-            self.get_douban_status(url)
-        elif url.find('group/topic') != -1:
-            self.get_douban_group_article(url)
+        else:
+            self.aurl = douban['aurl']
+            # url = 'https://www.douban.com/group/topic/253423326/?_i=0339993ZD7VEW1'  # 测试语句
+            url=self.aurl
+            douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath(
+                'string(//*[@class="doulist-item"][1]//*[@class="ft"])')).group()
+            if url.find('note') != -1:
+                self.get_douban_note(url)
+            elif url.find('book.douban.com/review') != -1:
+                self.get_douban_book_review(url)
+            elif url.find('movie.douban.com/review') != -1:
+                self.get_douban_movie_review(url)
+            elif url.find('status') != -1:
+                self.get_douban_status(url)
+            elif url.find('group/topic') != -1:
+                self.get_douban_group_article(url)
 
-        douban['title'] = self.title
-        douban['content'] = self.content
-        douban['origin'] = self.origin
-        douban['originurl'] = self.originurl
-        #发送给huginn
-        requests.post(url=huginnUrl,data=douban)
-        print(douban)
-        return '1'
+            douban['title'] = self.title
+            douban['content'] = self.content
+            douban['origin'] = self.origin
+            douban['originurl'] = self.originurl
+            #发送给huginn
+            # requests.post(url=huginnUrl,data=douban)
+            print('ticks')
+            return '1'
 
     def get_douban_note(self, url):
         selector = get_selector(url, headers=self.headers)
@@ -118,15 +122,15 @@ class Douban(object):
 
 douban = Douban(myfavlist)
 
-
-def sleeptime(hour, min, sec):
-    return hour * 3600 + min * 60 + sec
-
-
-second = sleeptime(0, 0, 2)
-while 1 == 1:
-    time.sleep(second)
-    douban.get_fav_list()
+#
+# def sleeptime(hour, min, sec):
+#     return hour * 3600 + min * 60 + sec
+#
+#
+# second = sleeptime(0, 0, 2)
+# while 1 == 1:
+#     time.sleep(second)
+#     douban.get_fav_list()
 
 # print(douban.__dict__)
 # t = Timer(interval=3.0, function=)

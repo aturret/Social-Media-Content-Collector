@@ -8,6 +8,7 @@ import re
 import threading
 from . import aturretbot, weibo, douban
 from collections import OrderedDict
+from time import sleep
 
 
 # from .verify import check
@@ -90,6 +91,15 @@ def create_app():
         requests.post(url=apiurl,data=twitter)
         return reqs
 
+    # @server.route('/doubanGet')
+    # # 开启豆瓣抓取线程
+    # def doubanGet():
+    #     while True:
+    #         d.get_fav_list()
+    #         print('1')
+    #         sleep(5)
+
+
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraphConvert():
         url = 'https://huginn.aturret.top/users/2/web_requests/21/supersbshelley' # huginn webhook
@@ -131,9 +141,16 @@ def create_app():
     # 开启telebot线程
     telebot_thread = threading.Thread(target=aturretbot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
-    # 开启豆瓣抓取线程
     durl = 'https://www.douban.com/doulist/145693559/'
     d = douban.Douban(durl)
-    douban_thread = threading.Timer(3, d.get_fav_list)
-    douban_thread.start()
+    def getDouban():
+        d.get_fav_list()
+        print('1')
+        threading.Timer(3, getDouban).start()
+    getDouban()
+
+
+
+# douban_thread = threading.Timer(5, d.get_fav_list)
+    # douban_thread.start()
     return server
