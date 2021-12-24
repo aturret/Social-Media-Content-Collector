@@ -6,7 +6,7 @@ from html_telegraph_poster import TelegraphPoster
 import requests
 import re
 import threading
-from . import aturretbot, weibo
+from . import aturretbot, weibo, douban
 from collections import OrderedDict
 
 
@@ -23,12 +23,7 @@ def create_app():
     list = [""]
 
 
-# server.config['JSON_AS_ASCII'] = False
-    # @server.route()可以将普通函数转变为服务 登录接口的路径、请求方式
     @server.route('/weiboConvert1', methods=['get', 'post'])
-    # @server.route('/telegraphConvert', methods=['get', 'post'])
-    # @server.route('/tweetAPIConvert', methods=['get', 'post'])
-
     def weiboConvert1():
         weiboData = request.get_data()
         wdict = json.loads(weiboData)
@@ -43,16 +38,13 @@ def create_app():
 
     @server.route('/weiboConvert', methods=['get', 'post'])
     def weiboConvert():
-
+        huginnUrl='https://huginn.aturret.top/users/2/web_requests/56/shelleysmummydied'
         weiboData = request.get_data()
         wdict = json.loads(weiboData)
         print(wdict['url'])
         wurl = wdict['url']
         if wurl.find('weibo.com'):
             wurl=wurl.replace('weibo.com','m.weibo.cn')
-
-
-        huginnUrl='https://huginn.aturret.top/users/2/web_requests/56/shelleysmummydied'
         wb = weibo.Weibo(wurl)
         print(wb.get_weibo())
         requests.post(url=huginnUrl,data=wb.get_weibo())
@@ -100,14 +92,13 @@ def create_app():
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraphConvert():
+        url = 'https://huginn.aturret.top/users/2/web_requests/21/supersbshelley' # huginn webhook
         #definite the keys of the json file
         author = 'origin'
         author_url = 'originurl'
         article_url = 'aurl'
         title = 'title'
         content = 'content'
-
-        url = 'https://huginn.aturret.top/users/2/web_requests/21/supersbshelley' # huginn webhook
         broadcastData = request.get_data()
         dict = json.loads(broadcastData)
         print(dict[title])
@@ -137,6 +128,12 @@ def create_app():
                 print("same one")
                 break
         return ('mission accomplished')
+    # 开启telebot线程
     telebot_thread = threading.Thread(target=aturretbot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
+    # 开启豆瓣抓取线程
+    durl = 'https://www.douban.com/doulist/145693559/'
+    d = douban.Douban(durl)
+    douban_thread = threading.Timer(3, d.get_fav_list)
+    douban_thread.start()
     return server

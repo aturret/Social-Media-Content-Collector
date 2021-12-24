@@ -4,6 +4,8 @@ from collections import OrderedDict
 from lxml import etree
 import sys
 
+testurl='https://m.weibo.cn/5279955185/L7lBzpt6l'
+
 class Weibo(object):
     def __init__(self, url):
         self.headers = {
@@ -13,6 +15,7 @@ class Weibo(object):
 
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
+        print(html)
         html = html[html.find('"status":'):]
         html = html[:html.rfind('"hotScheme"')]
         html = html[:html.rfind(',')]
@@ -217,3 +220,6 @@ class Weibo(object):
         else:
             weibo['rturl']=''
         return self.standardize_info(weibo)
+
+wb = Weibo(testurl)
+wb.get_weibo(True)

@@ -34,8 +34,9 @@ Agent.receive = function () {
 				break;
 			}
 			case "douban": {
+				var doubanMessage = events[0].payload.events[0].douban.comment || "";
 				this.createEvent({
-					"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].douban.title + "</b></a>\nvia #Douban - <a href=\"" + events[0].payload.events[0].douban.originurl + "\">" + events[0].payload.events[0].douban.origin + "</a>\n<a href=\"" + events[0].payload.events[0].douban.aurl + "\">阅读原文</a>"
+					"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].douban.title + "</b></a>\nvia #Douban - <a href=\"" + events[0].payload.events[0].douban.originurl + "\">" + events[0].payload.events[0].douban.origin + "</a>\n" + doubanMessage + "\n<a href=\"" + events[0].payload.events[0].douban.aurl + "\">阅读原文</a>"
 				});
 				break;
 			}
@@ -87,8 +88,9 @@ Agent.receive = function () {
 				break;
 			}
 			case "douban": {
+				var doubanMessage = events[0].payload.events[1].douban.comment || "";
 				this.createEvent({
-					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].douban.title + "</b></a>\nvia #blog - <a href=\"" + events[0].payload.events[1].douban.originurl + "\">" + events[0].payload.events[1].douban.origin + "</a>\n<a href=\"" + events[0].payload.events[1].douban.aurl + "\">阅读原文</a>"
+					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].douban.title + "</b></a>\nvia #Douban - <a href=\"" + events[0].payload.events[1].douban.originurl + "\">" + events[0].payload.events[1].douban.origin + "</a>\n" + doubanMessage + "\n<a href=\"" + events[0].payload.events[1].douban.aurl + "\">阅读原文</a>"
 				});
 				break;
 			}
