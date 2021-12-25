@@ -38,6 +38,7 @@ class Douban(object):
     def get_fav_list(self):
         douban = OrderedDict()
         selector = util.get_selector(url=self.url, headers=self.headers)
+        print(util.local_time())
         print('抓取前aurl属性为：'+self.aurl)
         douban['aurl'] = selector.xpath(
             'string(//*[@class="doulist-item"][1]//*[@class="title"]/a/@href|//*[@class="doulist-item"][1]//*[@class="status-content"]/a/@href)')

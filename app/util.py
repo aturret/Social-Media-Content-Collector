@@ -2,7 +2,7 @@ import hashlib
 import json
 # import logging
 import sys
-
+import time
 import requests
 from lxml import etree
 
@@ -19,6 +19,9 @@ def get_selector(url, headers):
     selector = etree.HTML(html)
     return selector
 
+def local_time():
+    time1=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(int(round(time.time()*1000))/1000))
+    return time1
 
 def hash_url(url):
     return hashlib.sha224(url.encode('utf8')).hexdigest()
