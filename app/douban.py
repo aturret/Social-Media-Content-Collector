@@ -7,8 +7,7 @@ from collections import OrderedDict
 import re
 from threading import Timer
 from lxml.html import tostring
-# from .
-import util
+from . import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
