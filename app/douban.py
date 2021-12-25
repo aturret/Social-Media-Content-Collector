@@ -48,8 +48,8 @@ class Douban(object):
             return '1'
         else:
             self.aurl = douban['aurl']
-            url = 'https://www.douban.com/people/RonaldoLuiz/status/3700076364/?_i=0411458ZD7VEW1'  # 测试语句
-            # url=self.aurl
+            # url = 'https://www.douban.com/people/RonaldoLuiz/status/3700076364/?_i=0411458ZD7VEW1'  # 测试语句
+            url=self.aurl
             if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
                 print('检测到评语，抓取评语')
                 douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
