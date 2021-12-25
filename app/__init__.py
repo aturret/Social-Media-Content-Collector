@@ -143,14 +143,11 @@ def create_app():
     telebot_thread.start()  # start the bot in a thread instead
     durl = 'https://www.douban.com/doulist/145693559/'
     d = douban.Douban(durl)
-    def getDouban():
-        d.get_fav_list()
-        print('1')
-        threading.Timer(3, getDouban).start()
-    getDouban()
-
-
-
-# douban_thread = threading.Timer(5, d.get_fav_list)
-    # douban_thread.start()
+    class RepeatingTimer(threading.Timer):
+        def run(self):
+            while not self.finished.is_set():
+                self.function(*self.args, **self.kwargs)
+                self.finished.wait(self.interval)
+    t = RepeatingTimer(10.0,d.get_fav_list)
+    t.start()
     return server

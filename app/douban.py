@@ -7,15 +7,13 @@ from collections import OrderedDict
 import re
 from threading import Timer
 from lxml.html import tostring
+from . import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
 huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/63/shelleysallfamiliesdied'
 
-def get_selector(url, headers):
-    html = requests.get(url=url, headers=headers).text
-    selector = etree.HTML(html)
-    return selector
+
 
 
 class Douban(object):
@@ -39,24 +37,23 @@ class Douban(object):
 
     def get_fav_list(self):
         douban = OrderedDict()
-        selector = get_selector(url=self.url, headers=self.headers)
-        print('self='+self.aurl)
+        selector = util.get_selector(url=self.url, headers=self.headers)
+        print('抓取前aurl属性为：'+self.aurl)
         douban['aurl'] = selector.xpath(
             'string(//*[@class="doulist-item"][1]//*[@class="title"]/a/@href|//*[@class="doulist-item"][1]//*[@class="status-content"]/a/@href)')
-        print('dict='+douban['aurl'])
-        print('self='+self.aurl)
+        print('抓取出的aurl是：'+douban['aurl'])
+        print('抓取后aurl属性为：'+self.aurl)
         if douban['aurl'] == self.aurl:  # 如果重复就不干了
-            print('弹出')
+            print('与上一次抓取的url相同，弹出')
             return '1'
         else:
             self.aurl = douban['aurl']
             # url = 'https://www.douban.com/group/topic/253423326/?_i=0339993ZD7VEW1'  # 测试语句
             url=self.aurl
-            # print(selector.xpath('//*[@class="doulist-item"][1]//blockquote'))
-            # print(selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()'))
             if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
+                print('检测到评语，抓取评语')
                 douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
-                print(douban['comment'])
+                print('评语为：'+douban['comment'])
             else:
                 douban['comment'] = ''
                 print('没有评语')
@@ -81,7 +78,7 @@ class Douban(object):
             return '1'
 
     def get_douban_note(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -89,7 +86,7 @@ class Douban(object):
         self.originurl = selector.xpath('string(//div[@class="content"]/a/@href)')
 
     def get_douban_book_review(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -99,7 +96,7 @@ class Douban(object):
         self.workurl = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_movie_review(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -109,7 +106,7 @@ class Douban(object):
         self.workurl = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_status(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.content = str(etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
                            encoding='utf-8')
         self.origin = selector.xpath('string(//div[@class="content"]/a)')
@@ -117,7 +114,7 @@ class Douban(object):
         self.title = self.origin + '的广播'
 
     def get_douban_group_article(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')

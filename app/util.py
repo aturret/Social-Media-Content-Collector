@@ -10,7 +10,14 @@ from lxml import etree
 GENERATE_TEST_DATA = False
 TEST_DATA_DIR = 'tests/testdata'
 URL_MAP_FILE = 'url_map.json'
+
+
 # logger = logging.getLogger('spider.util')
+
+def get_selector(url, headers):
+    html = requests.get(url=url, headers=headers).text
+    selector = etree.HTML(html)
+    return selector
 
 
 def hash_url(url):
@@ -76,7 +83,7 @@ def bid2mid(bid):
         strlen = len(d)
         for char in d:
             power = (strlen - (idx + 1))
-            num += alphabet.index(char) * (base**power)
+            num += alphabet.index(char) * (base ** power)
             idx += 1
             strnum = str(num)
             while (len(d) == 4 and len(strnum) < 7):
