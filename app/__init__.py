@@ -47,7 +47,7 @@ def create_app():
         if wurl.find('weibo.com'):
             wurl=wurl.replace('weibo.com','m.weibo.cn')
         wb = weibo.Weibo(wurl)
-        print(wb.get_weibo())
+        # print(wb.get_weibo())
         requests.post(url=huginnUrl,data=wb.get_weibo())
         return wb.get_weibo()
 

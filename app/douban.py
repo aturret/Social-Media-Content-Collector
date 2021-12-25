@@ -7,7 +7,7 @@ from collections import OrderedDict
 import re
 from threading import Timer
 from lxml.html import tostring
-from . import util
+import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
@@ -41,16 +41,15 @@ class Douban(object):
         print(util.local_time())
         print('抓取前aurl属性为：'+self.aurl)
         douban['aurl'] = selector.xpath(
-            'string(//*[@class="doulist-item"][1]//*[@class="title"]/a/@href|//*[@class="doulist-item"][1]//*[@class="status-content"]/a/@href)')
+            'string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         print('抓取出的aurl是：'+douban['aurl'])
-        print('抓取后aurl属性为：'+self.aurl)
         if douban['aurl'] == self.aurl:  # 如果重复就不干了
             print('与上一次抓取的url相同，弹出')
             return '1'
         else:
             self.aurl = douban['aurl']
-            # url = 'https://www.douban.com/group/topic/253423326/?_i=0339993ZD7VEW1'  # 测试语句
-            url=self.aurl
+            url = 'https://www.douban.com/people/RonaldoLuiz/status/3700076364/?_i=0411458ZD7VEW1'  # 测试语句
+            # url=self.aurl
             if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
                 print('检测到评语，抓取评语')
                 douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
@@ -126,6 +125,7 @@ class Douban(object):
 
 
 douban = Douban(myfavlist)
+douban.get_fav_list()
 
 #
 # def sleeptime(hour, min, sec):
