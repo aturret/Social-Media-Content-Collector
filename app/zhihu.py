@@ -9,7 +9,7 @@ from threading import Timer
 from lxml.html import tostring
 from . import util
 
-myfavlist = 'https://www.douban.com/doulist/145693559/'
+myfavlist = 'https://zhuanlan.zhihu.com/p/449095252'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
 huginnUrl = ''
 
@@ -33,3 +33,33 @@ class Zhihu(object):
         self.groupname = ''
         self.groupurl = ''
 
+    def get_fav_list(self):
+        zhihu = OrderedDict()
+        selector = util.get_selector(url=self.url, headers=self.headers)
+        print(util.local_time())
+        # print(str(etree.tostring(selector.xpath('//body')[0], encoding="utf-8"),encoding='utf-8'))
+
+    def get_article(self):
+        print(str(etree.tostring(selector.xpath('//div[@class="RichText ztext Post-RichText css-hnrfcf"]')[0], encoding="utf-8"),encoding='utf-8'))
+
+        # print(selector.xpath(''))
+
+
+
+        # "extract": {
+        #     "url": {
+        #         "path": "data[0].url"
+        #     },
+        #     "title": {
+        #         "path": "data[0].question.title"
+        #     },
+        #     "author": {
+        #         "path": "data[0].author.name"
+        #     },
+        #     "author_url": {
+        #         "path": "data[0].author.url"
+        #     }
+        # }
+
+zhihu = Zhihu(myfavlist)
+zhihu.get_fav_list()

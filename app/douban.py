@@ -7,14 +7,12 @@ from collections import OrderedDict
 import re
 from threading import Timer
 from lxml.html import tostring
-from . import util
+# from .
+import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
 huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/63/shelleysallfamiliesdied'
-
-
-
 
 class Douban(object):
     def __init__(self, url):
@@ -49,7 +47,7 @@ class Douban(object):
         else:
             self.aurl = douban['aurl']
             # url = 'https://www.douban.com/people/RonaldoLuiz/status/3700076364/?_i=0411458ZD7VEW1'  # 测试语句
-            url=self.aurl
+            url=self.aurl # 生产环境语句
             if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
                 print('检测到评语，抓取评语')
                 douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
@@ -72,6 +70,7 @@ class Douban(object):
             douban['content'] = self.content
             douban['origin'] = self.origin
             douban['originurl'] = self.originurl
+            print(self.content)
             #发送给huginn
             requests.post(url=huginnUrl,data=douban)
             print('ticks')
@@ -108,7 +107,7 @@ class Douban(object):
     def get_douban_status(self, url):
         selector = util.get_selector(url, headers=self.headers)
         self.content = str(etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
-                           encoding='utf-8')
+                           encoding='utf-8').replace('<blockquote>','').replace('</blockquote>','').replace('>+<','><')
         self.origin = selector.xpath('string(//div[@class="content"]/a)')
         self.originurl = selector.xpath('string(//div[@class="content"]/a/@href)')
         self.title = self.origin + '的广播'
