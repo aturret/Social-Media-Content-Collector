@@ -6,7 +6,7 @@ from html_telegraph_poster import TelegraphPoster
 import requests
 import re
 import threading
-from . import aturretbot, weibo, douban
+from . import aturretbot, weibo, douban, zhihu
 from collections import OrderedDict
 from time import sleep
 
@@ -91,14 +91,17 @@ def create_app():
         requests.post(url=apiurl,data=twitter)
         return reqs
 
-    # @server.route('/doubanGet')
-    # # 开启豆瓣抓取线程
-    # def doubanGet():
-    #     while True:
-    #         d.get_fav_list()
-    #         print('1')
-    #         sleep(5)
-
+    @server.route('/zhihuConvert', methods=['get', 'post'])
+    def zhihuConvert():
+        huginnUrl='https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobplayer'
+        zhihuData = request.get_data()
+        zdict = json.loads(zhihuData)
+        print(zdict['url'])
+        zurl = zdict['url']
+        zhh = zhihu.Zhihu(zurl)
+        # print()
+        requests.post(url=huginnUrl,data=zhh.get_fav_item())
+        return zhh.get_fav_item()
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraphConvert():

@@ -7,8 +7,7 @@ from collections import OrderedDict
 import re
 from threading import Timer
 from lxml.html import tostring
-# from .
-import util
+from . import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
@@ -48,23 +47,26 @@ class Douban(object):
             self.aurl = douban['aurl']
             # url = 'https://www.douban.com/people/RonaldoLuiz/status/3700076364/?_i=0411458ZD7VEW1'  # 测试语句
             url=self.aurl # 生产环境语句
-            if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
-                print('检测到评语，抓取评语')
-                douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
-                print('评语为：'+douban['comment'])
-            else:
-                douban['comment'] = ''
-                print('没有评语')
-            if url.find('note') != -1:
-                self.get_douban_note(url)
-            elif url.find('book.douban.com/review') != -1:
-                self.get_douban_book_review(url)
-            elif url.find('movie.douban.com/review') != -1:
-                self.get_douban_movie_review(url)
-            elif url.find('status') != -1:
-                self.get_douban_status(url)
-            elif url.find('group/topic') != -1:
-                self.get_douban_group_article(url)
+            try:
+                if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
+                    print('检测到评语，抓取评语')
+                    douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
+                    print('评语为：'+douban['comment'])
+                else:
+                    douban['comment'] = ''
+                    print('没有评语')
+                if url.find('note') != -1:
+                    self.get_douban_note(url)
+                elif url.find('book.douban.com/review') != -1:
+                    self.get_douban_book_review(url)
+                elif url.find('movie.douban.com/review') != -1:
+                    self.get_douban_movie_review(url)
+                elif url.find('status') != -1:
+                    self.get_douban_status(url)
+                elif url.find('group/topic') != -1:
+                    self.get_douban_group_article(url)
+            except:
+                print('抓取失败，重试中')
 
             douban['title'] = self.title
             douban['content'] = self.content

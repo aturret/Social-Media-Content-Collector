@@ -17,5 +17,6 @@ absl-py = "*"
 #telebot = "*"
 pyTelegramBotAPI = "4.2.2"
 cchardet = "*"
+html-sanitizer = "*"
 
 [dev-packages]
