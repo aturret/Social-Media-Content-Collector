@@ -71,7 +71,7 @@ Agent.receive = function () {
 			}
 			case "weibo": {
 				this.createEvent({
-					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].weibo.title + "</b></a>\nvia #weibo - <a href=\"" + events[0].payload.events[1].weibo.originurl + "\">" + events[0].payload.events[1].weibo.origin + "</a>\n<a href=\"" + events[0].payload.events[1].weibo.aurl + "\">阅读原文</a>"
+					"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].weibo.title + "</b></a>\nvia #Weibo - <a href=\"" + events[0].payload.events[1].weibo.originurl + "\">" + events[0].payload.events[1].weibo.origin + "</a>\n<a href=\"" + events[0].payload.events[1].weibo.aurl + "\">阅读原文</a>"
 				});
 				break;
 			}

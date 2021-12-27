@@ -45,7 +45,7 @@ class Douban(object):
             return '1'
         else:
             self.aurl = douban['aurl']
-            # url = 'https://www.douban.com/people/RonaldoLuiz/status/3700076364/?_i=0411458ZD7VEW1'  # 测试语句
+            # url = 'https://www.douban.com/people/54793495/status/3702215426/?_i=0615039ZD7VEW1'  # 测试语句
             url=self.aurl # 生产环境语句
             try:
                 if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
@@ -67,6 +67,7 @@ class Douban(object):
                     self.get_douban_group_article(url)
             except:
                 print('抓取失败，重试中')
+                return '抓取失败，重试中'
 
             douban['title'] = self.title
             douban['content'] = self.content
@@ -75,7 +76,7 @@ class Douban(object):
             print(self.content)
             #发送给huginn
             requests.post(url=huginnUrl,data=douban)
-            print('ticks')
+            print(self.__dict__)
             return '1'
 
     def get_douban_note(self, url):
@@ -109,7 +110,7 @@ class Douban(object):
     def get_douban_status(self, url):
         selector = util.get_selector(url, headers=self.headers)
         self.content = str(etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
-                           encoding='utf-8').replace('<blockquote>','').replace('</blockquote>','').replace('>+<','><')
+                           encoding='utf-8').replace('<blockquote>','').replace('</blockquote>','').replace('>+<','><').replace('&#13;','<br>')
         self.origin = selector.xpath('string(//div[@class="content"]/a)')
         self.originurl = selector.xpath('string(//div[@class="content"]/a/@href)')
         self.title = self.origin + '的广播'

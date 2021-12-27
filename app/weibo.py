@@ -3,28 +3,45 @@ import requests
 from collections import OrderedDict
 from lxml import etree
 import sys
+from . import util
+import re
+from bs4 import BeautifulSoup
 
-testurl='https://m.weibo.cn/5279955185/L7lBzpt6l'
+testurl='https://m.weibo.cn/7520920997/L81oXdTZa'
+
+imgpattern = '<.?img[^>]*>'
+pattern = re.compile(imgpattern)
+
+# def parse_emoji(str):
+#     result = pattern.search(str).group()
+#     for i in result:
+#         if i.find('alt='):
+#             i = re.search(r'(?<=alt=\[).*(?=\])',i)
+#         else:
+#             i = ""
+#     return
 
 class Weibo(object):
     def __init__(self, url):
         self.headers = {
-            'User_Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',
             'Cookie': ''}
         self.url = url
 
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
-        print(html)
         html = html[html.find('"status":'):]
         html = html[:html.rfind('"hotScheme"')]
         html = html[:html.rfind(',')]
         html = '{' + html + '}'
+        print(html)
         js = json.loads(html, strict=False)
+        # print(js)
         weibo_info = js.get('status')
         if weibo_info:
             if not raw:
                 weibo = self.parse_weibo(weibo_info)
+                print(weibo)
                 return weibo
             else:
                 return weibo_info
@@ -175,6 +192,7 @@ class Weibo(object):
         # if self.remove_html_tag:
         #     weibo['text'] = selector.xpath('string(.)')
         # else:
+        # weibo['text'] = re.sub(pattern, "", text_body)
         weibo['text'] = text_body
         weibo['article_url'] = self.get_article_url(selector)
         weibo['pics'] = self.get_pics(weibo_info)
@@ -209,7 +227,7 @@ class Weibo(object):
         weibo['title'] = weibo['screen_name'] + '的微博'
         weibo['origin'] = weibo['screen_name']
         weibo['aurl'] = self.url
-        weibo['original'] = 'https://weibo.com/u/' + str(weibo['user_id'])
+        weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
         if 'retweeted_status' in weibo_info:
             rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
             weibo['rturl']=rtweibo_url
@@ -219,7 +237,8 @@ class Weibo(object):
             weibo['content'] += '<br />' + rtweibo_info['content']
         else:
             weibo['rturl']=''
+        print(weibo)
         return self.standardize_info(weibo)
 
 wb = Weibo(testurl)
-wb.get_weibo(True)
+wb.get_weibo()

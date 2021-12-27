@@ -6,7 +6,6 @@ from lxml import etree
 from lxml import html
 from collections import OrderedDict
 import re
-from threading import Timer
 from . import util
 from html_sanitizer import Sanitizer
 

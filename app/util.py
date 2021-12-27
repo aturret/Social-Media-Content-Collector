@@ -5,6 +5,7 @@ import sys
 import time
 import requests
 from lxml import etree
+from html_sanitizer import Sanitizer
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
@@ -13,6 +14,22 @@ URL_MAP_FILE = 'url_map.json'
 
 
 # logger = logging.getLogger('spider.util')
+
+wsanitizer = Sanitizer({
+    "tags": {
+        "a", "h1", "h2", "h3", "strong", "em", "p", "ul", "ol",
+        "li", "br", "sub", "sup", "hr",
+    },
+    "attributes": {"a": ("href", "name", "target", "title", "id", "rel")},
+    "empty": {"hr", "a", "br"},
+    "separate": {"a", "p", "li"},
+    "whitespace": {"br"},
+    "keep_typographic_whitespace": False,
+    "add_nofollow": False,
+    "autolink": False,
+    # "sanitize_href": sanitize_href,
+    "element_postprocessors": [],
+})
 
 def get_selector(url, headers):
     html = requests.get(url=url, headers=headers).text
