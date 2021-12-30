@@ -104,7 +104,7 @@ def create_app():
         return zhh.get_fav_item()
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
-    def telegraphConvert():
+    def telegraphConvert(check=False):
         url = 'https://huginn.aturret.top/users/2/web_requests/21/supersbshelley' # huginn webhook
         #definite the keys of the json file
         author = 'origin'
@@ -128,18 +128,21 @@ def create_app():
             print(r.text)
         print(list)
         # 检测标题是否重复，如果重复就不发了
-        i = 0
-        while 1 == 1:
-            if dict[title] != list[i]:
-                i = i + 1
-                if i == len(list):
-                    list.append(dict[title])
-                    print(list)
-                    post()
+        if check:
+            i = 0
+            while 1 == 1:
+                if dict[title] != list[i]:
+                    i = i + 1
+                    if i == len(list):
+                        list.append(dict[title])
+                        print(list)
+                        post()
+                        break
+                else:
+                    print("same one")
                     break
-            else:
-                print("same one")
-                break
+        else:
+            post()
         return ('mission accomplished')
     # 开启telebot线程
     telebot_thread = threading.Thread(target=aturretbot.bot.polling, daemon=True)
