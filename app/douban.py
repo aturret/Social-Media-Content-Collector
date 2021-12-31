@@ -33,51 +33,52 @@ class Douban(object):
         self.groupurl = ''
 
     def get_fav_list(self):
-        douban = OrderedDict()
         selector = util.get_selector(url=self.url, headers=self.headers)
         print(util.local_time())
         print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.aurl)
-        douban['aurl'] = selector.xpath(
-            'string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
-        print('豆瓣收藏夹抓取：抓取出的aurl是：'+douban['aurl'])
-        if douban['aurl'] == self.aurl:  # 如果重复就不干了
+        aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
+        print('豆瓣收藏夹抓取：抓取出的aurl是：'+aurl)
+        if aurl == self.aurl:  # 如果重复就不干了
             print('豆瓣收藏夹抓取：与上一次抓取的url相同，弹出')
             return '1'
         else:
-            self.aurl = douban['aurl']
-            # url = 'https://www.douban.com/people/54793495/status/3702215426/?_i=0615039ZD7VEW1'  # 测试语句
-            url=self.aurl # 生产环境语句
-            try:
-                if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
-                    print('检测到评语，抓取评语')
-                    douban['comment'] = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
-                    print('评语为：'+douban['comment'])
-                else:
-                    douban['comment'] = ''
-                    print('没有评语')
-                if url.find('note') != -1:
-                    self.get_douban_note(url)
-                elif url.find('book.douban.com/review') != -1:
-                    self.get_douban_book_review(url)
-                elif url.find('movie.douban.com/review') != -1:
-                    self.get_douban_movie_review(url)
-                elif url.find('status') != -1:
-                    self.get_douban_status(url)
-                elif url.find('group/topic') != -1:
-                    self.get_douban_group_article(url)
-            except:
-                print('抓取失败，重试中')
-                return '抓取失败，重试中'
-
-            douban['title'] = self.title
-            douban['content'] = self.content
-            douban['origin'] = self.origin
-            douban['originurl'] = self.originurl
-            print(self.content)
-            #发送给huginn
-            requests.post(url=huginnUrl,data=douban)
-            print(self.__dict__)
+            if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
+                print('检测到评语，抓取评语')
+                comment = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
+                print('评语为：'+comment)
+            else:
+                comment = ''
+                print('没有评语')
+            # aurl = 'https://www.douban.com/people/54793495/status/3702215426/?_i=0615039ZD7VEW1'  # 测试语句
+            self.get_fav_item(aurl=aurl,comment=comment)
             return '1'
+
+    def get_fav_item(self, aurl, comment=''):
+        douban = OrderedDict()
+        douban['aurl'] = aurl
+        douban['comment'] = comment
+        try:
+            if aurl.find('note') != -1:
+                self.get_douban_note(aurl)
+            elif aurl.find('book.douban.com/review') != -1:
+                self.get_douban_book_review(aurl)
+            elif aurl.find('movie.douban.com/review') != -1:
+                self.get_douban_movie_review(aurl)
+            elif aurl.find('status') != -1:
+                self.get_douban_status(aurl)
+            elif aurl.find('group/topic') != -1:
+                self.get_douban_group_article(aurl)
+        except:
+            print('抓取失败，重试中')
+            return '抓取失败，重试中'
+        douban['title'] = self.title
+        douban['content'] = self.content
+        douban['origin'] = self.origin
+        douban['originurl'] = self.originurl
+        print(self.content)
+        #发送给huginn
+        requests.post(url=huginnUrl,data=douban)
+        print(self.__dict__)
 
     def get_douban_note(self, url):
         selector = util.get_selector(url, headers=self.headers)

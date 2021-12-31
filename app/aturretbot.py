@@ -39,16 +39,16 @@ urlpattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*') #只摘取h
 def get_social_media(message):
     url = urlpattern.search(message.text).group()
     data = {'url':url}
-    if url.find('weibo.com') or url.find('m.weibo.cn'):
+    if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
         requests.post(url=weiboApiUrl,data=json.dumps(data))
         print('检测到微博URL，转化中')
-    elif url.find('twitter.com'):
+    elif url.find('twitter.com') != -1:
         requests.post(url=twitterApiUrl,data=json.dumps(data))
         print('检测到TwitterURL，转化中')
-    elif url.find('zhihu.com'):
+    elif url.find('zhihu.com') != -1:
         requests.post(url=zhihuApiUrl,data=json.dumps(data))
         print('检测到知乎URL，转化中')
-    elif url.find('douban.com'):
+    elif url.find('douban.com') != -1:
         requests.post(url=doubanApiUrl,data=json.dumps(data))
         print('检测到豆瓣URL，转化中')
     else:
