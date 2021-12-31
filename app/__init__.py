@@ -6,7 +6,7 @@ from html_telegraph_poster import TelegraphPoster
 import requests
 import re
 import threading
-from . import aturretbot, weibo, douban, zhihu
+from . import aturretbot, weibo, douban, zhihu, telegraph, combination, util
 from collections import OrderedDict
 import traceback
 from time import sleep
@@ -122,11 +122,12 @@ def create_app():
                 t = TelegraphPoster(use_api=True)
                 short_name = dict[author]
                 t.create_api_token(short_name[0:14], dict[author], dict[article_url])
-                a = t.post(title=dict[title], author=dict[author], text=dict[content],author_url=dict[author_url])
-                print(a['url'])
-                b = {'url': ''}
-                b['url'] = a['url']
-                r = requests.post(url=url, data=b)
+                telegraphPost = t.post(title=dict[title], author=dict[author], text=dict[content],author_url=dict[author_url])
+                print(telegraphPost['url'])
+                print(type(telegraphPost))
+                telegraphPostJSON = {'url': ''}
+                telegraphPostJSON['url'] = telegraphPost['url']
+                r = requests.post(url=url, data=telegraphPostJSON)
                 print(r.text)
             except Exception:
                 print(traceback.format_exc())

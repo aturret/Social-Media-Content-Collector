@@ -37,6 +37,7 @@ class Douban(object):
         print(util.local_time())
         print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.aurl)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
+        self.aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         print('豆瓣收藏夹抓取：抓取出的aurl是：'+aurl)
         if aurl == self.aurl:  # 如果重复就不干了
             print('豆瓣收藏夹抓取：与上一次抓取的url相同，弹出')

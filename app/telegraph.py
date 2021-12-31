@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-class Digestion(object):
+class Telegraph(object):
     def __init__(self):
         self.type = ''
 
