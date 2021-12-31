@@ -8,6 +8,7 @@ import re
 import threading
 from . import aturretbot, weibo, douban, zhihu
 from collections import OrderedDict
+import traceback
 from time import sleep
 
 
@@ -127,8 +128,8 @@ def create_app():
                 b['url'] = a['url']
                 r = requests.post(url=url, data=b)
                 print(r.text)
-            except:
-                print('exception occured')
+            except Exception:
+                print(traceback.format_exc())
         print(list)
         # 如果开启check标记，检测标题是否重复，如果重复就不发了
         if check:
