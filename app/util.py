@@ -31,6 +31,7 @@ wsanitizer = Sanitizer({
     "element_postprocessors": [],
 })
 
+
 def get_selector(url, headers):
     html = requests.get(url=url, headers=headers).text
     selector = etree.HTML(html)

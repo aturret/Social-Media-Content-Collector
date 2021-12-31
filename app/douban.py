@@ -36,12 +36,12 @@ class Douban(object):
         douban = OrderedDict()
         selector = util.get_selector(url=self.url, headers=self.headers)
         print(util.local_time())
-        print('抓取前aurl属性为：'+self.aurl)
+        print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.aurl)
         douban['aurl'] = selector.xpath(
             'string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
-        print('抓取出的aurl是：'+douban['aurl'])
+        print('豆瓣收藏夹抓取：抓取出的aurl是：'+douban['aurl'])
         if douban['aurl'] == self.aurl:  # 如果重复就不干了
-            print('与上一次抓取的url相同，弹出')
+            print('豆瓣收藏夹抓取：与上一次抓取的url相同，弹出')
             return '1'
         else:
             self.aurl = douban['aurl']

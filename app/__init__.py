@@ -72,7 +72,7 @@ def create_app():
         print(turl)
         tpattern=re.compile(r'(?<=status/)[0-9]*') #摘出推文id
         tid=tpattern.search(turl).group()
-        tapiurl='https://api.twitter.com/2/tweets/' + tid# + '?expansions=referenced_tweets.id,referenced_tweets.id.author_id&tweet.fields=created_at'
+        tapiurl='https://api.twitter.com/2/tweets/' + tid
         reqs = requests.get(url=tapiurl,headers=headers,params=params).json()
         # 编辑推送信息
         twitter = OrderedDict()
@@ -115,19 +115,22 @@ def create_app():
         broadcastData = request.get_data()
         dict = json.loads(broadcastData)
         print(dict[title])
-        # Use htmltotelegraph to post telegraph article
+        # Use pyhtmltotelegraph to post telegraph article
         def post():
-            t = TelegraphPoster(use_api=True)
-            short_name = dict[author]
-            t.create_api_token(short_name[0:14], dict[author], dict[article_url])
-            a = t.post(dict[title], dict[author], dict[content])
-            print(a['url'])
-            b = {'url': ''}
-            b['url'] = a['url']
-            r = requests.post(url=url, data=b)
-            print(r.text)
+            try:
+                t = TelegraphPoster(use_api=True)
+                short_name = dict[author]
+                t.create_api_token(short_name[0:14], dict[author], dict[article_url])
+                a = t.post(title=dict[title], author=dict[author], text=dict[content],author_url=dict[author_url])
+                print(a['url'])
+                b = {'url': ''}
+                b['url'] = a['url']
+                r = requests.post(url=url, data=b)
+                print(r.text)
+            except:
+                print('exception occured')
         print(list)
-        # 检测标题是否重复，如果重复就不发了
+        # 如果开启check标记，检测标题是否重复，如果重复就不发了
         if check:
             i = 0
             while 1 == 1:
