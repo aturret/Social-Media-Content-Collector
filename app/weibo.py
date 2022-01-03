@@ -3,11 +3,11 @@ import requests
 from collections import OrderedDict
 from lxml import etree
 import sys
-from . import util
+# from . import util
 import re
 from bs4 import BeautifulSoup
 
-testurl='https://m.weibo.cn/7520920997/L81oXdTZa'
+testurl='https://m.weibo.cn/5143803255/L93OQprCG'
 
 imgpattern = '<.?img[^>]*>'
 pattern = re.compile(imgpattern)
@@ -216,28 +216,28 @@ class Weibo(object):
             piclist = weibo['pics_new']
             for i in piclist:
                 picsformat += '<img src="' + i + '"><br />'
-                print(picsformat)
+                # print(picsformat)
         if weibo['video_url'] != '':
             videoformat = '<video><source src="' + weibo['video_url'] + '" type="video/mp4">youcannotwatchthevideo</video>'
         #处理头条文章
         # if weibo['article_url'] != '':
             # aurl=weibo['article_url']
             # aurl.replace('weibo.com','m.weibo.cn')
-        weibo['content'] = weibo['text'] + '<br />' + picsformat + videoformat
         weibo['title'] = weibo['screen_name'] + '的微博'
         weibo['origin'] = weibo['screen_name']
         weibo['aurl'] = self.url
         weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
+        weibo['content'] = '@'+'<a href="'+ weibo['originurl'] +'">'+ weibo['origini'] +'</a>：'+ weibo['text'] + '<br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
             weibo['rturl']=rtweibo_url
             rtweibo=Weibo(rtweibo_url)
             rtweibo_info=rtweibo.get_weibo()
             rtweibo_info['content'] = '<a href="'+ rtweibo_info['aurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
-            weibo['content'] += '<br />' + rtweibo_info['content']
+            weibo['content'] += '<br>' + rtweibo_info['content']
         else:
             weibo['rturl']=''
-        print(weibo)
+        # print(weibo)
         return self.standardize_info(weibo)
 
 wb = Weibo(testurl)
