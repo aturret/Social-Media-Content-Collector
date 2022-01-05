@@ -36,11 +36,11 @@ class Douban(object):
     def get_fav_list(self):
         selector = util.get_selector(url=self.favurl, headers=self.headers)
         print(util.local_time())
-        print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.aurl)
+        print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.url)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
-        self.aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
+        self.url = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         print('豆瓣收藏夹抓取：抓取出的aurl是：'+aurl)
-        if aurl == self.aurl:  # 如果重复就不干了
+        if aurl == self.url:  # 如果重复就不干了
             print('豆瓣收藏夹抓取：与上一次抓取的url相同，弹出')
             return '1'
         else:
