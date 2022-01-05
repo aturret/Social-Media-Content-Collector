@@ -15,7 +15,7 @@ huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobpl
 
 
 class Zhihu(object):
-    def __init__(self, url):
+    def __init__(self, favurl,url):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
             'Cookie': '',
@@ -27,7 +27,7 @@ class Zhihu(object):
         self.origin = ''
         self.originurl = ''
         self.title = ''
-        # self.aurl = ''
+        self.favurl = favurl
         self.question = ''
         self.workurl = ''
         self.groupname = ''

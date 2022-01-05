@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 import requests
+import traceback
 import time
 import cchardet as chardet
 from lxml import etree
@@ -14,7 +15,7 @@ testurl = 'https://m.weibo.cn/status/4717569200881723 '
 huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/63/shelleysallfamiliesdied'
 
 class Douban(object):
-    def __init__(self, url):
+    def __init__(self, favurl,url):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
             'Cookie': '',
@@ -26,14 +27,14 @@ class Douban(object):
         self.origin = ''
         self.originurl = ''
         self.title = ''
-        self.aurl = ''
+        self.favurl = favurl
         self.worktitle = ''
         self.workurl = ''
         self.groupname = ''
         self.groupurl = ''
 
     def get_fav_list(self):
-        selector = util.get_selector(url=self.url, headers=self.headers)
+        selector = util.get_selector(url=self.favurl, headers=self.headers)
         print(util.local_time())
         print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.aurl)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
@@ -51,27 +52,26 @@ class Douban(object):
                 comment = ''
                 print('没有评语')
             # aurl = 'https://www.douban.com/people/54793495/status/3702215426/?_i=0615039ZD7VEW1'  # 测试语句
-            self.get_fav_item(aurl=aurl,comment=comment)
+            self.get_fav_item(url=aurl,comment=comment)
             return '1'
 
-    def get_fav_item(self, aurl, comment=''):
+    def get_fav_item(self, url, comment=''):
         douban = OrderedDict()
-        douban['aurl'] = aurl
+        douban['aurl'] = url
         douban['comment'] = comment
         try:
-            if aurl.find('note') != -1:
-                self.get_douban_note(aurl)
-            elif aurl.find('book.douban.com/review') != -1:
-                self.get_douban_book_review(aurl)
-            elif aurl.find('movie.douban.com/review') != -1:
-                self.get_douban_movie_review(aurl)
-            elif aurl.find('status') != -1:
-                self.get_douban_status(aurl)
-            elif aurl.find('group/topic') != -1:
-                self.get_douban_group_article(aurl)
-        except:
-            print('抓取失败，重试中')
-            return '抓取失败，重试中'
+            if url.find('note') != -1:
+                self.get_douban_note(url)
+            elif url.find('book.douban.com/review') != -1:
+                self.get_douban_book_review(url)
+            elif url.find('movie.douban.com/review') != -1:
+                self.get_douban_movie_review(url)
+            elif url.find('status') != -1:
+                self.get_douban_status(url)
+            elif url.find('group/topic') != -1:
+                self.get_douban_group_article(url)
+        except Exception:
+            print(traceback.format_exc())
         douban['title'] = self.title
         douban['content'] = self.content
         douban['origin'] = self.origin
@@ -128,7 +128,7 @@ class Douban(object):
         self.groupurl = selector.xpath('string(//div[@id="g-side-info"]//div[@class="title"]/a/@href)')
 
 
-douban = Douban(myfavlist)
+douban = Douban(favurl=myfavlist)
 douban.get_fav_list()
 
 #

@@ -52,6 +52,18 @@ def create_app():
         requests.post(url=huginnUrl,data=wb.get_weibo())
         return wb.get_weibo()
 
+    @server.route('/doubanConvert', methods=['get', 'post'])
+    def doubanConvert():
+        huginnUrl='https://huginn.aturret.top/users/2/web_requests/63/shelleysallfamiliesdied'
+        doubanData = request.get_data()
+        ddict = json.loads(doubanData)
+        print(ddict['url'])
+        durl = ddict['url']
+        db = douban.Douban(url=durl)
+        # print(wb.get_weibo())
+        requests.post(url=huginnUrl,data=db.get_fav_item(aurl=db.url))
+        return db.get_fav_item()
+
     @server.route('/twitterConvert', methods=['get', 'post'])
     def twitterConvert():
         apiurl = 'https://huginn.aturret.top/users/2/web_requests/60/shelleysdaddydied'

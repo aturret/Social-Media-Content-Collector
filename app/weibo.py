@@ -233,7 +233,7 @@ class Weibo(object):
             weibo['rturl']=rtweibo_url
             rtweibo=Weibo(rtweibo_url)
             rtweibo_info=rtweibo.get_weibo()
-            rtweibo_info['content'] = '<a href="'+ rtweibo_info['aurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
+            rtweibo_info['content'] = '<a href="'+ rtweibo_info['originurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
             weibo['content'] += '<br>' + rtweibo_info['content']
         else:
             weibo['rturl']=''
