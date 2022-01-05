@@ -227,13 +227,13 @@ class Weibo(object):
         weibo['origin'] = weibo['screen_name']
         weibo['aurl'] = self.url
         weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
-        weibo['content'] = '@'+'<a href="'+ weibo['originurl'] +'">'+ weibo['origin'] +'</a>：'+ weibo['text'] + '<br>' + picsformat + videoformat
+        weibo['content'] = '<a href="'+'@'+weibo['originurl'] +'">'+ weibo['origin'] +'</a>：'+ weibo['text'] + '<br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
             weibo['rturl']=rtweibo_url
             rtweibo=Weibo(rtweibo_url)
             rtweibo_info=rtweibo.get_weibo()
-            rtweibo_info['content'] = '<a href="'+ rtweibo_info['originurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
+            # rtweibo_info['content'] = '<a href="'+ rtweibo_info['originurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
             weibo['content'] += '<br>' + rtweibo_info['content']
         else:
             weibo['rturl']=''
