@@ -6,8 +6,8 @@ from lxml import etree
 from lxml import html
 from collections import OrderedDict
 import re
-# from . import util
-import util
+from . import util
+# import util
 from html_sanitizer import Sanitizer
 
 favurl = 'https://www.zhihu.com/pin/1457225488036573184'
