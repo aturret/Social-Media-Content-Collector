@@ -189,10 +189,8 @@ class Weibo(object):
         weibo['bid'] = weibo_info['bid']
         text_body = weibo_info['text']
         selector = etree.HTML(text_body)
-        # if self.remove_html_tag:
-        #     weibo['text'] = selector.xpath('string(.)')
-        # else:
         # weibo['text'] = re.sub(pattern, "", text_body)
+        # weibo['text'] = selector.xpath('string(.)')
         weibo['text'] = text_body
         weibo['article_url'] = self.get_article_url(selector)
         weibo['pics'] = self.get_pics(weibo_info)

@@ -109,7 +109,7 @@ def create_app():
         zdict = json.loads(zhihuData)
         print(zdict['url'])
         zurl = zdict['url']
-        zhh = zhihu.Zhihu(zurl)
+        zhh = zhihu.Zhihu(url=zurl)
         # print()
         requests.post(url=huginnUrl,data=zhh.get_fav_item())
         return zhh.get_fav_item()
