@@ -6,10 +6,12 @@ from lxml import etree
 from lxml import html
 from collections import OrderedDict
 import re
-from . import util
+# from . import util
+import util
 from html_sanitizer import Sanitizer
 
 favurl = 'https://www.zhihu.com/pin/1457225488036573184'
+url = 'https://www.zhihu.com/answer/1466747753'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
 huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobplayer'
 
@@ -56,7 +58,7 @@ class Zhihu(object):
         zhihu['origin'] = self.origin
         zhihu['originurl'] = self.originurl
         zhihu['aurl'] = self.url
-        # requests.post(url=huginnUrl,data=zhihu)
+        requests.post(url=huginnUrl,data=zhihu)
         return zhihu
 
     def get_zhihu_article(self):
@@ -123,5 +125,5 @@ class Zhihu(object):
         # print(selector.xpath(''))
 
 
-zhihu = Zhihu(favurl=favurl)
+zhihu = Zhihu(url=url,favurl=favurl)
 zhihu.get_fav_item()

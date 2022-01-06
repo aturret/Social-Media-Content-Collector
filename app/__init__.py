@@ -110,9 +110,9 @@ def create_app():
         print(zdict['url'])
         zurl = zdict['url']
         zhh = zhihu.Zhihu(url=zurl)
-        # print()
-        requests.post(url=huginnUrl,data=zhh.get_fav_item())
-        return zhh.get_fav_item()
+        zhh.get_fav_item()
+        # requests.post(url=huginnUrl,data=zhh.get_fav_item())
+        return '1'
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraphConvert(check=False):
@@ -162,13 +162,14 @@ def create_app():
     # 开启telebot线程
     telebot_thread = threading.Thread(target=aturretbot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
-    durl = 'https://www.douban.com/doulist/145693559/'
-    d = douban.Douban(durl)
-    class RepeatingTimer(threading.Timer):
-        def run(self):
-            while not self.finished.is_set():
-                self.function(*self.args, **self.kwargs)
-                self.finished.wait(self.interval)
-    t = RepeatingTimer(10.0,d.get_fav_list)
-    t.start()
+    # 豆瓣收藏夹
+    # durl = 'https://www.douban.com/doulist/145693559/'
+    # d = douban.Douban(durl)
+    # class RepeatingTimer(threading.Timer):
+    #     def run(self):
+    #         while not self.finished.is_set():
+    #             self.function(*self.args, **self.kwargs)
+    #             self.finished.wait(self.interval)
+    # t = RepeatingTimer(10.0,d.get_fav_list)
+    # t.start()
     return server
