@@ -213,7 +213,7 @@ class Weibo(object):
         if weibo['pics_new'] != '':
             piclist = weibo['pics_new']
             for i in piclist:
-                picsformat += '<img src="' + i + '"><br>'
+                picsformat += '<img src="' + i + '"><br />'
                 # print(picsformat)
         if weibo['video_url'] != '':
             videoformat = '<video><source src="' + weibo['video_url'] + '" type="video/mp4">youcannotwatchthevideo</video>'
@@ -225,7 +225,7 @@ class Weibo(object):
         weibo['origin'] = weibo['screen_name']
         weibo['aurl'] = self.url
         weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
-        weibo['content'] = '<a href="'+weibo['originurl'] +'">'+'@'+ weibo['origin'] +'</a>：'+ weibo['text'] + '<br>' + picsformat + videoformat
+        weibo['content'] = '<a href="'+weibo['originurl'] +'">@'+ weibo['origin'] +'</a>：'+ weibo['text'] + '<br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
             weibo['rturl']=rtweibo_url
