@@ -125,5 +125,5 @@ class Zhihu(object):
         # print(selector.xpath(''))
 
 
-zhihu = Zhihu(url=url,favurl=favurl)
-zhihu.get_fav_item()
+# zhihu = Zhihu(url=url,favurl=favurl)
+# zhihu.get_fav_item()

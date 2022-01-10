@@ -115,7 +115,7 @@ def create_app():
         return '1'
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
-    def telegraphConvert(check=False):
+    def telegraphConvert(check=True):
         url = 'https://huginn.aturret.top/users/2/web_requests/21/supersbshelley' # huginn webhook
         #definite the keys of the json file
         author = 'origin'
@@ -131,7 +131,7 @@ def create_app():
             try:
                 t = TelegraphPoster(use_api=True)
                 short_name = dict[author]
-                t.create_api_token(short_name[0:14], dict[author], dict[article_url])
+                t.create_api_token(short_name[0:14], dict[author])
                 telegraphPost = t.post(title=dict[title], author=dict[author], text=dict[content],author_url=dict[author_url])
                 print(telegraphPost['url'])
                 print(type(telegraphPost))
