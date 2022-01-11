@@ -69,7 +69,7 @@ class Zhihu(object):
                            encoding="utf-8"), encoding='utf-8')
         self.content = upvote + '<br>' + content
         self.origin = selector.xpath('string(//div[contains(@class,"AuthorInfo-head")]//a)')
-        self.originurl = selector.xpath('string(//a[@class="UserLink-link"]/@href)')
+        self.originurl = 'https:'+selector.xpath('string(//a[@class="UserLink-link"]/@href)')
 
     def get_zhihu_answer(self):
         selector = util.get_selector(url=self.url, headers=self.headers)
