@@ -6,12 +6,12 @@ from lxml import etree
 from lxml import html
 from collections import OrderedDict
 import re
-from . import util
-# import util
+# from . import util
+import util
 from html_sanitizer import Sanitizer
 
 favurl = 'https://www.zhihu.com/pin/1457225488036573184'
-url = 'https://www.zhihu.com/answer/1466747753'
+url = 'https://zhuanlan.zhihu.com/p/454875933'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
 huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobplayer'
 
@@ -68,7 +68,7 @@ class Zhihu(object):
         content = str(etree.tostring(selector.xpath('//div[contains(@class,"RichText") and contains(@class,"ztext")]')[0],
                            encoding="utf-8"), encoding='utf-8')
         self.content = upvote + '<br>' + content
-        self.origin = selector.xpath('string(//a[@class="UserLink-link"])')
+        self.origin = selector.xpath('string(//div[contains(@class,"AuthorInfo-head")]//a)')
         self.originurl = selector.xpath('string(//a[@class="UserLink-link"]/@href)')
 
     def get_zhihu_answer(self):
@@ -125,5 +125,5 @@ class Zhihu(object):
         # print(selector.xpath(''))
 
 
-# zhihu = Zhihu(url=url,favurl=favurl)
-# zhihu.get_fav_item()
+zhihu = Zhihu(url=url,favurl=favurl)
+zhihu.get_fav_item()

@@ -131,7 +131,7 @@ def create_app():
             try:
                 t = TelegraphPoster(use_api=True)
                 short_name = dict[author]
-                t.create_api_token(short_name[0:13]+'j')
+                t.create_api_token(short_name[0:14])
                 telegraphPost = t.post(title=dict[title], author=dict[author], text=dict[content],author_url=dict[author_url])
                 print(telegraphPost['url'])
                 print(type(telegraphPost))
