@@ -2,6 +2,7 @@ Agent.receive = function () {
 	var events = this.incomingEvents();
 	var noTelegraph = RegExp(/(youtube\.com)|(bilibili\.com)|(t\.me)/);
 	var simpreadHostExtract = RegExp(/^(?:[^:\n]+:\/\/)?([^:#/\n]*)/);
+	var inoreaderCategory = RegExp(/(?<=label\/).[^",]*/);
 	var expre1 = JSON.stringify(Object.keys(events[0].payload.events[1])).replace(/\[\"/, "").replace(/\"\]/, ""); // switch needs same type
 	var expre2 = JSON.stringify(Object.keys(events[0].payload.events[0])).replace(/\[\"/, "").replace(/\"\]/, "");
 
@@ -47,13 +48,15 @@ Agent.receive = function () {
 				break;
 			}
 			default: {
+				// category = inoreaderCategory.exec(events[0].payload.events[0].inoreader.category);
+				category = events[0].payload.events[0].inoreader.category;
 				if (noTelegraph.test(events[0].payload.events[0].inoreader.aurl)) {
 					this.createEvent({
-						"text": "<a href=\"" + events[0].payload.events[0].inoreader.aurl + "\"><b>" + events[0].payload.events[0].inoreader.title + "</b></a>\nvia #" + events[0].payload.events[0].inoreader.category + " - <a href=\"" + events[0].payload.events[0].inoreader.originurl + "\">" + events[0].payload.events[0].inoreader.origin + "</a>\n" + events[0].payload.events[0].inoreader.message + ""
+						"text": "<a href=\"" + events[0].payload.events[0].inoreader.aurl + "\"><b>" + events[0].payload.events[0].inoreader.title + "</b></a>\nvia #" + category + " - <a href=\"" + events[0].payload.events[0].inoreader.originurl + "\">" + events[0].payload.events[0].inoreader.origin + "</a>\n" + events[0].payload.events[0].inoreader.message + ""
 					});
 				} else {
 					this.createEvent({
-						"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].inoreader.title + "</b></a>\nvia #" + events[0].payload.events[0].inoreader.category + " - <a href=\"" + events[0].payload.events[0].inoreader.originurl + "\">" + events[0].payload.events[0].inoreader.origin + "</a>\n" + events[0].payload.events[0].inoreader.message + "\n<a href=\"" + events[0].payload.events[0].inoreader.aurl + "\">阅读原文</a>"
+						"text": "<a href=\"" + events[0].payload.events[1].telegraph.url + "\"><b>" + events[0].payload.events[0].inoreader.title + "</b></a>\nvia #" + category + " - <a href=\"" + events[0].payload.events[0].inoreader.originurl + "\">" + events[0].payload.events[0].inoreader.origin + "</a>\n" + events[0].payload.events[0].inoreader.message + "\n<a href=\"" + events[0].payload.events[0].inoreader.aurl + "\">阅读原文</a>"
 					});
 				}
 			}
@@ -101,13 +104,15 @@ Agent.receive = function () {
 				break;
 			}
 			default: {
+				// category = inoreaderCategory.exec(events[0].payload.events[1].inoreader.category);
+				category = events[0].payload.events[1].inoreader.category;
 				if (noTelegraph.test(events[0].payload.events[1].inoreader.aurl)) {
 					this.createEvent({
-						"text": "<a href=\"" + events[0].payload.events[1].inoreader.aurl + "\"><b>" + events[0].payload.events[1].inoreader.title + "</b></a>\nvia #" + events[0].payload.events[1].inoreader.category + " - <a href=\"" + events[0].payload.events[1].inoreader.originurl + "\">" + events[0].payload.events[1].inoreader.origin + "</a>\n" + events[0].payload.events[1].inoreader.message + ""
+						"text": "<a href=\"" + events[0].payload.events[1].inoreader.aurl + "\"><b>" + events[0].payload.events[1].inoreader.title + "</b></a>\nvia #" + category + " - <a href=\"" + events[0].payload.events[1].inoreader.originurl + "\">" + events[0].payload.events[1].inoreader.origin + "</a>\n" + events[0].payload.events[1].inoreader.message + ""
 					});
 				} else {
 					this.createEvent({
-						"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].inoreader.title + "</b></a>\nvia #" + events[0].payload.events[1].inoreader.category + " - <a href=\"" + events[0].payload.events[1].inoreader.originurl + "\">" + events[0].payload.events[1].inoreader.origin + "</a>\n" + events[0].payload.events[1].inoreader.message + "\n<a href=\"" + events[0].payload.events[1].inoreader.aurl + "\">阅读原文</a>"
+						"text": "<a href=\"" + events[0].payload.events[0].telegraph.url + "\"><b>" + events[0].payload.events[1].inoreader.title + "</b></a>\nvia #" + category + " - <a href=\"" + events[0].payload.events[1].inoreader.originurl + "\">" + events[0].payload.events[1].inoreader.origin + "</a>\n" + events[0].payload.events[1].inoreader.message + "\n<a href=\"" + events[0].payload.events[1].inoreader.aurl + "\">阅读原文</a>"
 
 					});
 				}
