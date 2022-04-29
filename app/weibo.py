@@ -7,7 +7,7 @@ import sys
 import re
 from bs4 import BeautifulSoup
 
-testurl='https://m.weibo.cn/5143803255/L93OQprCG'
+
 
 imgpattern = '<.?img[^>]*>'
 pattern = re.compile(imgpattern)
@@ -31,10 +31,20 @@ class Weibo(object):
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
         html = html[html.find('"status":'):]
-        html = html[:html.rfind('"hotScheme"')]
-        html = html[:html.rfind(',')]
-        html = '{' + html + '}'
         print(html)
+        print("end")
+        html = html[:html.rfind('"hotScheme"')]
+        print(html)
+        print("end")
+        html = html[:html.rfind(',')]
+        html = html[:html.rfind('][0] || {};')]
+        print(html)
+        print("end")
+        html = '{' + html
+        # html = '{' + html + '}'
+        print(html)
+        print("end")
+        # breakpoint()
         js = json.loads(html, strict=False)
         # print(js)
         weibo_info = js.get('status')
@@ -238,5 +248,10 @@ class Weibo(object):
         # print(weibo)
         return self.standardize_info(weibo)
 
-wb = Weibo(testurl)
-wb.get_weibo()
+### TEST CODE ###
+
+# testurl='https://m.weibo.cn/5143803255/L93OQprCG'
+# testurl='https://m.weibo.cn/7755701767/LqLOSvqP3'
+#
+# wb = Weibo(testurl)
+# wb.get_weibo()

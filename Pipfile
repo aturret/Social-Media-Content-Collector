@@ -16,7 +16,7 @@ tqdm = "*"
 absl-py = "*"
 #telebot = "*"
 pyTelegramBotAPI = "4.2.2"
-cchardet = "*"
+#cchardet = "*"
 html-sanitizer = "*"
 beautifulsoup4 = "*"
 

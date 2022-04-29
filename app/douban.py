@@ -2,7 +2,7 @@
 import requests
 import traceback
 import time
-import cchardet as chardet
+# import cchardet as chardet
 from lxml import etree
 from collections import OrderedDict
 import re
