@@ -6,13 +6,12 @@ from lxml import etree
 from lxml import html
 from collections import OrderedDict
 import re
-from . import util
-# import util
+# from . import util
+import util
 from html_sanitizer import Sanitizer
 
 favurl = 'https://www.zhihu.com/pin/1457225488036573184'
-url = 'https://zhuanlan.zhihu.com/p/454875933'
-testurl = 'https://m.weibo.cn/status/4717569200881723 '
+
 huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobplayer'
 
 
@@ -43,10 +42,13 @@ class Zhihu(object):
         url = self.url
         # print(str(etree.tostring(selector.xpath('//body')[0], encoding="utf-8"),encoding='utf-8'))
         if url.find('zhuanlan.zhihu.com') != -1:
+            print('检测到知乎专栏，摘取中')
             self.get_zhihu_article()
         elif url.find('answer') != -1:
+            print('检测到知乎回答，摘取中')
             self.get_zhihu_answer()
         elif url.find('zhihu.com/pin/') != -1:
+            print('检测到知乎想法，摘取中')
             self.get_zhihu_status()
         # elif url.find('status') != -1:
         #     self.get_douban_status(url)
@@ -74,7 +76,7 @@ class Zhihu(object):
     def get_zhihu_answer(self):
         selector = util.get_selector(url=self.url, headers=self.headers)
         upvote = selector.xpath('string(//button[contains(@class,"VoteButton")])')
-        content = str(etree.tostring(selector.xpath('//span[contains(@class,"RichText") and @itemprop="text"]')[0],encoding="utf-8"), encoding='utf-8')
+        content = str(etree.tostring(selector.xpath('//div[contains(@class,"RichContent-inner")]//span[contains(@class,"RichText") and @itemprop="text"]')[0],encoding="utf-8"), encoding='utf-8')
         # question = str(
         #     etree.tostring(selector.xpath('//div[contains(@class,"QuestionRichText")]')[0],
         #                    encoding="utf-8"), encoding='utf-8')
@@ -124,6 +126,7 @@ class Zhihu(object):
 
         # print(selector.xpath(''))
 
-
+## TEST CODE ###
+url = 'https://www.zhihu.com/question/20953633/answer/196306254'
 zhihu = Zhihu(url=url,favurl=favurl)
 zhihu.get_fav_item()
