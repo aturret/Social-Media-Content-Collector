@@ -127,6 +127,6 @@ class Zhihu(object):
         # print(selector.xpath(''))
 
 ## TEST CODE ###
-url = 'https://www.zhihu.com/question/20953633/answer/196306254'
-zhihu = Zhihu(url=url,favurl=favurl)
-zhihu.get_fav_item()
+# url = 'https://www.zhihu.com/question/20953633/answer/196306254'
+# zhihu = Zhihu(url=url,favurl=favurl)
+# zhihu.get_fav_item()
