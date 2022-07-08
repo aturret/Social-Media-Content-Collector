@@ -187,6 +187,56 @@ class Weibo(object):
             at_users = ','.join(at_list)
         return at_users
 
+    def parse_date(self, weibo_info):
+        zday = '星期识别错误'
+        zmonth = '月份识别错误'
+        parse = weibo_info['created_at'].split()
+        day = parse[0]
+        if day == 'Mon':
+            zday = '星期一'
+        elif day == 'Tue':
+            zday = '星期二'
+        elif day == 'Wed':
+            zday = '星期三'
+        elif day == 'Thu':
+            zday = '星期四'
+        elif day == 'Fri':
+            zday = '星期五'
+        elif day == 'Sat':
+            zday = '星期六'
+        elif day == 'Sun':
+            zday = '星期日'
+        month = parse[1]
+        if month == 'Jan':
+            zmonth = '1'
+        elif month == 'Feb':
+            zmonth = '2'
+        elif month == 'Mar':
+            zmonth = '3'
+        elif month == 'Apr':
+            zmonth = '4'
+        elif month == 'May':
+            zmonth = '5'
+        elif month == 'Jun':
+            zmonth = '6'
+        elif month == 'Jul':
+            zmonth = '7'
+        elif month == 'Aug':
+            zmonth = '8'
+        elif month == 'Sep':
+            zmonth = '9'
+        elif month == 'Oct':
+            zmonth = '10'
+        elif month == 'Nov':
+            zmonth = '11'
+        elif month == 'Dec':
+            zmonth = '12'
+        date = parse[2]
+        time = parse[3]
+        year = parse[5]
+        text = '发表于'+year+'年'+zmonth+'月'+date+'日('+zday+') '+time
+        return text
+
     def parse_weibo(self, weibo_info):
         weibo = OrderedDict()
         if weibo_info['user']:
@@ -201,7 +251,7 @@ class Weibo(object):
         selector = etree.HTML(text_body)
         # weibo['text'] = re.sub(pattern, "", text_body)
         # weibo['text'] = selector.xpath('string(.)')
-        weibo['text'] = text_body
+        weibo['text'] = text_body.replace('<br />', '<br>')
         weibo['article_url'] = self.get_article_url(selector)
         weibo['pics'] = self.get_pics(weibo_info)
         weibo['pics_new'] = self.get_pics_new(weibo_info)
@@ -235,22 +285,26 @@ class Weibo(object):
         weibo['origin'] = weibo['screen_name']
         weibo['aurl'] = self.url
         weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
-        weibo['content'] = '<a href="'+weibo['originurl'] +'">@'+ weibo['origin'] +'</a>：'+ weibo['text'] + '<br>' + picsformat + videoformat
+        weibo['date'] = self.parse_date(weibo_info)
+        weibo['count'] = '转发：'+str(weibo_info['reposts_count'])+' 评论：'+str(weibo_info['comments_count'])+' 点赞：'+str(weibo_info['attitudes_count'])
+        weibo['content'] = '<br><p>'+weibo['date']+'</p><br><p>'+weibo['count']+'</p><br><a href="'+weibo['originurl'] +'">@'+ weibo['origin'] +'</a>：<p>'+ weibo['text'] +'</p><br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
             weibo['rturl']=rtweibo_url
             rtweibo=Weibo(rtweibo_url)
             rtweibo_info=rtweibo.get_weibo()
             # rtweibo_info['content'] = '<a href="'+ rtweibo_info['originurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
-            weibo['content'] += '<br>' + rtweibo_info['content']
+            weibo['content'] += '<br><hr>' + rtweibo_info['content']
         else:
             weibo['rturl']=''
+        print(weibo['content'])
         # print(weibo)
         return self.standardize_info(weibo)
 
 ### TEST CODE ###
 
-# testurl='https://m.weibo.cn/5143803255/L93OQprCG'
+# testurl='https://m.weibo.cn/1989660417/yp2eLrUhm'
+# testurl='https://m.weibo.cn/7605038522/LBlABpi7K'
 # testurl='https://m.weibo.cn/7755701767/LqLOSvqP3'
 #
 # wb = Weibo(testurl)
