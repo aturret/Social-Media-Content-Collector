@@ -231,10 +231,10 @@ class Weibo(object):
             zmonth = '11'
         elif month == 'Dec':
             zmonth = '12'
-        date = parse[2]
+        date = int(parse[2])
         time = parse[3]
         year = parse[5]
-        text = '发布于'+year+'年'+zmonth+'月'+date+'日('+zday+') '+time+'使用'+weibo_info['source']+'发布'
+        text = '发布于'+year+'年'+zmonth+'月'+str(date)+'日（'+zday+'） '+time+'<br>通过'+weibo_info['source']+'发布'
         return text
 
     def parse_weibo(self, weibo_info):
@@ -286,7 +286,7 @@ class Weibo(object):
         weibo['aurl'] = self.url
         weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
         weibo['date'] = self.parse_date(weibo_info)
-        weibo['count'] = '转发：'+str(weibo_info['reposts_count'])+' 评论：'+str(weibo_info['comments_count'])+' 点赞：'+str(weibo_info['attitudes_count'])
+        weibo['count'] = '转发:'+str(weibo_info['reposts_count'])+' 评论:'+str(weibo_info['comments_count'])+' 点赞:'+str(weibo_info['attitudes_count'])
         weibo['content'] = '<br><p>'+weibo['date']+'</p><br><p>'+weibo['count']+'</p><br><a href="'+weibo['originurl'] +'">@'+ weibo['origin'] +'</a>：<p>'+ weibo['text'] +'</p><br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
