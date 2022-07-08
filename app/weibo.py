@@ -234,7 +234,7 @@ class Weibo(object):
         date = parse[2]
         time = parse[3]
         year = parse[5]
-        text = '发表于'+year+'年'+zmonth+'月'+date+'日('+zday+') '+time
+        text = '发布于'+year+'年'+zmonth+'月'+date+'日('+zday+') '+time+'使用'+weibo_info['source']+'发布'
         return text
 
     def parse_weibo(self, weibo_info):
