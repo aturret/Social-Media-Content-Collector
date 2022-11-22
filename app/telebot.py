@@ -2,12 +2,16 @@ import telebot
 import re
 import requests
 import json
+import yaml
 
-bot = telebot.TeleBot("931723693:AAFN453UJxlrPX8ilzKL2bFp2---QNLRQrA")
-weiboApiUrl = 'http://api.aturret.top/weiboConvert'
-twitterApiUrl = 'http://api.aturret.top/twitterConvert'
-zhihuApiUrl = 'http://api.aturret.top/zhihuConvert'
-doubanApiUrl = 'http://api.aturret.top/doubanConvert'
+with open("config.yaml", 'r') as ymlfile:
+    cfg = yaml.load(ymlfile)
+
+bot = telebot.TeleBot(cfg['telegram']['bot_key'])
+weiboApiUrl = 'http://'+cfg['site']['url']+'/weiboConvert'
+twitterApiUrl = 'http://'+cfg['site']['url']+'/twitterConvert'
+zhihuApiUrl = 'http://'+cfg['site']['url']+'/zhihuConvert'
+doubanApiUrl = 'http://'+cfg['site']['url']+'/doubanConvert'
 
 urlpattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*') #只摘取httpURL的pattern
 
@@ -41,18 +45,18 @@ def get_social_media(message):
     data = {'url':url}
     if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
         requests.post(url=weiboApiUrl,data=json.dumps(data))
-        print('检测到微博URL，转化中')
+        print('检测到微博URL，转化中\nWeibo URL detected, converting...')
     elif url.find('twitter.com') != -1:
         requests.post(url=twitterApiUrl,data=json.dumps(data))
-        print('检测到TwitterURL，转化中')
+        print('检测到TwitterURL，转化中\nTwitter URL detected, converting...')
     elif url.find('zhihu.com') != -1:
         requests.post(url=zhihuApiUrl,data=json.dumps(data))
-        print('检测到知乎URL，转化中')
+        print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
     elif url.find('douban.com') != -1:
         requests.post(url=doubanApiUrl,data=json.dumps(data))
-        print('检测到豆瓣URL，转化中')
+        print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
     else:
-        print('不符合规范，无法转化')
+        print('不符合规范，无法转化\ninvalid URL detected, cannont convert')
 
 
 

@@ -12,10 +12,10 @@ from . import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
-huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/63/shelleysallfamiliesdied'
+
 
 class Douban(object):
-    def __init__(self, favurl='',url=''):
+    def __init__(self, favurl='',url='',huginnUrl = ''):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
             'Cookie': '',
@@ -32,6 +32,7 @@ class Douban(object):
         self.workurl = ''
         self.groupname = ''
         self.groupurl = ''
+        self.huginnUrl = huginnUrl
 
     def get_fav_list(self):
         selector = util.get_selector(url=self.favurl, headers=self.headers)
@@ -78,7 +79,7 @@ class Douban(object):
         douban['originurl'] = self.originurl
         print(self.content)
         #发送给huginn
-        requests.post(url=huginnUrl,data=douban)
+        requests.post(url=self.huginnUrl,data=douban)
         print(self.__dict__)
 
     def get_douban_note(self, url):

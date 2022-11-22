@@ -6,25 +6,22 @@ from html_telegraph_poster import TelegraphPoster
 import requests
 import re
 import threading
-from . import aturretbot, weibo, douban, zhihu, telegraph, combination, util
+from . import telebot, weibo, douban, zhihu, telegraph, combination, util
 from collections import OrderedDict
 import traceback
 from time import sleep
+import yaml
 
 
 # from .verify import check
 
-'''
-flask： web框架，通过flask提供的装饰器@server.route()将普通函数转换为服务
-'''
 
-
-# 创建一个服务，把当前这个python文件当做一个服务
 def create_app():
     server = Flask(__name__)
     list = [""]
 
-
+    with open("config.yaml",'r') as ymlfile:
+        cfg = yaml.load(ymlfile)
     @server.route('/weiboConvert1', methods=['get', 'post'])
     def weiboConvert1():
         weiboData = request.get_data()
@@ -40,7 +37,7 @@ def create_app():
 
     @server.route('/weiboConvert', methods=['get', 'post'])
     def weiboConvert():
-        huginnUrl='https://huginn.aturret.top/users/2/web_requests/56/shelleysmummydied'
+        huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['weibo']
         weiboData = request.get_data()
         wdict = json.loads(weiboData)
         print(wdict['url'])
@@ -54,19 +51,20 @@ def create_app():
 
     @server.route('/doubanConvert', methods=['get', 'post'])
     def doubanConvert():
+        huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['douban']
         doubanData = request.get_data()
         ddict = json.loads(doubanData)
         print(ddict['url'])
         durl = ddict['url']
-        db = douban.Douban(url=durl)
+        db = douban.Douban(url=durl,huginnUrl=huginnUrl)
         db.get_fav_item(url=db.url)
         return db.get_fav_item()
 
     @server.route('/twitterConvert', methods=['get', 'post'])
     def twitterConvert():
-        apiurl = 'https://huginn.aturret.top/users/2/web_requests/60/shelleysdaddydied'
+        huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['twitter']
         headers = {
-            'Authorization' : 'Bearer AAAAAAAAAAAAAAAAAAAAANmlWAEAAAAAPk7fNFgO2P0Mg83ga4kVvF49ilI%3DL67pc1i9el1HNUo2vJOPFTts921jAd1QpFqp8XZYYIblJ7MLLU',
+            'Authorization' : 'Bearer '+cfg['authorization']['twitter']['app_key'],
             'Cookie' : '',
             'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'
         }
@@ -99,24 +97,24 @@ def create_app():
             print(picformat)
         twitter['content']=twitter['text']+'<br>'+picformat
         print(twitter)
-        requests.post(url=apiurl,data=twitter)
+        requests.post(url=huginnUrl,data=twitter)
         return reqs
 
     @server.route('/zhihuConvert', methods=['get', 'post'])
     def zhihuConvert():
-        huginnUrl='https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobplayer'
+        huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['zhihu']
         zhihuData = request.get_data()
         zdict = json.loads(zhihuData)
         print(zdict['url'])
         zurl = zdict['url']
-        zhh = zhihu.Zhihu(url=zurl)
+        zhh = zhihu.Zhihu(url=zurl,huginnUrl=huginnUrl)
         zhh.get_fav_item()
         # requests.post(url=huginnUrl,data=zhh.get_fav_item())
         return '1'
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraphConvert(check=True):
-        url = 'https://huginn.aturret.top/users/2/web_requests/21/supersbshelley' # huginn webhook
+        url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph'] # huginn webhook
         #definite the keys of the json file
         author = 'origin'
         author_url = 'originurl'
@@ -160,7 +158,7 @@ def create_app():
             post()
         return ('mission accomplished')
     # 开启telebot线程
-    telebot_thread = threading.Thread(target=aturretbot.bot.polling, daemon=True)
+    telebot_thread = threading.Thread(target=telebot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
     # 豆瓣收藏夹
     # durl = 'https://www.douban.com/doulist/145693559/'

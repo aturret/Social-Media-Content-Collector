@@ -16,7 +16,7 @@ huginnUrl = 'https://huginn.aturret.top/users/2/web_requests/67/shelleyisanoobpl
 
 
 class Zhihu(object):
-    def __init__(self, favurl='',url=''):
+    def __init__(self, favurl='',url='',huginnUrl=''):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
             'Cookie': '',
@@ -34,6 +34,7 @@ class Zhihu(object):
         self.groupname = ''
         self.groupurl = ''
         self.retweet_html = ''
+        self.huginnUrl = huginnUrl
 
     def get_fav_item(self):
         zhihu = OrderedDict()
@@ -60,7 +61,7 @@ class Zhihu(object):
         zhihu['origin'] = self.origin
         zhihu['originurl'] = self.originurl
         zhihu['aurl'] = self.url
-        requests.post(url=huginnUrl,data=zhihu)
+        requests.post(url=self.huginnUrl,data=zhihu)
         return zhihu
 
     def get_zhihu_article(self):
