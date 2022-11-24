@@ -18,7 +18,8 @@ import toml
 
 def create_app():
     server = Flask(__name__)
-    list = [""]
+    c_title = ""
+    c_list = [""]
     server.config.from_prefixed_env()
     server.config.from_file("./config.toml", load=toml.load)
     print(server.config)
@@ -140,21 +141,15 @@ def create_app():
                 print(r.text)
             except Exception:
                 print(traceback.format_exc())
-        print(list)
+        print(c_list)
         # 如果开启check标记，检测标题是否重复，如果重复就不发了
         if check:
-            i = 0
-            while 1 == 1:
-                if dict[title] != list[i]:
-                    i = i + 1
-                    if i == len(list):
-                        list.append(dict[title])
-                        print(list)
-                        post()
-                        break
-                else:
-                    print("same one")
-                    break
+            if c_list[0] != title:
+                post()
+                c_list.pop()
+                c_list.append(title)
+            else:
+                print("same one")
         else:
             post()
         return ('mission accomplished')
