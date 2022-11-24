@@ -9,6 +9,7 @@ import re
 from threading import Timer
 from lxml.html import tostring
 from . import util
+# import util
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
@@ -129,8 +130,8 @@ class Douban(object):
         self.groupurl = selector.xpath('string(//div[@id="g-side-info"]//div[@class="title"]/a/@href)')
 
 
-douban = Douban(favurl=myfavlist)
-douban.get_fav_list()
+# douban = Douban(favurl=myfavlist)
+# douban.get_fav_list()
 
 #
 # def sleeptime(hour, min, sec):

@@ -24,5 +24,6 @@ pyTelegramBotAPI ={ version =  "4.2.2"}
 html-sanitizer = {version="*"}
 beautifulsoup4 = {version="*"}
 pyyaml = {version="*"}
+toml = {version ="*"}
 
 [dev-packages]

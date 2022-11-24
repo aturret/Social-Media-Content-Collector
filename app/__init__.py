@@ -6,11 +6,11 @@ from html_telegraph_poster import TelegraphPoster
 import requests
 import re
 import threading
-from . import telebot, weibo, douban, zhihu, telegraph, combination, util
+from . import atelebot, weibo, douban, zhihu, telegraph, combination, util
 from collections import OrderedDict
 import traceback
 from time import sleep
-import yaml
+import toml
 
 
 # from .verify import check
@@ -19,9 +19,10 @@ import yaml
 def create_app():
     server = Flask(__name__)
     list = [""]
-
-    with open("config.yaml",'r') as ymlfile:
-        cfg = yaml.load(ymlfile)
+    # server.config.from_file("config.toml", load=toml.load)
+    print('1')
+    # print(server.config)
+    cfg = server.config
     @server.route('/weiboConvert1', methods=['get', 'post'])
     def weiboConvert1():
         weiboData = request.get_data()
@@ -158,7 +159,7 @@ def create_app():
             post()
         return ('mission accomplished')
     # 开启telebot线程
-    telebot_thread = threading.Thread(target=telebot.bot.polling, daemon=True)
+    telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
     # 豆瓣收藏夹
     # durl = 'https://www.douban.com/doulist/145693559/'

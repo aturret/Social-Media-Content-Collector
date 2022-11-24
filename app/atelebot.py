@@ -2,10 +2,12 @@ import telebot
 import re
 import requests
 import json
-import yaml
+import toml
+# import yaml
 
-with open("config.yaml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+with open("config.toml", 'r') as tfile:
+#     cfg = yaml.load(ymlfile)
+    cfg = toml.load(tfile)
 
 bot = telebot.TeleBot(cfg['telegram']['bot_key'])
 weiboApiUrl = 'http://'+cfg['site']['url']+'/weiboConvert'
