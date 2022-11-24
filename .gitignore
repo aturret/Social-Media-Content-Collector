@@ -1,5 +1,5 @@
 # my config file
 app/config.yaml
 app/config_template.toml
-app/config.yoml
+app/config.toml
 Pipfile.lock

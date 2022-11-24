@@ -5,7 +5,7 @@ import json
 import toml
 # import yaml
 
-with open("config.toml", 'r') as tfile:
+with open("./app/config.toml", 'r') as tfile:
 #     cfg = yaml.load(ymlfile)
     cfg = toml.load(tfile)
 
