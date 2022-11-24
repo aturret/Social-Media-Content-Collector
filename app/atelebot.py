@@ -8,7 +8,7 @@ import toml
 with open("./app/config.toml", 'r') as tfile:
 #     cfg = yaml.load(ymlfile)
     cfg = toml.load(tfile)
-
+print(cfg)
 bot = telebot.TeleBot(cfg['telegram']['bot_key'])
 weiboApiUrl = 'http://'+cfg['site']['url']+'/weiboConvert'
 twitterApiUrl = 'http://'+cfg['site']['url']+'/twitterConvert'

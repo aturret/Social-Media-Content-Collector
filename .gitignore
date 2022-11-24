@@ -2,6 +2,6 @@
 app/config.yaml
 app/config_template.toml
 app/config.toml
-Pipfile.lock
+#Pipfile.lock
 __pycache__
 app/__pycache__

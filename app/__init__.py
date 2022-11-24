@@ -19,8 +19,8 @@ import toml
 def create_app():
     server = Flask(__name__)
     list = [""]
-    server.config.from_file("config.toml", load=toml.load)
-    print('1')
+    server.config.from_prefixed_env()
+    server.config.from_file("./config.toml", load=toml.load)
     print(server.config)
     cfg = server.config
     @server.route('/weiboConvert1', methods=['get', 'post'])
