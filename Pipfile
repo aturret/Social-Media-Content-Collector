@@ -19,5 +19,6 @@ pyTelegramBotAPI = "4.2.2"
 #cchardet = "*"
 html-sanitizer = "*"
 beautifulsoup4 = "*"
+pyyaml = "*"
 
 [dev-packages]
