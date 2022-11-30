@@ -10,7 +10,7 @@ telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 channel_id = settings.env_var.get('CHANNEL_ID',None)
 
 bot = telebot.TeleBot(telebot_key)
-weiboApiUrl = 'http://'+site_url+'/weiboConvert'
+weiboApiUrl = 'https://'+site_url+'/weiboConvert'
 twitterApiUrl = 'http://'+site_url+'/twitterConvert'
 zhihuApiUrl = 'http://'+site_url+'/zhihuConvert'
 doubanApiUrl = 'http://'+site_url+'/doubanConvert'
