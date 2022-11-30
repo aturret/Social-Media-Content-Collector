@@ -6,7 +6,7 @@ from html_telegraph_poster import TelegraphPoster
 import requests
 import re
 import threading
-from . import atelebot, weibo, douban, zhihu, telegraph, combination, util
+from . import atelebot, weibo, douban, zhihu, telegraph, combination, util,settings
 from collections import OrderedDict
 import traceback
 from time import sleep
@@ -20,10 +20,9 @@ def create_app():
     server = Flask(__name__)
     c_title = ""
     c_list = [""]
-    server.config.from_prefixed_env()
-    server.config.from_file("./config.toml", load=toml.load)
-    print(server.config)
-    cfg = server.config
+    site_url = 'http://'+settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
+    print(site_url)
+    telegraph_url = site_url+'/telegraphConvert'
     @server.route('/weiboConvert1', methods=['get', 'post'])
     def weiboConvert1():
         weiboData = request.get_data()
@@ -39,34 +38,58 @@ def create_app():
 
     @server.route('/weiboConvert', methods=['get', 'post'])
     def weiboConvert():
-        huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['weibo']
-        weiboData = request.get_data()
-        wdict = json.loads(weiboData)
-        print(wdict['url'])
-        wurl = wdict['url']
-        if wurl.find('weibo.com'):
-            wurl=wurl.replace('weibo.com','m.weibo.cn')
-        wb = weibo.Weibo(wurl)
+        try:
+        # huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['weibo']
+            weiboData = request.get_data()
+            wdict = json.loads(weiboData)
+            print(wdict['url'])
+            wurl = wdict['url']
+            if wurl.find('weibo.com'):
+                wurl=wurl.replace('weibo.com','m.weibo.cn')
+            wb = weibo.Weibo(wurl).get_weibo()
+            print(wb)
+            tdict = {
+                'content': wb['content'],
+                'title': wb['title'],
+                'origin': wb['origin'],
+                'originurl': wb['originurl'],
+                'url': wb['aurl']
+            }
+            print(tdict)
+            t_url = requests.post(url=telegraph_url, json=tdict).text
+            mdict = {
+                'category': 'weibo',
+                'title': wb['title'],
+                'origin': wb['origin'],
+                'aurl': wb['aurl'],
+                'originurl': wb['originurl'],
+                'message': '',
+                'turl': t_url
+            }
+            print(mdict)
+        except Exception:
+            print(traceback.format_exc())
+            return False
         # print(wb.get_weibo())
-        requests.post(url=huginnUrl,data=wb.get_weibo())
-        return wb.get_weibo()
+        # requests.post(url=huginnUrl,data=wb.get_weibo())
+        return mdict
 
     @server.route('/doubanConvert', methods=['get', 'post'])
     def doubanConvert():
-        huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['douban']
+        # huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['douban']
         doubanData = request.get_data()
         ddict = json.loads(doubanData)
         print(ddict['url'])
         durl = ddict['url']
-        db = douban.Douban(url=durl,huginnUrl=huginnUrl)
-        db.get_fav_item(url=db.url)
-        return db.get_fav_item()
+        # db = douban.Douban(url=durl,huginnUrl=huginnUrl)
+        # db.get_fav_item(url=db.url)
+        # return db.get_fav_item()
 
     @server.route('/twitterConvert', methods=['get', 'post'])
     def twitterConvert():
-        huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['twitter']
+        # huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['twitter']
         headers = {
-            'Authorization' : 'Bearer '+cfg['authorization']['twitter']['app_key'],
+            'Authorization' : 'Bearer '+settings.env_var.get('TWITTER_APP_KEY'),
             'Cookie' : '',
             'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'
         }
@@ -99,60 +122,94 @@ def create_app():
             print(picformat)
         twitter['content']=twitter['text']+'<br>'+picformat
         print(twitter)
-        requests.post(url=huginnUrl,data=twitter)
+        # requests.post(url=huginnUrl,data=twitter)
         return reqs
 
     @server.route('/zhihuConvert', methods=['get', 'post'])
     def zhihuConvert():
-        huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['zhihu']
-        zhihuData = request.get_data()
-        zdict = json.loads(zhihuData)
+        # huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['zhihu']
+        zhihu_data = request.get_data()
+        zdict = json.loads(zhihu_data)
         print(zdict['url'])
         zurl = zdict['url']
-        zhh = zhihu.Zhihu(url=zurl,huginnUrl=huginnUrl)
-        zhh.get_fav_item()
+        # zhh = zhihu.Zhihu(url=zurl,huginnUrl=huginnUrl)
+        # zhh.get_fav_item()
         # requests.post(url=huginnUrl,data=zhh.get_fav_item())
         return '1'
 
+    @server.route('/inoreaderConvert', methods=['get','post'])
+    def inoreaderConvert():
+        try:
+            inoreader_data = request.get_data()
+            idict = json.loads(inoreader_data)
+            print(idict)
+            tdict = {
+                'content' : idict['content'],
+                'title' : idict['title'],
+                'origin' : idict['origin'],
+                'originurl': idict['originurl'],
+                'url' : idict['aurl']
+            }
+            print(tdict)
+            t_url = requests.post(url=telegraph_url, json=tdict).text
+            mdict = {
+                'category' : idict['tag'],
+                'title' : idict['title'],
+                'origin' : idict['origin'],
+                'aurl' : idict['aurl'],
+                'originurl': idict['originurl'],
+                'message': idict['message']+'\n',
+                'turl': t_url
+            }
+            print(mdict)
+        except Exception:
+            print(traceback.format_exc())
+            return 'Failed'
+        return mdict
+
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraphConvert(check=True):
-        url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph'] # huginn webhook
+        res = ''
+        #url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
         #definite the keys of the json file
         author = 'origin'
         author_url = 'originurl'
-        article_url = 'aurl'
         title = 'title'
         content = 'content'
-        broadcastData = request.get_data()
-        dict = json.loads(broadcastData)
-        print(dict[title])
+        content_data = request.get_data()
+        print(content_data)
+        metadata_dict = json.loads(content_data)
+        # metadata_dict = content_data
+        print(type(metadata_dict))
+        print(metadata_dict)
         # Use pyhtmltotelegraph to post telegraph article
         def post():
             try:
                 t = TelegraphPoster(use_api=True)
-                short_name = dict[author]
-                t.create_api_token(short_name[0:14],author_name=dict[author])
-                telegraphPost = t.post(title=dict[title], author=dict[author], text=dict[content],author_url=dict[author_url])
+                short_name = metadata_dict[author]
+                t.create_api_token(short_name[0:14], author_name=metadata_dict[author])
+                telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author], text=metadata_dict['content'], author_url=metadata_dict[author_url])
                 print(telegraphPost['url'])
                 print(type(telegraphPost))
                 telegraphPostJSON = {'url': ''}
                 telegraphPostJSON['url'] = telegraphPost['url']
-                r = requests.post(url=url, data=telegraphPostJSON)
-                print(r.text)
+                # r = requests.post(url=url, data=telegraphPostJSON)
+                # print(r.text)
+                return telegraphPost['url']
             except Exception:
                 print(traceback.format_exc())
         print(c_list)
-        # 如果开启check标记，检测标题是否重复，如果重复就不发了
+        # check if the title is a duplicate
         if check:
             if c_list[0] != title:
-                post()
+                res = post()
                 c_list.pop()
                 c_list.append(title)
             else:
                 print("same one")
         else:
-            post()
-        return ('mission accomplished')
+            res = post()
+        return res if res else 'nothing'
     # 开启telebot线程
     telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead

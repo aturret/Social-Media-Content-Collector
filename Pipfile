@@ -25,5 +25,6 @@ html-sanitizer = {version="*"}
 beautifulsoup4 = {version="*"}
 pyyaml = {version="*"}
 toml = {version ="*"}
+aiohttp = {version = "*"}
 
 [dev-packages]
