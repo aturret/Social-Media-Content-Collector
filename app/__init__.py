@@ -22,6 +22,7 @@ def create_app():
     c_list = [""]
     site_url = 'http://'+settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
     print(site_url)
+    print(settings.env_var.get('PORT','no port'))
     telegraph_url = site_url+'/telegraphConvert'
     @server.route('/weiboConvert1', methods=['get', 'post'])
     def weiboConvert1():
@@ -56,7 +57,9 @@ def create_app():
                 'url': wb['aurl']
             }
             print(tdict)
-            t_url = requests.post(url=telegraph_url, json=tdict).text
+            # t_url = requests.post(url=telegraph_url, json=tdict).text
+            t_url = util.telegraphConvert(tdict)
+            print(t_url)
             mdict = {
                 'category': 'weibo',
                 'title': wb['title'],
@@ -151,17 +154,19 @@ def create_app():
                 'url' : idict['aurl']
             }
             print(tdict)
-            t_url = requests.post(url=telegraph_url, json=tdict).text
+            # t_url = requests.post(url=telegraph_url, json=tdict).text
+            t_url = util.telegraphConvert(tdict)
             mdict = {
                 'category' : idict['tag'],
                 'title' : idict['title'],
                 'origin' : idict['origin'],
                 'aurl' : idict['aurl'],
                 'originurl': idict['originurl'],
-                'message': idict['message']+'\n',
+                'message': idict['message']+'\n' if idict['message'] else '',
                 'turl': t_url
             }
             print(mdict)
+            atelebot.send_to_channel(mdict)
         except Exception:
             print(traceback.format_exc())
             return 'Failed'

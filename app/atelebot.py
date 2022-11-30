@@ -46,17 +46,20 @@ def get_social_media(message):
     else:
         print('不符合规范，无法转化\ninvalid URL detected, cannont convert')
     if t and channel_id:
+        send_to_channel(data,message)
+def send_to_channel(data, message=None):
         try:
-            text = '<a href=\"'+ t['turl'] +'\">' \
-                   '<b>'+ t['title'] +'</b></a>\n' \
-                   'via #'+ t['category'] +\
-                   ' - <a href=\"'+ t['originurl'] +' \"> ' \
-                   + t['origin']+'</a>\n' + t['message'] + \
-                   '<a href=\"'+ t['aurl'] +'\">阅读原文</a>'
+            text = '<a href=\"' + data['turl'] + '\">' \
+                   '<b>' + data['title'] + '</b></a>\n' \
+                   'via #' + data['category'] +\
+                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
+                   + data['origin'] + '</a>\n' + data['message'] + \
+                   '<a href=\"' + data['aurl'] + '\">阅读原文</a>'
             print(text)
             bot.send_message(chat_id=channel_id,parse_mode='html',text=text)
         except Exception:
-            bot.reply_to(message,'Failure')
+            if message:
+                bot.reply_to(message,'Failure')
             print(traceback.format_exc())
 
 
