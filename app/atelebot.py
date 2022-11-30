@@ -46,7 +46,7 @@ def get_social_media(message):
     else:
         print('不符合规范，无法转化\ninvalid URL detected, cannont convert')
     if t and channel_id:
-        send_to_channel(data,message)
+        send_to_channel(data = t,message = message)
 def send_to_channel(data, message=None):
         try:
             text = '<a href=\"' + data['turl'] + '\">' \

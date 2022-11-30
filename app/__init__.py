@@ -166,7 +166,7 @@ def create_app():
                 'turl': t_url
             }
             print(mdict)
-            atelebot.send_to_channel(mdict)
+            atelebot.send_to_channel(data=mdict)
         except Exception:
             print(traceback.format_exc())
             return 'Failed'
