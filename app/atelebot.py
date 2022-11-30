@@ -1,3 +1,5 @@
+import traceback
+
 import telebot
 import re
 import requests
@@ -10,7 +12,7 @@ telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 channel_id = settings.env_var.get('CHANNEL_ID',None)
 
 bot = telebot.TeleBot(telebot_key)
-weiboApiUrl = 'https://'+site_url+'/weiboConvert'
+weiboApiUrl = 'http://'+site_url+'/weiboConvert'
 twitterApiUrl = 'http://'+site_url+'/twitterConvert'
 zhihuApiUrl = 'http://'+site_url+'/zhihuConvert'
 doubanApiUrl = 'http://'+site_url+'/doubanConvert'
@@ -44,14 +46,18 @@ def get_social_media(message):
     else:
         print('不符合规范，无法转化\ninvalid URL detected, cannont convert')
     if t and channel_id:
-        text = '<a href=\"'+ t['turl'] +'\">' \
-               '<b>'+ t['title'] +'</b></a>\n' \
-               'via #'+ t['category'] +\
-               ' - <a href=\"'+ t['originurl'] +' \"> ' \
-               + t['origin']+'</a>\n' + t['message'] + \
-               '<a href=\"'+ t['aurl'] +'\">阅读原文</a>'
-        print(text)
-        bot.send_message(chat_id=channel_id,parse_mode='html',text=text)
+        try:
+            text = '<a href=\"'+ t['turl'] +'\">' \
+                   '<b>'+ t['title'] +'</b></a>\n' \
+                   'via #'+ t['category'] +\
+                   ' - <a href=\"'+ t['originurl'] +' \"> ' \
+                   + t['origin']+'</a>\n' + t['message'] + \
+                   '<a href=\"'+ t['aurl'] +'\">阅读原文</a>'
+            print(text)
+            bot.send_message(chat_id=channel_id,parse_mode='html',text=text)
+        except Exception:
+            bot.reply_to(message,'Failure')
+            print(traceback.format_exc())
 
 
 
