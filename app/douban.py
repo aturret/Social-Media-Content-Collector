@@ -1,12 +1,12 @@
 # -*- coding: UTF-8 -*-
-import requests
+# import requests
 import traceback
-import time
+# import time
 # import cchardet as chardet
 from lxml import etree
 from collections import OrderedDict
 import re
-from threading import Timer
+# from threading import Timer
 from lxml.html import tostring
 from . import util
 # import util
@@ -16,7 +16,7 @@ testurl = 'https://m.weibo.cn/status/4717569200881723 '
 
 
 class Douban(object):
-    def __init__(self, favurl='',url='',huginnUrl = ''):
+    def __init__(self, favurl='',url=''):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
             'Cookie': '',
@@ -33,7 +33,6 @@ class Douban(object):
         self.workurl = ''
         self.groupname = ''
         self.groupurl = ''
-        self.huginnUrl = huginnUrl
 
     def get_fav_list(self):
         selector = util.get_selector(url=self.favurl, headers=self.headers)
@@ -57,7 +56,8 @@ class Douban(object):
             self.get_fav_item(url=aurl,comment=comment)
             return '1'
 
-    def get_fav_item(self, url, comment=''):
+    def get_fav_item(self, comment=''):
+        url = self.url
         douban = OrderedDict()
         douban['aurl'] = url
         douban['comment'] = comment
@@ -80,8 +80,9 @@ class Douban(object):
         douban['originurl'] = self.originurl
         print(self.content)
         #发送给huginn
-        requests.post(url=self.huginnUrl,data=douban)
+        # requests.post(url=self.huginnUrl,data=douban)
         print(self.__dict__)
+        return douban
 
     def get_douban_note(self, url):
         selector = util.get_selector(url, headers=self.headers)

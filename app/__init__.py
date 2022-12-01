@@ -3,14 +3,14 @@ from flask import Flask
 import json
 from flask import request
 from html_telegraph_poster import TelegraphPoster
-import requests
-import re
 import threading
-from . import atelebot, weibo, douban, zhihu, telegraph, combination, util,settings
 from collections import OrderedDict
 import traceback
-from time import sleep
-import toml
+from . import atelebot, twitter, weibo, douban, zhihu, telegraph, combination, util, settings
+import requests
+import re
+# from time import sleep
+# import toml
 
 
 # from .verify import check
@@ -58,7 +58,7 @@ def create_app():
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
-            t_url = util.telegraphConvert(tdict)
+            t_url = util.telegraph_convert(tdict)
             print(t_url)
             mdict = {
                 'category': 'weibo',
@@ -79,90 +79,130 @@ def create_app():
 
     @server.route('/doubanConvert', methods=['get', 'post'])
     def doubanConvert():
-        # huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['douban']
-        doubanData = request.get_data()
-        ddict = json.loads(doubanData)
-        print(ddict['url'])
-        durl = ddict['url']
+        try:
+            doubanData = request.get_data()
+            ddict = json.loads(doubanData)
+            print(ddict['url'])
+            douban_url = ddict['url']
+            data_dict = douban.Douban(url=douban_url).get_fav_item()
+            tdict = {
+                'content': data_dict['content'],
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'originurl': data_dict['originurl'],
+                'url': data_dict['aurl']
+            }
+            print(tdict)
+            # t_url = requests.post(url=telegraph_url, json=tdict).text
+            t_url = util.telegraph_convert(tdict)
+            mdict = {
+                'category': 'Douban',
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'aurl': data_dict['aurl'],
+                'originurl': data_dict['originurl'],
+                'message': '',
+                'turl': t_url
+            }
+            print(mdict)
+            # atelebot.send_to_channel(data=mdict)
+        except Exception:
+            print(traceback.format_exc())
+            return 'Failed'
+        return mdict
         # db = douban.Douban(url=durl,huginnUrl=huginnUrl)
         # db.get_fav_item(url=db.url)
         # return db.get_fav_item()
 
     @server.route('/twitterConvert', methods=['get', 'post'])
     def twitterConvert():
-        # huginnUrl = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['twitter']
-        headers = {
-            'Authorization' : 'Bearer '+settings.env_var.get('TWITTER_APP_KEY'),
-            'Cookie' : '',
-            'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'
-        }
-        params={
-            'expansions' : 'referenced_tweets.id,referenced_tweets.id.author_id,attachments.media_keys',
-            'tweet.fields' : 'created_at',
-            'media.fields' : 'duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text'
-        }
-
-        twitterData = request.get_data() #获取推文链接
-        tdict = json.loads(twitterData)
-        print(tdict['url'])
-        turl = tdict['url']
-        print(turl)
-        tpattern=re.compile(r'(?<=status/)[0-9]*') #摘出推文id
-        tid=tpattern.search(turl).group()
-        tapiurl='https://api.twitter.com/2/tweets/' + tid
-        reqs = requests.get(url=tapiurl,headers=headers,params=params).json()
-        # 编辑推送信息
-        twitter = OrderedDict()
-        twitter['text']=reqs['data']['text']
-        twitter['origin']=reqs['includes']['users'][0]['name']
-        twitter['title']=twitter['origin']+'\'s tweet'
-        twitter['originurl']='https://twitter.com/'+ reqs['includes']['users'][0]['username']
-        twitter['aurl']=turl
-        picformat = '' # 处理图片
-        if 'attachments' in reqs['data']:
-            for i in reqs['includes']['media']:
-                picformat += '<img src="' + i['url'] + '">' + '<br>'
-            print(picformat)
-        twitter['content']=twitter['text']+'<br>'+picformat
-        print(twitter)
-        # requests.post(url=huginnUrl,data=twitter)
-        return reqs
+        try:
+            twitter_data = request.get_data()  # 获取推文链接
+            response_dict = json.loads(twitter_data)
+            print(response_dict['url'])
+            twitter_url = response_dict['url']
+            data_dict = twitter.Twitter(url=twitter_url).get_single_tweet()
+            tdict = {
+                'content': data_dict['content'],
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'originurl': data_dict['originurl'],
+                'url': data_dict['aurl']
+            }
+            print(tdict)
+            # t_url = requests.post(url=telegraph_url, json=tdict).text
+            t_url = util.telegraph_convert(tdict)
+            mdict = {
+                'category': 'twitter',
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'aurl': data_dict['aurl'],
+                'originurl': data_dict['originurl'],
+                'message': '',
+                'turl': t_url
+            }
+            print(mdict)
+        except Exception:
+            print(traceback.format_exc())
+            return 'Failed'
+        return mdict
 
     @server.route('/zhihuConvert', methods=['get', 'post'])
     def zhihuConvert():
-        # huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['zhihu']
-        zhihu_data = request.get_data()
-        zdict = json.loads(zhihu_data)
-        print(zdict['url'])
-        zurl = zdict['url']
-        # zhh = zhihu.Zhihu(url=zurl,huginnUrl=huginnUrl)
-        # zhh.get_fav_item()
-        # requests.post(url=huginnUrl,data=zhh.get_fav_item())
-        return '1'
+        try:
+            zhihu_data = request.get_data()
+            zdict = json.loads(zhihu_data)
+            print(zdict['url'])
+            zhihu_url = zdict['url']
+            data_dict = zhihu.Zhihu(url=zhihu_url).get_fav_item()
+            tdict = {
+                'content': data_dict['content'],
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'originurl': data_dict['originurl'],
+                'url': data_dict['aurl']
+            }
+            print(tdict)
+            # t_url = requests.post(url=telegraph_url, json=tdict).text
+            t_url = util.telegraph_convert(tdict)
+            mdict = {
+                'category': 'twitter',
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'aurl': data_dict['aurl'],
+                'originurl': data_dict['originurl'],
+                'message': '',
+                'turl': t_url
+            }
+            print(mdict)
+        except Exception:
+            print(traceback.format_exc())
+            return 'Failed'
+        return mdict
 
     @server.route('/inoreaderConvert', methods=['get','post'])
     def inoreaderConvert():
         try:
             inoreader_data = request.get_data()
-            idict = json.loads(inoreader_data)
-            print(idict)
+            data_dict = json.loads(inoreader_data)
+            print(data_dict)
             tdict = {
-                'content' : idict['content'],
-                'title' : idict['title'],
-                'origin' : idict['origin'],
-                'originurl': idict['originurl'],
-                'url' : idict['aurl']
+                'content' : data_dict['content'],
+                'title' : data_dict['title'],
+                'origin' : data_dict['origin'],
+                'originurl': data_dict['originurl'],
+                'url' : data_dict['aurl']
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
-            t_url = util.telegraphConvert(tdict)
+            t_url = util.telegraph_convert(tdict)
             mdict = {
-                'category' : idict['tag'],
-                'title' : idict['title'],
-                'origin' : idict['origin'],
-                'aurl' : idict['aurl'],
-                'originurl': idict['originurl'],
-                'message': idict['message']+'\n' if idict['message'] else '',
+                'category' : data_dict['tag'],
+                'title' : data_dict['title'],
+                'origin' : data_dict['origin'],
+                'aurl' : data_dict['aurl'],
+                'originurl': data_dict['originurl'],
+                'message': data_dict['message']+'\n' if data_dict['message'] else '',
                 'turl': t_url
             }
             print(mdict)

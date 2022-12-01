@@ -2,9 +2,13 @@
 app/config.yaml
 app/config_template.toml
 app/config.toml
+app/config_template.yaml
+app/test.py
+
 Pipfile.lock
 __pycache__
 app/__pycache__
 Dockerfile
 docker-compose.yml
 .env
+.gitignore

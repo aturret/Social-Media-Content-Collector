@@ -8,12 +8,15 @@ import time
 import requests
 from lxml import etree
 from html_sanitizer import Sanitizer
+from . import settings
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
 TEST_DATA_DIR = 'tests/testdata'
 URL_MAP_FILE = 'url_map.json'
-
+DOWNLOAD_DIR = settings.env_var.get('DOWNLOAD_DIR',
+                                    settings.env_var.get('HOMEPATH' if settings.system == 'Windows' else 'HOME', '~'))
+print(DOWNLOAD_DIR)
 
 # logger = logging.getLogger('spider.util')
 
@@ -39,9 +42,11 @@ def get_selector(url, headers):
     selector = etree.HTML(html)
     return selector
 
+
 def local_time():
-    time1=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(int(round(time.time()*1000))/1000))
+    time1 = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
     return time1
+
 
 def hash_url(url):
     return hashlib.sha224(url.encode('utf8')).hexdigest()
@@ -128,7 +133,7 @@ def to_video_download_url(cookie, video_page_url):
         video_url = wb_info['data']['object']['stream'].get('hd_url')
         if not video_url:
             video_url = wb_info['data']['object']['stream']['url']
-            if not video_url:  # 说明该视频为直播
+            if not video_url:  # This video is a live 说明该视频为直播
                 video_url = ''
     except json.decoder.JSONDecodeError:
         return "1"
@@ -139,6 +144,7 @@ def to_video_download_url(cookie, video_page_url):
 
 def string_to_int(string):
     """字符串转换为整数"""
+    '''transfer Chinese character numeric string to int'''
     if isinstance(string, int):
         return string
     elif string.endswith(u'万+'):
@@ -149,29 +155,35 @@ def string_to_int(string):
         string = float(string[:-1]) * 100000000
     return int(string)
 
-def telegraphConvert(tdict):
+
+def download_file(format: set = ('html')):
+    return '1'
+
+
+def telegraph_convert(tdict):
     res = ''
     try:
         metadata_dict = tdict
 
-        #url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
-        #definite the keys of the json file
+        # url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
+        # definite the keys of the json file
         author = 'origin'
         author_url = 'originurl'
         # metadata_dict = content_data
-        print('type of argument:'+str(type(metadata_dict)))
-        print('content of argument:'+str(metadata_dict))
+        print('type of argument:' + str(type(metadata_dict)))
+        print('content of argument:' + str(metadata_dict))
         # Use pyhtmltotelegraph to post telegraph article
 
         t = TelegraphPoster(use_api=True)
         short_name = metadata_dict[author]
         t.create_api_token(short_name[0:14], author_name=metadata_dict[author])
-        telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author], text=metadata_dict['content'], author_url=metadata_dict[author_url])
-        print('telegraph url:'+telegraphPost['url'])
-        print('telegraph result type:'+str(type(telegraphPost)))
+        telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author],
+                               text=metadata_dict['content'], author_url=metadata_dict[author_url])
+        print('telegraph url:' + telegraphPost['url'])
+        print('telegraph result type:' + str(type(telegraphPost)))
         res = telegraphPost['url']
     except Exception:
-            print(traceback.format_exc())
+        print(traceback.format_exc())
     # check if the title is a duplicate
 
     return res if res else 'nothing'
