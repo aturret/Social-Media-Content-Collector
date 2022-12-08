@@ -1,8 +1,5 @@
 # my config file
-app/config.yaml
-app/config_template.toml
-app/config.toml
-app/config_template.yaml
+app/abondoned
 app/test.py
 
 Pipfile.lock

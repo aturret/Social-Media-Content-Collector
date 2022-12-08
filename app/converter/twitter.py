@@ -3,7 +3,7 @@ import requests
 from collections import OrderedDict
 from lxml import etree
 import sys
-from . import settings
+from app import settings
 import re
 
 tpattern = re.compile(r'(?<=status/)[0-9]*')  # 摘出推文id

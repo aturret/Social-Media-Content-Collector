@@ -3,7 +3,6 @@ import requests
 from collections import OrderedDict
 from lxml import etree
 import sys
-# from . import util
 import re
 from bs4 import BeautifulSoup
 

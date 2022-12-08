@@ -4,6 +4,7 @@ import re
 import requests
 import json
 from . import settings
+from .utils import util
 # import toml
 # import yaml
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
@@ -15,11 +16,12 @@ weiboApiUrl = 'http://' + site_url + '/weiboConvert'
 twitterApiUrl = 'http://' + site_url + '/twitterConvert'
 zhihuApiUrl = 'http://' + site_url + '/zhihuConvert'
 doubanApiUrl = 'http://' + site_url + '/doubanConvert'
+mustodonApiUrl = 'http://' + site_url + '/mustodonConvert'
 
 urlpattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
+# regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
 
-
-@bot.message_handler(regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com")
+@bot.message_handler(regexp="(http|https)://([\w.!@#$%^&*()_+-=])*\s*")
 def get_social_media(message):
     url = urlpattern.search(message.text).group()
     print('the url is: '+url)
@@ -43,7 +45,14 @@ def get_social_media(message):
         print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
         target_url = doubanApiUrl
     else:
-        print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
+        if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
+            bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
+            print('检测到长毛象URL，转化中\nMustodon URL detected, converting...')
+            target_url = mustodonApiUrl
+        else:
+            bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
+            print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
+            return False
     response = requests.post(url=target_url, data=json.dumps(data))
     print(response.status_code)
     if response.status_code == 200:

@@ -4,11 +4,12 @@ import json
 from flask import request
 from html_telegraph_poster import TelegraphPoster
 import threading
-from collections import OrderedDict
 import traceback
-from . import atelebot, twitter, weibo, douban, zhihu, telegraph, combination, util, settings
-import requests
-import re
+from . import atelebot, combination, settings
+from .utils import telegraph, util
+from .converter import zhihu, twitter, douban, weibo
+
+
 # from time import sleep
 # import toml
 

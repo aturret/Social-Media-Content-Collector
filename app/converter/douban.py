@@ -8,8 +8,8 @@ from collections import OrderedDict
 import re
 # from threading import Timer
 from lxml.html import tostring
-from . import util
-# import util
+from app import utils
+# import utils
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723 '
@@ -35,8 +35,8 @@ class Douban(object):
         self.groupurl = ''
 
     def get_fav_list(self):
-        selector = util.get_selector(url=self.favurl, headers=self.headers)
-        print(util.local_time())
+        selector = utils.get_selector(url=self.favurl, headers=self.headers)
+        print(utils.local_time())
         print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.url)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         self.url = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
@@ -85,7 +85,7 @@ class Douban(object):
         return douban
 
     def get_douban_note(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = utils.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -93,7 +93,7 @@ class Douban(object):
         self.originurl = selector.xpath('string(//div[@class="content"]/a/@href)')
 
     def get_douban_book_review(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = utils.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -103,7 +103,7 @@ class Douban(object):
         self.workurl = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_movie_review(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = utils.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -113,7 +113,7 @@ class Douban(object):
         self.workurl = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_status(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = utils.get_selector(url, headers=self.headers)
         self.content = str(etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
                            encoding='utf-8').replace('<blockquote>','').replace('</blockquote>','').replace('>+<','><').replace('&#13;','<br>')
         self.origin = selector.xpath('string(//div[@class="content"]/a)')
@@ -121,7 +121,7 @@ class Douban(object):
         self.title = self.origin + '的广播'
 
     def get_douban_group_article(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = utils.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')

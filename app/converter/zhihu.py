@@ -6,8 +6,8 @@ from lxml import etree
 from lxml import html
 from collections import OrderedDict
 import re
-from . import util
-# import util
+from app import utils
+# import utils
 from html_sanitizer import Sanitizer
 
 favurl = 'https://www.zhihu.com/pin/1457225488036573184'
@@ -37,8 +37,8 @@ class Zhihu(object):
 
     def get_fav_item(self):
         zhihu = OrderedDict()
-        # selector = util.get_selector(url=self.url, headers=self.headers)
-        print(util.local_time())
+        # selector = utils.get_selector(url=self.url, headers=self.headers)
+        print(utils.local_time())
         url = self.url
         # print(str(etree.tostring(selector.xpath('//body')[0], encoding="utf-8"),encoding='utf-8'))
         if url.find('zhuanlan.zhihu.com') != -1:
@@ -63,7 +63,7 @@ class Zhihu(object):
         return zhihu
 
     def get_zhihu_article(self):
-        selector = util.get_selector(url=self.url, headers=self.headers)
+        selector = utils.get_selector(url=self.url, headers=self.headers)
         self.title = selector.xpath('string(//h1)')
         upvote = selector.xpath('string(//button[@class="Button VoteButton VoteButton--up"])')
         content = str(etree.tostring(selector.xpath('//div[contains(@class,"RichText") and contains(@class,"ztext")]')[0],
@@ -73,7 +73,7 @@ class Zhihu(object):
         self.originurl = 'https:'+selector.xpath('string(//a[@class="UserLink-link"]/@href)')
 
     def get_zhihu_answer(self):
-        selector = util.get_selector(url=self.url, headers=self.headers)
+        selector = utils.get_selector(url=self.url, headers=self.headers)
         upvote = selector.xpath('string(//button[contains(@class,"VoteButton")])')
         content = str(etree.tostring(selector.xpath('//div[contains(@class,"RichContent-inner")]//span[contains(@class,"RichText") and @itemprop="text"]')[0],encoding="utf-8"), encoding='utf-8')
         # question = str(
@@ -87,7 +87,7 @@ class Zhihu(object):
         self.title = selector.xpath('string(//h1)')
 
     def get_zhihu_status(self):
-        selector = util.get_selector(url=self.url, headers=self.headers)
+        selector = utils.get_selector(url=self.url, headers=self.headers)
         content = str(etree.tostring(selector.xpath('//span[contains(@class,"RichText") and @itemprop="text"]')[0],
                                      encoding="utf-8"), encoding='utf-8')
         upvote = selector.xpath('string(//button[contains(@class,"VoteButton")]//span)')

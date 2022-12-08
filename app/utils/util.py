@@ -8,7 +8,7 @@ import time
 import requests
 from lxml import etree
 from html_sanitizer import Sanitizer
-from . import settings
+from app import settings
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
@@ -18,7 +18,7 @@ DOWNLOAD_DIR = settings.env_var.get('DOWNLOAD_DIR',
                                     settings.env_var.get('HOMEPATH' if settings.system == 'Windows' else 'HOME', '~'))
 print(DOWNLOAD_DIR)
 
-# logger = logging.getLogger('spider.util')
+# logger = logging.getLogger('spider.utils')
 
 wsanitizer = Sanitizer({
     "tags": {
@@ -36,6 +36,13 @@ wsanitizer = Sanitizer({
     "element_postprocessors": [],
 })
 
+def get_response(url):
+    request_headers = {
+        'User-Agent': 'smcc',
+    }
+    resp = requests.get(url=url,
+                        headers=request_headers)
+    return resp
 
 def get_selector(url, headers):
     html = requests.get(url=url, headers=headers).text
