@@ -3,6 +3,7 @@ from flask import Flask
 import json
 from flask import request
 from html_telegraph_poster import TelegraphPoster
+from html_telegraph_poster.utils import DocumentPreprocessor
 import threading
 import traceback
 from . import atelebot, combination, settings
@@ -50,6 +51,9 @@ def create_app():
                 wurl=wurl.replace('weibo.com','m.weibo.cn')
             wb = weibo.Weibo(wurl).get_weibo()
             print(wb)
+            temp_html = DocumentPreprocessor(wb['content'])
+            temp_html.upload_all_images()
+            wb['content']=temp_html.get_processed_html()
             tdict = {
                 'content': wb['content'],
                 'title': wb['title'],
