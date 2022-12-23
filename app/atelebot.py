@@ -10,6 +10,7 @@ from .utils import util
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 channel_id = settings.env_var.get('CHANNEL_ID', None)
+youtube_api = settings.env_var.get('YOUTUBE_API', None)
 
 bot = telebot.TeleBot(telebot_key)
 weiboApiUrl = 'http://' + site_url + '/weiboConvert'
@@ -19,8 +20,9 @@ doubanApiUrl = 'http://' + site_url + '/doubanConvert'
 mustodonApiUrl = 'http://' + site_url + '/mustodonConvert'
 
 urlpattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
-# regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
-
+# no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
+no_telegraph_regexp="youtube\.com|bilibili\.com"
+# no_telegraph_list = ['',]
 @bot.message_handler(regexp="(http|https)://([\w.!@#$%^&*()_+-=])*\s*")
 def get_social_media(message):
     url = urlpattern.search(message.text).group()
@@ -44,6 +46,11 @@ def get_social_media(message):
         bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
         print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
         target_url = doubanApiUrl
+    elif url.find('youtube.com') != -1:
+        if not youtube_api:
+            bot.reply_to(message, '未配置YouTube API，无法抓取\nYouTube API is not configured. Cannot extract metadata from YouTube.')
+        else:
+            bot.reply_to(message, '检测到YouTubeURL，转化中\nYouTube URL detected, converting...')
     else:
         if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
             bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
@@ -68,7 +75,14 @@ def get_social_media(message):
 
 def send_to_channel(data, message=None):
     try:
-        text = '<a href=\"' + data['turl'] + '\">' \
+        if re.search(no_telegraph_regexp,data['aurl']):
+            text = '<a href=\"' + data['aurl'] + '\">' \
+               '<b>' + data['title'] + '</b></a>\n' \
+               'via #' + data['category'] + \
+               ' - <a href=\"' + data['originurl'] + ' \"> ' \
+               + data['origin'] + '</a>\n' + data['message']
+        else:
+            text = '<a href=\"' + data['turl'] + '\">' \
                '<b>' + data['title'] + '</b></a>\n' \
                'via #' + data['category'] + \
                ' - <a href=\"' + data['originurl'] + ' \"> ' \
