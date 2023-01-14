@@ -2,7 +2,7 @@
 
 [中文版文档](https://github.com/aturret/Social-Media-Content-Collector/wiki/%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3)
 
-A simple API written in Flask. I originally wrote this program to make it easy to keep a copy of the social media information I see every day on [telegra.ph](https://telegra.ph) and forward it to [my telegram channel](https://t.me/ aturretbillboard) into a form that can be easily read with telegram's instant view. As we all know, it is always difficult to keep the information in the Chinese world, so this is necessary for me.
+A simple API written in Flask. I originally wrote this program to make it easy to keep a copy of the social media information I see every day on [telegra.ph](https://telegra.ph) and forward it to [my telegram channel](https://t.me/aturretbillboard) into a form that can be easily read with telegram's instant view. As we all know, it is always difficult to keep the information in the Chinese world, so this is necessary for me.
 
 Can be easily deployed on a server by Docker.
 
