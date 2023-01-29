@@ -2,6 +2,7 @@
 import requests
 import time
 # import cchardet as chardet
+
 from lxml import etree
 from lxml import html
 from collections import OrderedDict

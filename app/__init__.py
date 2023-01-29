@@ -171,7 +171,7 @@ def create_app():
             # t_url = requests.post(url=telegraph_url, json=tdict).text
             t_url = util.telegraph_convert(tdict)
             mdict = {
-                'category': 'twitter',
+                'category': 'Zhihu',
                 'title': data_dict['title'],
                 'origin': data_dict['origin'],
                 'aurl': data_dict['aurl'],
