@@ -6,9 +6,10 @@ from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
 import threading
 import traceback
-from . import atelebot, combination, settings
+from . import atelebot_async,atelebot, combination, settings
 from .utils import telegraph, util
 from .converter import zhihu, twitter, douban, weibo
+import asyncio
 
 
 # from time import sleep
@@ -135,7 +136,6 @@ def create_app():
                 'url': data_dict['aurl']
             }
             print(tdict)
-            # t_url = requests.post(url=telegraph_url, json=tdict).text
             t_url = util.telegraph_convert(tdict)
             mdict = {
                 'category': 'twitter',
@@ -169,7 +169,17 @@ def create_app():
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
-            t_url = util.telegraph_convert(tdict)
+            a=0
+
+            while a<5:
+                try:
+                    t_url = util.telegraph_convert(tdict)
+                    if t_url != 'Nothing':
+                        break
+                except Exception:
+                    a+=1
+                    print(traceback.format_exc())
+                    continue
             mdict = {
                 'category': 'Zhihu',
                 'title': data_dict['title'],
@@ -261,8 +271,13 @@ def create_app():
             res = post()
         return res if res else 'nothing'
     # 开启telebot线程
+
+    # asyncio.run(atelebot_async.bot.polling())
+
     telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
+
+
     # 豆瓣收藏夹
     # durl = 'https://www.douban.com/doulist/145693559/'
     # d = douban.Douban(durl)

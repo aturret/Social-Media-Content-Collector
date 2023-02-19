@@ -15,7 +15,7 @@ GENERATE_TEST_DATA = False
 TEST_DATA_DIR = 'tests/testdata'
 URL_MAP_FILE = 'url_map.json'
 DOWNLOAD_DIR = settings.env_var.get('DOWNLOAD_DIR',
-                                    settings.env_var.get('HOMEPATH' if settings.system == 'Windows' else 'HOME', '~'))
+settings.env_var.get('HOMEPATH' if settings.system == 'Windows' else 'HOME', '~'))
 print(DOWNLOAD_DIR)
 
 # logger = logging.getLogger('spider.utils')
@@ -184,8 +184,7 @@ def telegraph_convert(tdict):
         t = TelegraphPoster(use_api=True)
         short_name = metadata_dict[author]
         t.create_api_token(short_name[0:14], author_name=metadata_dict[author])
-        telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author],
-                               text=metadata_dict['content'], author_url=metadata_dict[author_url])
+        telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author],text=metadata_dict['content'], author_url=metadata_dict[author_url])
         print('telegraph url:' + telegraphPost['url'])
         print('telegraph result type:' + str(type(telegraphPost)))
         res = telegraphPost['url']

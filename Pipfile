@@ -20,6 +20,7 @@ tqdm = {version="*"}
 absl-py = {version="*"}
 #telebot = {version="*"}
 pyTelegramBotAPI ={ version =  "4.2.2"}
+markdownify = {version = "*"}
 #cchardet = {version="*"}
 html-sanitizer = {version="*"}
 beautifulsoup4 = {version="*"}
