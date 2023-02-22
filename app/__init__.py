@@ -9,6 +9,7 @@ import traceback
 from . import atelebot_async,atelebot, combination, settings
 from .utils import telegraph, util
 from .converter import zhihu, twitter, douban, weibo
+import time
 import asyncio
 
 
@@ -159,6 +160,7 @@ def create_app():
             zdict = json.loads(zhihu_data)
             print(zdict['url'])
             zhihu_url = zdict['url']
+            t_url = 'nothing'
             data_dict = zhihu.Zhihu(url=zhihu_url).get_fav_item()
             tdict = {
                 'content': data_dict['content'],
@@ -174,7 +176,7 @@ def create_app():
             while a<5:
                 try:
                     t_url = util.telegraph_convert(tdict)
-                    if t_url != 'Nothing':
+                    if t_url != 'nothing':
                         break
                 except Exception:
                     a+=1
@@ -199,6 +201,7 @@ def create_app():
     def inoreaderConvert():
         try:
             inoreader_data = request.get_data()
+            t_url = 'nothing'
             data_dict = json.loads(inoreader_data)
             print(data_dict)
             tdict = {
@@ -210,7 +213,18 @@ def create_app():
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
-            t_url = util.telegraph_convert(tdict)
+            a = 0
+            while a<5:
+                try:
+                    t_url = util.telegraph_convert(tdict)
+                    print(t_url)
+                    if t_url != 'nothing':
+                        break
+                except Exception:
+                    time.sleep(1)
+                    a+=1
+                    print(traceback.format_exc())
+                    continue
             mdict = {
                 'category' : data_dict['tag'],
                 'title' : data_dict['title'],
