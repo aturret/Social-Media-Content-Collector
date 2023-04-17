@@ -9,6 +9,11 @@ import requests
 from lxml import etree
 from html_sanitizer import Sanitizer
 from app import settings
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
@@ -36,6 +41,29 @@ wsanitizer = Sanitizer({
     "element_postprocessors": [],
 })
 
+
+def get_page_by_selenium(url: str,user_agent: str, wait_time: int = 10 ):
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument(f'user-agent={user_agent}')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--allow-running-insecure-content')
+    driver = webdriver.Chrome(options=options)
+    try:
+        driver.get(url)
+        # WebDriverWait(driver, wait_time).until(ec.presence_of_element_located((By.XPATH, '//ul[@data-testid="hero-title-block__metadata"]')))
+        html = driver.page_source
+    except TimeoutException:
+        print('Error: get_page_by_selenium')
+        html = None
+    finally:
+        driver.quit()
+    return html
+
+
+
 def get_response(url):
     request_headers = {
         'User-Agent': 'smcc',
@@ -43,6 +71,7 @@ def get_response(url):
     resp = requests.get(url=url,
                         headers=request_headers)
     return resp
+
 
 def get_selector(url, headers):
     html = requests.get(url=url, headers=headers).text

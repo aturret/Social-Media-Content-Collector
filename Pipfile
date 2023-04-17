@@ -27,5 +27,7 @@ beautifulsoup4 = {version="*"}
 pyyaml = {version="*"}
 toml = {version ="*"}
 aiohttp = {version = "*"}
+pytest = {version = "*"}
+selenium = "*"
 
 [dev-packages]

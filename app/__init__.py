@@ -6,7 +6,7 @@ from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
 import threading
 import traceback
-from . import atelebot_async,atelebot, combination, settings
+from . import atelebot_async, atelebot, combination, settings
 from .utils import telegraph, util
 from .converter import zhihu, twitter, douban, weibo
 import time
@@ -42,9 +42,8 @@ def create_app():
         return wb.get_weibo()
 
     @server.route('/weiboConvert', methods=['get', 'post'])
-    def weiboConvert():
+    def weibo_convert():
         try:
-        # huginnUrl='https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['weibo']
             weiboData = request.get_data()
             wdict = json.loads(weiboData)
             print(wdict['url'])
@@ -85,7 +84,7 @@ def create_app():
         return mdict
 
     @server.route('/doubanConvert', methods=['get', 'post'])
-    def doubanConvert():
+    def douban_convert():
         try:
             doubanData = request.get_data()
             ddict = json.loads(doubanData)
@@ -122,7 +121,7 @@ def create_app():
         # return db.get_fav_item()
 
     @server.route('/twitterConvert', methods=['get', 'post'])
-    def twitterConvert():
+    def twitter_convert():
         try:
             twitter_data = request.get_data()  # 获取推文链接
             response_dict = json.loads(twitter_data)
@@ -154,7 +153,7 @@ def create_app():
         return mdict
 
     @server.route('/zhihuConvert', methods=['get', 'post'])
-    def zhihuConvert():
+    def zhihu_convert():
         try:
             zhihu_data = request.get_data()
             zdict = json.loads(zhihu_data)
@@ -171,15 +170,15 @@ def create_app():
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
-            a=0
+            failure_counter=0
 
-            while a<5:
+            while failure_counter<5:
                 try:
                     t_url = util.telegraph_convert(tdict)
                     if t_url != 'nothing':
                         break
                 except Exception:
-                    a+=1
+                    failure_counter+=1
                     print(traceback.format_exc())
                     continue
             mdict = {
@@ -198,7 +197,7 @@ def create_app():
         return mdict
 
     @server.route('/inoreaderConvert', methods=['get','post'])
-    def inoreaderConvert():
+    def inoreader_convert():
         try:
             inoreader_data = request.get_data()
             t_url = 'nothing'
@@ -242,7 +241,7 @@ def create_app():
         return mdict
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
-    def telegraphConvert(check=True):
+    def telegraph_convert(check=True):
         res = ''
         #url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
         #definite the keys of the json file
@@ -284,22 +283,10 @@ def create_app():
         else:
             res = post()
         return res if res else 'nothing'
-    # 开启telebot线程
 
-    # asyncio.run(atelebot_async.bot.polling())
-
+    # if settings.env_var.get('BOT', 'True') == 'True':
     telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
 
 
-    # 豆瓣收藏夹
-    # durl = 'https://www.douban.com/doulist/145693559/'
-    # d = douban.Douban(durl)
-    # class RepeatingTimer(threading.Timer):
-    #     def run(self):
-    #         while not self.finished.is_set():
-    #             self.function(*self.args, **self.kwargs)
-    #             self.finished.wait(self.interval)
-    # t = RepeatingTimer(10.0,d.get_fav_list)
-    # t.start()
     return server

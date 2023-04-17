@@ -2,7 +2,7 @@
 app/abondoned
 app/test.py
 
-Pipfile.lock
+#Pipfile.lock
 __pycache__
 app/__pycache__
 Dockerfile
