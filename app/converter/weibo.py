@@ -13,7 +13,7 @@ imgpattern = '<.?img[^>]*>'
 pattern = re.compile(imgpattern)
 ajax_host = 'https://weibo.com/ajax/statuses/show?id='
 ajax_host_longtext = 'https://weibo.com/ajax/statuses/longtext?id='
-short_limit = settings.env_var.get('SHORT_LIMIT', 150)
+short_limit = settings.env_var.get('SHORT_LIMIT', 200)
 weibo_cookie = settings.env_var.get('WEIBO_COOKIE', '')
 
 # def parse_emoji(str):
@@ -431,13 +431,14 @@ class Weibo(object):
 
         weibo['text_raw'] = weibo_info['text_raw'] + rtweibo_info['text_raw'] if 'retweeted_status' in weibo_info \
             else weibo_info['text_raw']
+        print(len(weibo['text_raw']))
         weibo['type'] = 'long' if len(weibo['text_raw']) > short_limit else 'short'
 
-        if weibo['type'] == 'short':
-            weibo['text'] = '<a href="' + weibo['aurl'] + '">@' + weibo['origin'] + \
-                            '</a>：' + weibo['text'].replace('<br>', '\n')
-            weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info else weibo[
-                'text']
+
+        weibo['text'] = '<a href="' + weibo['aurl'] + '">@' + weibo['origin'] + \
+                        '</a>：' + weibo['text'].replace('<br>', '\n')
+        weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info else weibo[
+            'text']
 
 
 

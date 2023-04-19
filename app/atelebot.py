@@ -85,6 +85,9 @@ def get_social_media(message):
         show_button = telebot.types.InlineKeyboardButton(text='发送到私聊',
                                                          callback_data='priv+{}'.format(message.chat.id))
         buttons.append(show_button)
+        extract_button = telebot.types.InlineKeyboardButton(text='强制提取',
+                                                         callback_data='extr+{}'.format(message.chat.id))
+        buttons.append(extract_button)
         if len(buttons) > 0:
             markup.add(*buttons)
             bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
@@ -101,6 +104,10 @@ def get_social_media(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
 def callback_query(call):
+    if len(formatted_data) == 0:
+        bot.reply_to(call.message, "No data to send")
+        bot.answer_callback_query(call.id, "No data to send")
+        return
     the_data = formatted_data.pop()
     send_to_channel(data=the_data, channel_id=call.data.split('+')[1])
     bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
@@ -110,12 +117,29 @@ def callback_query(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
 def callback_query(call):
+    if len(formatted_data) == 0:
+        bot.reply_to(call.message, "No data to send")
+        bot.answer_callback_query(call.id, "No data to send")
+        return
     the_data = formatted_data.pop()
     send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
     bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
     bot.answer_callback_query(call.id, "Message sent to private chat")
 
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
+def callback_query(call):
+    if len(formatted_data) == 0:
+        bot.reply_to(call.message, "No data to send")
+        bot.answer_callback_query(call.id, "No data to send")
+        return
+    the_data = formatted_data.pop()
+    the_data['type'] = 'short'
+    send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+    bot.answer_callback_query(call.id, "Force extracted")
 
 def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
     if not chat_id:
