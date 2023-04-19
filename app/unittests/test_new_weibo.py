@@ -37,5 +37,9 @@ def test_weibo_rt():
     w = weibo.Weibo(url='https://weibo.com/2656274875/MARShsRK7')
     return w.new_get_weibo()
 
+def test_no_weibo_found():
+    w = weibo.Weibo(url='https://weibo.com/status/7714699796')
+    return w.new_get_weibo()
+
 
 pytest

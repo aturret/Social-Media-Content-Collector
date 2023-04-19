@@ -343,6 +343,8 @@ class Weibo(object):
         url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
         ajax_json = get_response_json(url, headers=self.headers)
         print(url)
+        if ajax_json['ok'] == 0:
+            return None
         # if ajax_json['isLongText']:
         #     longtext_json = get_response_json(self.longtext_url, headers=self.headers)
         # print(json['text'])

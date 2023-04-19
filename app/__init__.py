@@ -39,6 +39,8 @@ def create_app():
             if wurl.find('weibo.com'):
                 wurl = wurl.replace('weibo.com', 'm.weibo.cn')
             wb = weibo.Weibo(wurl).new_get_weibo()
+            if not wb:
+                raise Exception('No weibo found')
             print(wb)
             temp_html = DocumentPreprocessor(wb['content'])
             temp_html.upload_all_images()

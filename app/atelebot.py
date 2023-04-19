@@ -98,48 +98,65 @@ def get_social_media(message):
                 send_to_channel(data=response_data)
     except Exception as e:
         print(traceback.format_exc())
-        bot.reply_to(message, 'Failure')
+        bot.reply_to(message, 'Failure'+traceback.format_exc())
         return
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
 def callback_query(call):
-    if len(formatted_data) == 0:
-        bot.reply_to(call.message, "No data to send")
-        bot.answer_callback_query(call.id, "No data to send")
-        return
-    the_data = formatted_data.pop()
-    send_to_channel(data=the_data, channel_id=call.data.split('+')[1])
-    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-    bot.answer_callback_query(call.id, "Message sent to channel")
+    try:
+        if len(formatted_data) == 0:
+            bot.reply_to(call.message, "No data to send")
+            bot.answer_callback_query(call.id, "No data to send")
+            raise Exception('No data to send')
+        the_data = formatted_data.pop()
+        send_to_channel(data=the_data, channel_id=call.data.split('+')[1])
+        bot.answer_callback_query(call.id, "Message sent to channel")
+    except Exception as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure")
+    finally:
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
 def callback_query(call):
-    if len(formatted_data) == 0:
-        bot.reply_to(call.message, "No data to send")
-        bot.answer_callback_query(call.id, "No data to send")
-        return
-    the_data = formatted_data.pop()
-    send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
-    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-    bot.answer_callback_query(call.id, "Message sent to private chat")
+    try:
+        if len(formatted_data) == 0:
+            bot.reply_to(call.message, "No data to send")
+            bot.answer_callback_query(call.id, "No data to send")
+            raise Exception('No data to send')
+        the_data = formatted_data.pop()
+        send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+        bot.answer_callback_query(call.id, "Message sent to channel")
+    except Exception as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure")
+    finally:
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
 def callback_query(call):
-    if len(formatted_data) == 0:
-        bot.reply_to(call.message, "No data to send")
-        bot.answer_callback_query(call.id, "No data to send")
-        return
-    the_data = formatted_data.pop()
-    the_data['type'] = 'short'
-    send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
-    bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
-    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-    bot.answer_callback_query(call.id, "Force extracted")
+    try:
+        if len(formatted_data) == 0:
+            bot.reply_to(call.message, "No data to send")
+            bot.answer_callback_query(call.id, "No data to send")
+            raise Exception('No data to send')
+        the_data = formatted_data.pop()
+        the_data['type'] = 'short'
+        send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+        bot.answer_callback_query(call.id, "Message sent to channel")
+    except Exception as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure")
+    finally:
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
@@ -157,7 +174,7 @@ def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
     except Exception:
         print(traceback.format_exc())
         if message:
-            bot.reply_to(message, 'Failure')
+            bot.reply_to(message, 'Failure'+traceback.format_exc())
 
 
 def send_to_channel(data, message=None, telegram_bot=bot, channel_id=default_channel_id):
@@ -172,25 +189,16 @@ def send_to_channel(data, message=None, telegram_bot=bot, channel_id=default_cha
             telegram_bot.send_message(chat_id=channel_id, parse_mode='html', text=text)
     except Exception:
         if message:
-            bot.reply_to(message, 'Failure')
+            bot.reply_to(message, 'Failure'+traceback.format_exc())
         print(traceback.format_exc())
 
 
 def message_formatting(data):
     if data['type'] == 'short':
         if re.search(no_telegraph_regexp, data['aurl']):
-            text = '<a href=\"' + data['aurl'] + '\">' \
-                                                 '<b>' + data['title'] + '</b></a>\n' \
-                                                                         'via #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
-                   + data['origin'] + '</a>\n' + data['message']
+            text = data['text'] + '\n#' + data['category']
         else:
-            text = '<a href=\"' + data['turl'] + '\">' \
-                                                 '<b>' + data['title'] + '</b></a>\n' \
-                                                                         'via #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
-                   + data['origin'] + '</a>\n' + data['message'] + \
-                   '<a href=\"' + data['aurl'] + '\">阅读原文</a>'
+            text = data['text'] + '\n#' + data['category']
     else:
         if re.search(no_telegraph_regexp, data['aurl']):
             text = '<a href=\"' + data['aurl'] + '\">' \
