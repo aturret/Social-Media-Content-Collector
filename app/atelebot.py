@@ -141,12 +141,14 @@ def callback_query(call):
     bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
     bot.answer_callback_query(call.id, "Force extracted")
 
+
 def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
     if not chat_id:
         chat_id = message.chat.id
     try:
         if data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
-            media_group = media_files_packaging(data['media_files'], data['text'])
+            caption_text = data['text'] + '\n#' + data['category']
+            media_group = media_files_packaging(data['media_files'], caption_text)
             telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
         else:
             text = message_formatting(data)
@@ -161,7 +163,8 @@ def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
 def send_to_channel(data, message=None, telegram_bot=bot, channel_id=default_channel_id):
     try:
         if data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
-            media_group = media_files_packaging(data['media_files'], data['text'])
+            caption_text = data['text'] + '\n#' + data['category']
+            media_group = media_files_packaging(data['media_files'], caption_text)
             telegram_bot.send_media_group(chat_id=channel_id, media=media_group)
         else:
             text = message_formatting(data)
@@ -206,6 +209,7 @@ def message_formatting(data):
 
 
 def media_files_packaging(media_files, caption=None):
+    caption_text = caption
     media_group = []
     for media in media_files:
         if media['type'] == 'image':
@@ -214,7 +218,7 @@ def media_files_packaging(media_files, caption=None):
             media_group.append(telebot.types.InputMediaVideo(media['url'], caption=media['caption'], parse_mode='html'))
         elif media['type'] == 'audio':
             media_group.append(telebot.types.InputMediaAudio(media['url'], caption=media['caption'], parse_mode='html'))
-    media_group[0].caption = caption
+    media_group[0].caption = caption_text
     return media_group
 
 # bot.infinity_polling()
