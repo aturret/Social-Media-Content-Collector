@@ -6,7 +6,7 @@ from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
 import threading
 import traceback
-from . import atelebot_async, atelebot, combination, settings
+from . import atelebot, combination, settings
 from .utils import telegraph, util
 from .converter import zhihu, twitter, douban, weibo
 import time

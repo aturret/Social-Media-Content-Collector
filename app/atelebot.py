@@ -93,10 +93,11 @@ def get_social_media(message):
                                                          callback_data='priv+' + str(message.chat.id) +
                                                                        '+' + data_id)
         buttons.append(show_button)
-        extract_button = telebot.types.InlineKeyboardButton(text='强制提取',
-                                                            callback_data='extr+' + str(message.chat.id) +
-                                                                          '+' + data_id)
-        buttons.append(extract_button)
+        if 'media_files' in response_data:
+            extract_button = telebot.types.InlineKeyboardButton(text='强制提取',
+                                                                callback_data='extr+' + str(message.chat.id) +
+                                                                              '+' + data_id)
+            buttons.append(extract_button)
         if len(buttons) > 0:
             markup.add(*buttons)
             bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
@@ -243,6 +244,9 @@ def media_files_packaging(media_files, caption=None):
         print(media['url'])
         file_data = requests.get(media["url"]).content
         io_object = NamedBytesIO(file_data, name='media'+str(uuid.uuid4()))
+        # if the size is over 50MB, skip this file
+        if io_object.getbuffer().nbytes > 50 * 1024 * 1024:
+            continue
         file_like_object = telebot.types.InputFile(io_object)
         if media['type'] == 'image':
             media_group.append(telebot.types.InputMediaPhoto(file_like_object, caption=media['caption'], parse_mode='html'))
