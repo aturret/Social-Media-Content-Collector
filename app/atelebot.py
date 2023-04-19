@@ -1,3 +1,4 @@
+import io
 import traceback
 import telebot
 import re
@@ -5,6 +6,8 @@ import requests
 import json
 from . import settings
 from .utils import util
+from .utils.classes import NamedBytesIO
+import uuid
 
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
@@ -23,7 +26,9 @@ urlpattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘�
 # no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
 no_telegraph_regexp = "youtube\.com|bilibili\.com"
 # no_telegraph_list = ['',]
-formatted_data = []
+formatted_data = {}
+
+
 
 
 @bot.message_handler(regexp="(http|https)://([\w.!@#$%^&*()_+-=])*\s*")
@@ -71,8 +76,9 @@ def get_social_media(message):
         response = requests.post(url=target_url, data=json.dumps(data))
         if response.status_code == 200:
             response_data = response.json()
-            formatted_data.pop() if len(formatted_data) > 0 else None
-            formatted_data.append(response_data)
+            # formatted_data.pop() if len(formatted_data) > 0 else None
+            data_id = str(uuid.uuid4())
+            formatted_data[data_id] = response_data
         else:
             print('Failure')
             bot.reply_to(message, 'Failure')
@@ -80,13 +86,16 @@ def get_social_media(message):
         bot.delete_message(message.chat.id, replying_message.message_id) if replying_message else None
         if default_channel_id:
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
-                                                                callback_data='chan+{}'.format(default_channel_id))
+                                                                callback_data='chan+' + str(default_channel_id) +
+                                                                              '+' + data_id)
             buttons.append(forward_button)
         show_button = telebot.types.InlineKeyboardButton(text='发送到私聊',
-                                                         callback_data='priv+{}'.format(message.chat.id))
+                                                         callback_data='priv+' + str(message.chat.id) +
+                                                                       '+' + data_id)
         buttons.append(show_button)
         extract_button = telebot.types.InlineKeyboardButton(text='强制提取',
-                                                         callback_data='extr+{}'.format(message.chat.id))
+                                                            callback_data='extr+' + str(message.chat.id) +
+                                                                          '+' + data_id)
         buttons.append(extract_button)
         if len(buttons) > 0:
             markup.add(*buttons)
@@ -109,9 +118,12 @@ def callback_query(call):
             bot.reply_to(call.message, "No data to send")
             bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
-        the_data = formatted_data.pop()
+        the_data = formatted_data.pop(call.data.split('+')[2])
         send_to_channel(data=the_data, channel_id=call.data.split('+')[1])
-        bot.answer_callback_query(call.id, "Message sent to channel")
+        # bot.answer_callback_query(call.id, "Message sent to channel")
+    except telebot.apihelper.ApiException as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure, timeout")
     except Exception as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
@@ -128,9 +140,12 @@ def callback_query(call):
             bot.reply_to(call.message, "No data to send")
             bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
-        the_data = formatted_data.pop()
+        the_data = formatted_data.pop(call.data.split('+')[2])
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
-        bot.answer_callback_query(call.id, "Message sent to channel")
+        # bot.answer_callback_query(call.id, "Message sent to channel")
+    except telebot.apihelper.ApiException as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure, timeout")
     except Exception as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
@@ -147,10 +162,15 @@ def callback_query(call):
             bot.reply_to(call.message, "No data to send")
             bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
-        the_data = formatted_data.pop()
+        the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
+        if len(the_data['text']) > 1000:
+            the_data['text'] = the_data['text'][:1000] + '...'
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
-        bot.answer_callback_query(call.id, "Message sent to channel")
+        # bot.answer_callback_query(call.id, "Message sent to channel")
+    except telebot.apihelper.ApiException as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure, timeout")
     except Exception as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
@@ -220,12 +240,16 @@ def media_files_packaging(media_files, caption=None):
     caption_text = caption
     media_group = []
     for media in media_files:
+        print(media['url'])
+        file_data = requests.get(media["url"]).content
+        io_object = NamedBytesIO(file_data, name='media'+str(uuid.uuid4()))
+        file_like_object = telebot.types.InputFile(io_object)
         if media['type'] == 'image':
-            media_group.append(telebot.types.InputMediaPhoto(media['url'], caption=media['caption'], parse_mode='html'))
+            media_group.append(telebot.types.InputMediaPhoto(file_like_object, caption=media['caption'], parse_mode='html'))
         elif media['type'] == 'video':
-            media_group.append(telebot.types.InputMediaVideo(media['url'], caption=media['caption'], parse_mode='html'))
+            media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'], parse_mode='html'))
         elif media['type'] == 'audio':
-            media_group.append(telebot.types.InputMediaAudio(media['url'], caption=media['caption'], parse_mode='html'))
+            media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'], parse_mode='html'))
     media_group[0].caption = caption_text
     return media_group
 
