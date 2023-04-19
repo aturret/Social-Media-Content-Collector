@@ -42,6 +42,12 @@ wsanitizer = Sanitizer({
 })
 
 
+def get_response_json(url, headers=None):
+    response = requests.get(url, headers=headers)
+    json_result = response.json()
+    return json_result
+
+
 def get_page_by_selenium(url: str,user_agent: str, wait_time: int = 10 ):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')

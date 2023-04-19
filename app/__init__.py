@@ -24,22 +24,53 @@ def create_app():
     server = Flask(__name__)
     c_title = ""
     c_list = [""]
-    site_url = 'http://'+settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
+    site_url = 'http://' + settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
     print(site_url)
-    print(settings.env_var.get('PORT','no port'))
-    telegraph_url = site_url+'/telegraphConvert'
-    @server.route('/weiboConvert1', methods=['get', 'post'])
-    def weiboConvert1():
-        weiboData = request.get_data()
-        wdict = json.loads(weiboData)
-        print(wdict['url'])
-        wurl = wdict['url']
-        if wurl.find('weibo.com'):
-            wurl=wurl.replace('weibo.com','m.weibo.cn')
-        print(wurl)
-        wb = weibo.Weibo(wurl)
-        print(wb.get_weibo())
-        return wb.get_weibo()
+    print(settings.env_var.get('PORT', 'no port'))
+    telegraph_url = site_url + '/telegraphConvert'
+
+    @server.route('/newWeiboConvert', methods=['get', 'post'])
+    def newWeiboConvert():
+        try:
+            weiboData = request.get_data()
+            wdict = json.loads(weiboData)
+            print(wdict['url'])
+            wurl = wdict['url']
+            if wurl.find('weibo.com'):
+                wurl = wurl.replace('weibo.com', 'm.weibo.cn')
+            wb = weibo.Weibo(wurl).new_get_weibo()
+            print(wb)
+            temp_html = DocumentPreprocessor(wb['content'])
+            temp_html.upload_all_images()
+            wb['content'] = temp_html.get_processed_html()
+            tdict = {
+                'content': wb['content'],
+                'title': wb['title'],
+                'origin': wb['origin'],
+                'originurl': wb['originurl'],
+                'url': wb['aurl']
+            }
+            print(tdict)
+            # t_url = requests.post(url=telegraph_url, json=tdict).text
+            t_url = util.telegraph_convert(tdict)
+            print(t_url)
+            mdict = {
+                'category': 'weibo',
+                'title': wb['title'],
+                'origin': wb['origin'],
+                'aurl': wb['aurl'],
+                'originurl': wb['originurl'],
+                'text': wb['text'],
+                'message': '',
+                'turl': t_url,
+                'type': wb['type'] if 'type' in wb else 'long',
+                'media_files': wb['media_files'] if 'media_files' in wb else []
+            }
+            print(mdict)
+        except Exception:
+            print(traceback.format_exc())
+            return False
+        return mdict
 
     @server.route('/weiboConvert', methods=['get', 'post'])
     def weibo_convert():
@@ -49,18 +80,19 @@ def create_app():
             print(wdict['url'])
             wurl = wdict['url']
             if wurl.find('weibo.com'):
-                wurl=wurl.replace('weibo.com','m.weibo.cn')
+                wurl = wurl.replace('weibo.com', 'm.weibo.cn')
             wb = weibo.Weibo(wurl).get_weibo()
             print(wb)
             temp_html = DocumentPreprocessor(wb['content'])
             temp_html.upload_all_images()
-            wb['content']=temp_html.get_processed_html()
+            wb['content'] = temp_html.get_processed_html()
             tdict = {
                 'content': wb['content'],
                 'title': wb['title'],
                 'origin': wb['origin'],
                 'originurl': wb['originurl'],
-                'url': wb['aurl']
+                'url': wb['aurl'],
+                'type': wb['type'] if 'type' in wb else 'long'
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
@@ -79,8 +111,6 @@ def create_app():
         except Exception:
             print(traceback.format_exc())
             return False
-        # print(wb.get_weibo())
-        # requests.post(url=huginnUrl,data=wb.get_weibo())
         return mdict
 
     @server.route('/doubanConvert', methods=['get', 'post'])
@@ -96,7 +126,7 @@ def create_app():
                 'title': data_dict['title'],
                 'origin': data_dict['origin'],
                 'originurl': data_dict['originurl'],
-                'url': data_dict['aurl']
+                'url': data_dict['aurl'],
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
@@ -108,7 +138,8 @@ def create_app():
                 'aurl': data_dict['aurl'],
                 'originurl': data_dict['originurl'],
                 'message': '',
-                'turl': t_url
+                'turl': t_url,
+                'type': data_dict['type'] if 'type' in data_dict else 'long'
             }
             print(mdict)
             # atelebot.send_to_channel(data=mdict)
@@ -144,7 +175,8 @@ def create_app():
                 'aurl': data_dict['aurl'],
                 'originurl': data_dict['originurl'],
                 'message': '',
-                'turl': t_url
+                'turl': t_url,
+                'type': data_dict['type'] if 'type' in data_dict else 'long'
             }
             print(mdict)
         except Exception:
@@ -170,15 +202,15 @@ def create_app():
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
-            failure_counter=0
+            failure_counter = 0
 
-            while failure_counter<5:
+            while failure_counter < 5:
                 try:
                     t_url = util.telegraph_convert(tdict)
                     if t_url != 'nothing':
                         break
                 except Exception:
-                    failure_counter+=1
+                    failure_counter += 1
                     print(traceback.format_exc())
                     continue
             mdict = {
@@ -188,7 +220,8 @@ def create_app():
                 'aurl': data_dict['aurl'],
                 'originurl': data_dict['originurl'],
                 'message': '',
-                'turl': t_url
+                'turl': t_url,
+                'type': data_dict['type'] if 'type' in data_dict else 'long'
             }
             print(mdict)
         except Exception:
@@ -196,7 +229,7 @@ def create_app():
             return 'Failed'
         return mdict
 
-    @server.route('/inoreaderConvert', methods=['get','post'])
+    @server.route('/inoreaderConvert', methods=['get', 'post'])
     def inoreader_convert():
         try:
             inoreader_data = request.get_data()
@@ -204,16 +237,16 @@ def create_app():
             data_dict = json.loads(inoreader_data)
             print(data_dict)
             tdict = {
-                'content' : data_dict['content'],
-                'title' : data_dict['title'],
-                'origin' : data_dict['origin'],
+                'content': data_dict['content'],
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
                 'originurl': data_dict['originurl'],
-                'url' : data_dict['aurl']
+                'url': data_dict['aurl']
             }
             print(tdict)
             # t_url = requests.post(url=telegraph_url, json=tdict).text
             a = 0
-            while a<5:
+            while a < 5:
                 try:
                     t_url = util.telegraph_convert(tdict)
                     print(t_url)
@@ -221,17 +254,18 @@ def create_app():
                         break
                 except Exception:
                     time.sleep(1)
-                    a+=1
+                    a += 1
                     print(traceback.format_exc())
                     continue
             mdict = {
-                'category' : data_dict['tag'],
-                'title' : data_dict['title'],
-                'origin' : data_dict['origin'],
-                'aurl' : data_dict['aurl'],
+                'category': data_dict['tag'],
+                'title': data_dict['title'],
+                'origin': data_dict['origin'],
+                'aurl': data_dict['aurl'],
                 'originurl': data_dict['originurl'],
-                'message': data_dict['message']+'\n' if data_dict['message'] else '',
-                'turl': t_url
+                'message': data_dict['message'] + '\n' if data_dict['message'] else '',
+                'turl': t_url,
+                'type': data_dict['type'] if 'type' in data_dict else 'long'
             }
             print(mdict)
             atelebot.send_to_channel(data=mdict)
@@ -243,8 +277,8 @@ def create_app():
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraph_convert(check=True):
         res = ''
-        #url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
-        #definite the keys of the json file
+        # url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
+        # definite the keys of the json file
         author = 'origin'
         author_url = 'originurl'
         title = 'title'
@@ -255,13 +289,15 @@ def create_app():
         # metadata_dict = content_data
         print(type(metadata_dict))
         print(metadata_dict)
+
         # Use pyhtmltotelegraph to post telegraph article
         def post():
             try:
                 t = TelegraphPoster(use_api=True)
                 short_name = metadata_dict[author]
                 t.create_api_token(short_name[0:14], author_name=metadata_dict[author])
-                telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author], text=metadata_dict['content'], author_url=metadata_dict[author_url])
+                telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author],
+                                       text=metadata_dict['content'], author_url=metadata_dict[author_url])
                 print(telegraphPost['url'])
                 print(type(telegraphPost))
                 telegraphPostJSON = {'url': ''}
@@ -271,6 +307,7 @@ def create_app():
                 return telegraphPost['url']
             except Exception:
                 print(traceback.format_exc())
+
         print(c_list)
         # check if the title is a duplicate
         if check:
@@ -287,6 +324,5 @@ def create_app():
     # if settings.env_var.get('BOT', 'True') == 'True':
     telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
-
 
     return server

@@ -1,5 +1,5 @@
 import pytest
-from .converter import douban
+from app.converter import douban
 
 t_scraper = 'requests'
 

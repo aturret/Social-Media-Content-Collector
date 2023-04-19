@@ -2,14 +2,19 @@ import json
 import requests
 from collections import OrderedDict
 from lxml import etree
+from lxml import html
+from app import settings
 import sys
 import re
 from bs4 import BeautifulSoup
-
-
+from app.utils.util import get_response_json
 
 imgpattern = '<.?img[^>]*>'
 pattern = re.compile(imgpattern)
+ajax_host = 'https://weibo.com/ajax/statuses/show?id='
+ajax_host_longtext = 'https://weibo.com/ajax/statuses/longtext?id='
+short_limit = settings.env_var.get('SHORT_LIMIT', 150)
+weibo_cookie = settings.env_var.get('WEIBO_COOKIE', '')
 
 # def parse_emoji(str):
 #     result = pattern.search(str).group()
@@ -23,26 +28,30 @@ pattern = re.compile(imgpattern)
 class Weibo(object):
     def __init__(self, url):
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',
-            'Cookie': ''}
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
+            'Cookie': weibo_cookie if weibo_cookie else '',}
         self.url = url
+        self.status_id = url.split('/')[-1]
+        self.ajax_url = ajax_host + self.status_id
+        self.longtext_url = ajax_host_longtext + self.status_id
+        self.isLongText = False
 
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
         html = html[html.find('"status":'):]
-        print(html)
-        print("end")
+        # print(html)
+        # print("end")
         html = html[:html.rfind('"hotScheme"')]
-        print(html)
-        print("end")
+        # print(html)
+        # print("end")
         html = html[:html.rfind(',')]
         html = html[:html.rfind('][0] || {};')]
-        print(html)
-        print("end")
+        # print(html)
+        # print("end")
         html = '{' + html
         # html = '{' + html + '}'
-        print(html)
-        print("end")
+
+        # print("end")
         # breakpoint()
         js = json.loads(html, strict=False)
         # print(js)
@@ -50,7 +59,8 @@ class Weibo(object):
         if weibo_info:
             if not raw:
                 weibo = self.parse_weibo(weibo_info)
-                print(weibo)
+                # print(weibo)
+                print(html)
                 return weibo
             else:
                 return weibo_info
@@ -60,7 +70,8 @@ class Weibo(object):
         article_url = ''
         # text = selector.xpath('string(.)')
         # if text.startswith(u'发布了头条文章'):
-        url = selector.xpath('//a[.//img/@src="https://h5.sinaimg.cn/upload/2015/09/25/3/timeline_card_small_article_default.png"]/@href')
+        url = selector.xpath(
+            '//a[.//img/@src="https://h5.sinaimg.cn/upload/2015/09/25/3/timeline_card_small_article_default.png"]/@href')
         if url is not None:
             article_url = url
         return article_url
@@ -81,6 +92,13 @@ class Weibo(object):
             pic_info = weibo_info['pics']
             pic_list = [pic['large']['url'] for pic in pic_info]
             pics = pic_list
+        elif weibo_info.get('pic_num') > 0:
+            pic_info = weibo_info['pic_infos']
+            pic_list = []
+            for pic in pic_info:
+                pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
+                    pic_list.append(pic_info[pic]['large']['url'])
+            pics = pic_list
         else:
             pics = ''
         return pics
@@ -90,10 +108,12 @@ class Weibo(object):
         video_url = ''
         video_url_list = []
         if weibo_info.get('page_info'):
+
             if ((weibo_info['page_info'].get('urls')
                  or weibo_info['page_info'].get('media_info'))
-                    and weibo_info['page_info'].get('type') == 'video'):
-                media_info = weibo_info['page_info']['urls']
+                    and (weibo_info['page_info'].get('type') == 'video'
+                         or weibo_info['page_info'].get('object_type') == 'video')):
+                media_info = weibo_info['page_info']['urls'] if weibo_info['page_info'].get('urls') else ''
                 if not media_info:
                     media_info = weibo_info['page_info']['media_info']
                 video_url = media_info.get('mp4_720p_mp4')
@@ -109,12 +129,31 @@ class Weibo(object):
                     video_url = media_info.get('stream_url_hd')
                 if not video_url:
                     video_url = media_info.get('stream_url')
-        if video_url:
-            video_url_list.append(video_url)
+                video_url_list.append(video_url)
+        elif weibo_info.get('mix_media_info'):
+            for items in weibo_info['mix_media_info']['items']:
+                if items.get('type') == 'video':
+                    video_url = items.get('stream_url_hd')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('mp4_720p_mp4')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('mp4_hd_url')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('hevc_mp4_hd')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('mp4_sd_url')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('mp4_ld_mp4')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('stream_url_hd')
+                    if not video_url:
+                        video_url = items['data']['media_info'].get('stream_url')
+                    video_url_list.append(video_url)
         live_photo_list = self.get_live_photo(weibo_info)
         if live_photo_list:
             video_url_list += live_photo_list
-        return ';'.join(video_url_list)
+        print(video_url_list)
+        return video_url_list
 
     def get_live_photo(self, weibo_info):
         """获取live photo中的视频url"""
@@ -233,7 +272,8 @@ class Weibo(object):
         date = int(parse[2])
         time = parse[3]
         year = parse[5]
-        text = '发布于'+year+'年'+zmonth+'月'+str(date)+'日('+zday+') '+time+'<br>通过'+weibo_info['source']+'发布'
+        text = '发布于' + year + '年' + zmonth + '月' + str(date) + '日(' + zday + ') ' + time + '<br>通过' + \
+               weibo_info['source'] + '发布'
         return text
 
     def parse_weibo(self, weibo_info):
@@ -250,7 +290,8 @@ class Weibo(object):
         selector = etree.HTML(text_body)
         # weibo['text'] = re.sub(pattern, "", text_body)
         # weibo['text'] = selector.xpath('string(.)')
-        weibo['text'] = text_body.replace('<br />', '<br>')
+        weibo['text'] = text_body.replace('<br />', '<br>').replace('br/', 'br')
+        print(weibo['text'])
         weibo['article_url'] = self.get_article_url(selector)
         weibo['pics'] = self.get_pics(weibo_info)
         weibo['pics_new'] = self.get_pics_new(weibo_info)
@@ -273,38 +314,168 @@ class Weibo(object):
             piclist = weibo['pics_new']
             for i in piclist:
                 picsformat += '<img src="' + i + '"><br />'
-                # print(picsformat)
         if weibo['video_url'] != '':
-            videoformat = '<video><source src="' + weibo['video_url'] + '" type="video/mp4">youcannotwatchthevideo</video>'
-        #处理头条文章
-        # if weibo['article_url'] != '':
-            # aurl=weibo['article_url']
-            # aurl.replace('weibo.com','m.weibo.cn')
+            for i in weibo['video_url']:
+                videoformat += '<video><source src="' + i + '" type="video/mp4">youcannotwatchthevideo</video>'
         weibo['title'] = weibo['screen_name'] + '的微博'
         weibo['origin'] = weibo['screen_name']
         weibo['aurl'] = self.url
         weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
         weibo['date'] = self.parse_date(weibo_info)
-        weibo['count'] = '转发:'+str(weibo_info['reposts_count'])+' 评论:'+str(weibo_info['comments_count'])+' 点赞:'+str(weibo_info['attitudes_count'])
-        weibo['content'] = '<br><p>'+weibo['date']+'</p><br><p>'+weibo['count']+'</p><br><a href="'+weibo['originurl'] +'">@'+ weibo['origin'] +'</a>：<p>'+ weibo['text'] +'</p><br>' + picsformat + videoformat
+        weibo['count'] = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
+            weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
+        weibo['content'] = '<br><p>' + weibo['date'] + '</p><br><p>' + weibo['count'] + '</p><br><a href="' + weibo[
+            'originurl'] + '">@' + weibo['origin'] + '</a>：<p>' + weibo['text'] + '</p><br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
-            rtweibo_url='https://m.weibo.cn/status/'+weibo_info['retweeted_status']['id']
-            weibo['rturl']=rtweibo_url
-            rtweibo=Weibo(rtweibo_url)
-            rtweibo_info=rtweibo.get_weibo()
+            rtweibo_url = 'https://m.weibo.cn/status/' + weibo_info['retweeted_status']['id']
+            weibo['rturl'] = rtweibo_url
+            rtweibo = Weibo(rtweibo_url)
+            rtweibo_info = rtweibo.get_weibo()
             # rtweibo_info['content'] = '<a href="'+ rtweibo_info['originurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
             weibo['content'] += '<br><hr>' + rtweibo_info['content']
         else:
-            weibo['rturl']=''
-        print(weibo['content'])
+            weibo['rturl'] = ''
+        # print(weibo['content'])
         # print(weibo)
         return self.standardize_info(weibo)
 
-### TEST CODE ###
+    def new_get_weibo(self):
+        url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
+        ajax_json = get_response_json(url, headers=self.headers)
+        print(url)
+        # if ajax_json['isLongText']:
+        #     longtext_json = get_response_json(self.longtext_url, headers=self.headers)
+        # print(json['text'])
+        # print(json)
+        weibo = self.new_parse_weibo(ajax_json)
+        return weibo
 
-# testurl='https://m.weibo.cn/1989660417/yp2eLrUhm'
-# testurl='https://m.weibo.cn/7605038522/LBlABpi7K'
-# testurl='https://m.weibo.cn/7755701767/LqLOSvqP3'
-#
-# wb = Weibo(testurl)
-# wb.get_weibo()
+    def new_parse_weibo(self, weibo_info):
+        weibo = OrderedDict()
+        if weibo_info['user']:
+            weibo['user_id'] = weibo_info['user']['id']
+            weibo['screen_name'] = weibo_info['user']['screen_name']
+        else:
+            weibo['user_id'] = 'Unknown user id'
+            weibo['screen_name'] = 'Unknown name'
+        weibo['id'] = int(weibo_info['id'])
+        if weibo_info['isLongText']:
+            self.isLongText = True
+            if self.headers['Cookie']:
+                longtext_json = get_response_json(self.longtext_url, headers=self.headers)
+                weibo['text'] = weibo['text_raw'] = longtext_json['data']['longTextContent']
+                weibo['text'] = weibo['text'].replace('\n', '<br>')
+        else:
+            cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
+            print(cleaned_text)
+            weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
+        print(weibo['text'])
+        # weibo['article_url'] = self.get_article_url(selector)
+        # weibo['pics'] = self.get_pics(weibo_info)
+        weibo['pics_new'] = self.get_pics_new(weibo_info)
+        weibo['video_url'] = self.get_video_url(weibo_info)
+        # weibo['location'] = self.get_location(selector)
+        weibo['created_at'] = weibo_info['created_at']
+        weibo['source'] = weibo_info['source']
+        weibo['attitudes_count'] = self.string_to_int(
+            weibo_info.get('attitudes_count', 0))
+        weibo['comments_count'] = self.string_to_int(
+            weibo_info.get('comments_count', 0))
+        weibo['reposts_count'] = self.string_to_int(
+            weibo_info.get('reposts_count', 0))
+        # weibo['topics'] = self.get_topics(selector)
+        # weibo['at_users'] = self.get_at_users(selector)
+        # 处理图片和视频
+        pics_format = ''
+        video_format = ''
+        if weibo['pics_new']:
+            if not weibo_info['isLongText'] and len(fw_pics) > 0:
+                pic_list = fw_pics.extend(weibo['pics_new'])
+            else:
+                pic_list = weibo['pics_new']
+            for i in pic_list:
+                pics_format += '<img src="' + i + '"><br>'
+        if weibo['video_url']:
+            for i in weibo['video_url']:
+                video_format += '<video><source src="' + i + '" type="video/mp4">youcannotwatchthevideo</video>'
+        weibo['title'] = weibo['screen_name'] + '的微博'
+        weibo['origin'] = weibo['screen_name']
+        weibo['aurl'] = self.url
+        weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
+        weibo['date'] = self.parse_date(weibo_info)
+        weibo['count'] = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
+            weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
+        weibo['region_name'] = weibo_info['region_name'] if 'region_name' in weibo_info else ''
+        weibo['content'] = '<br><p>' + weibo['date'] + '</p><br><p>' + \
+                           weibo['count'] + ' ' + weibo['region_name'] + \
+                           '</p><br><a href="' + weibo['originurl'] + '">@' + weibo['origin'] + \
+                           '</a>：<p>' + weibo['text'] + '</p><br>' + pics_format + video_format
+
+        weibo['media_files'] = []
+        for i in weibo['pics_new']:
+            item = {'type': 'image', 'url': i, 'caption': ''}
+            weibo['media_files'].append(item)
+        for i in weibo['video_url']:
+            item = {'type': 'video', 'url': i, 'caption': ''}
+            weibo['media_files'].append(item)
+
+        if 'retweeted_status' in weibo_info:
+            rtweibo_url = 'https://weibo.com/status/' + str(weibo_info['retweeted_status']['id'])
+            weibo['rturl'] = rtweibo_url
+            rtweibo = Weibo(rtweibo_url)
+            rtweibo_info = rtweibo.new_get_weibo()
+            weibo['content'] += '<br><hr>' + rtweibo_info['content']
+            weibo['media_files'].extend(rtweibo_info['media_files']) if rtweibo_info['media_files'] else ''
+        else:
+            weibo['rturl'] = ''
+
+        weibo['text_raw'] = weibo_info['text_raw'] + rtweibo_info['text_raw'] if 'retweeted_status' in weibo_info \
+            else weibo_info['text_raw']
+        weibo['type'] = 'long' if len(weibo['text_raw']) > short_limit else 'short'
+
+        if weibo['type'] == 'short':
+            weibo['text'] = '<a href="' + weibo['aurl'] + '">@' + weibo['origin'] + \
+                            '</a>：' + weibo['text'].replace('<br>', '\n')
+            weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info else weibo[
+                'text']
+
+
+
+
+        # print(weibo['content'])
+        # print(weibo)
+        return self.standardize_info(weibo)
+
+    def weibo_html_text_clean(self, text, method='bs4'):
+        fw_pics = []
+        if method == 'bs4':
+            soup = BeautifulSoup(text, 'html.parser')
+            for img in soup.find_all('img'):
+                alt_text = img.get('alt', '')
+                img.replace_with(alt_text)
+            for a in soup.find_all('a'):
+                if a.text == '查看图片':
+                    fw_pics.append(a.get('href'))
+                if '/n/' in a.get('href') and a.get('usercard'):
+                    a['href'] = 'https://weibo.com' + a.get('href')
+            if self.isLongText:
+                for i in soup.find_all('span'):
+                    i.decompose()
+            return str(soup), fw_pics
+        if method == 'lxml':
+            selector = html.fromstring(text)
+
+            # remove all img tags and replace with alt text
+            for img in selector.xpath('//img'):
+                alt_text = img.get('alt', '')
+                # get innerhtml pure text of the parent tag
+                parent_text = img.getparent().text_content() if img.getparent() else ''
+                replace_text = alt_text + parent_text
+                text_node = html.fromstring(replace_text)
+                img.addprevious(text_node)
+                img.getparent().remove(img)
+                # make text_node become pure text
+                text_node.text = text_node.text_content()
+
+            # return the html document after cleaning
+            return html.tostring(selector, encoding='unicode')
