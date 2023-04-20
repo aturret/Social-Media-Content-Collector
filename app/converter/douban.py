@@ -3,7 +3,7 @@
 import traceback
 # import time
 # import cchardet as chardet
-from lxml import etree
+from lxml import etree, html
 from collections import OrderedDict
 import re
 # from threading import Timer
@@ -35,6 +35,8 @@ class Douban(object):
         self.group_name = ''
         self.group_url = ''
         self.scraper = scraper
+        self.type = 'long'
+        self.media_files = []
 
     def get_fav_list(self):
         selector = util.get_selector(url=self.fav_url, headers=self.headers)
@@ -76,13 +78,16 @@ class Douban(object):
                 self.get_douban_group_article(url)
         except Exception:
             print(traceback.format_exc())
+        if len(html.fromstring(self.content).xpath('string()')) < 200:
+            self.type = 'short'
         douban['title'] = self.title
         douban['content'] = self.content
         douban['origin'] = self.origin
         douban['originurl'] = self.origin_url
+        douban['type'] = self.type
+        douban['media_files'] = self.media_files
+
         print(self.content)
-        #发送给huginn
-        # requests.post(url=self.huginnUrl,data=douban)
         print(self.__dict__)
         return douban
 
@@ -96,6 +101,9 @@ class Douban(object):
                                encoding='utf-8')
             self.origin = selector.xpath('string(//div[@class="content"]/a)')
             self.origin_url = selector.xpath('string(//div[@class="content"]/a/@href)')
+
+
+
 
     def get_douban_book_review(self, url):
         selector = util.get_selector(url, headers=self.headers)

@@ -7,14 +7,16 @@ import json
 from . import settings
 from .utils import util
 from .utils.classes import NamedBytesIO
+from .api_functions import *
 import uuid
 
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 default_channel_id = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
-
+# initialize telebot
 bot = telebot.TeleBot(telebot_key)
+# define api urls
 # weiboApiUrl = 'http://' + site_url + '/weiboConvert'
 weiboApiUrl = 'http://' + site_url + '/newWeiboConvert'
 twitterApiUrl = 'http://' + site_url + '/twitterConvert'
@@ -40,23 +42,26 @@ def get_social_media(message):
         url = urlpattern.search(message.text).group()
         print('the url is: ' + url)
         target_url = ''
-        data = {'url': url}
+        request_data = {'url': url}
         response_data = None
         if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
             replying_message = bot.reply_to(message, '检测到微博URL，转化中\nWeibo URL detected, converting...')
             print('检测到微博URL，转化中\nWeibo URL detected, converting...')
-            target_url = weiboApiUrl
+            target_function = new_weibo_converter
         elif url.find('twitter.com') != -1:
             replying_message = bot.reply_to(message, '检测到TwitterURL，转化中\nTwitter URL detected, converting...')
             print('检测到TwitterURL，转化中\nTwitter URL detected, converting...')
-            target_url = twitterApiUrl
+            target_function = twitter_converter
+            # target_url = twitterApiUrl
         elif url.find('zhihu.com') != -1:
             replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
             print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
+            target_function = zhihu_converter
             target_url = zhihuApiUrl
         elif url.find('douban.com') != -1:
             replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
             print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
+            target_function = douban_converter
             target_url = doubanApiUrl
         elif url.find('youtube.com') != -1:
             if not youtube_api:
@@ -73,16 +78,24 @@ def get_social_media(message):
                 bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
                 print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
                 return False
-        response = requests.post(url=target_url, data=json.dumps(data))
-        if response.status_code == 200:
-            response_data = response.json()
-            # formatted_data.pop() if len(formatted_data) > 0 else None
+        response_data = target_function(request_data)
+        if response_data:
             data_id = str(uuid.uuid4())
             formatted_data[data_id] = response_data
         else:
             print('Failure')
             bot.reply_to(message, 'Failure')
             return
+
+        # response = requests.post(url=target_url, data=json.dumps(request_data))
+        # if response.status_code == 200:
+        #     response_data = response.json()
+        #     data_id = str(uuid.uuid4())
+        #     formatted_data[data_id] = response_data
+        # else:
+        #     print('Failure')
+        #     bot.reply_to(message, 'Failure')
+        #     return
         bot.delete_message(message.chat.id, replying_message.message_id) if replying_message else None
         if default_channel_id:
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
@@ -98,7 +111,7 @@ def get_social_media(message):
                                                                 callback_data='extr+' + str(message.chat.id) +
                                                                               '+' + data_id)
             buttons.append(extract_button)
-        if len(buttons) > 0:
+        if len(buttons) > 1:
             markup.add(*buttons)
             bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
         else:
@@ -106,6 +119,8 @@ def get_social_media(message):
                 send_formatted_message(data=response_data)
             elif buttons[0].callback_data == 'channel':
                 send_to_channel(data=response_data)
+            elif buttons[0].callback_data == 'extract':
+                send_formatted_message(data=response_data)
     except Exception as e:
         print(traceback.format_exc())
         bot.reply_to(message, 'Failure'+traceback.format_exc())
@@ -120,7 +135,7 @@ def callback_query(call):
             bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
-        send_to_channel(data=the_data, channel_id=call.data.split('+')[1])
+        send_formatted_message(data=the_data, channel_id=call.data.split('+')[1])
         # bot.answer_callback_query(call.id, "Message sent to channel")
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -131,7 +146,6 @@ def callback_query(call):
     finally:
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
@@ -153,7 +167,6 @@ def callback_query(call):
     finally:
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
@@ -180,14 +193,20 @@ def callback_query(call):
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
-def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
-    if not chat_id:
+def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, channel_id=None):
+    if (not chat_id) and message:
         chat_id = message.chat.id
+    if channel_id:
+        chat_id = channel_id
     try:
-        if data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
+        if data['type'] == 'short':
             caption_text = data['text'] + '\n#' + data['category']
-            media_group = media_files_packaging(data['media_files'], caption_text)
-            telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+            if data['media_files'] and len(data['media_files']) > 0:
+                media_message_group = media_files_packaging(data['media_files'], caption_text)
+                for media_group in media_message_group:
+                    telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+            else:
+                telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
         else:
             text = message_formatting(data)
             print(text)
@@ -196,22 +215,6 @@ def send_formatted_message(data, message=None,chat_id=None,telegram_bot=bot):
         print(traceback.format_exc())
         if message:
             bot.reply_to(message, 'Failure'+traceback.format_exc())
-
-
-def send_to_channel(data, message=None, telegram_bot=bot, channel_id=default_channel_id):
-    try:
-        if data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
-            caption_text = data['text'] + '\n#' + data['category']
-            media_group = media_files_packaging(data['media_files'], caption_text)
-            telegram_bot.send_media_group(chat_id=channel_id, media=media_group)
-        else:
-            text = message_formatting(data)
-            print(text)
-            telegram_bot.send_message(chat_id=channel_id, parse_mode='html', text=text)
-    except Exception:
-        if message:
-            bot.reply_to(message, 'Failure'+traceback.format_exc())
-        print(traceback.format_exc())
 
 
 def message_formatting(data):
@@ -239,8 +242,15 @@ def message_formatting(data):
 
 def media_files_packaging(media_files, caption=None):
     caption_text = caption
+    counters = 0
+    media_message_group = []
     media_group = []
     for media in media_files:
+        if counters == 9:
+            print('the number of valid media files is greater than 9, divide them into new groups')
+            media_message_group.append(media_group)
+            media_group = []
+            counters = 0
         print(media['url'])
         file_data = requests.get(media["url"]).content
         io_object = NamedBytesIO(file_data, name='media'+str(uuid.uuid4()))
@@ -254,7 +264,14 @@ def media_files_packaging(media_files, caption=None):
             media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'], parse_mode='html'))
         elif media['type'] == 'audio':
             media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'], parse_mode='html'))
-    media_group[0].caption = caption_text
-    return media_group
+        counters += 1
+    if len(media_message_group) == 0:
+        print('the number of valid media files is ' + str(len(media_group)) +
+              ' which is less than 9, send them in one group')
+        media_message_group.append(media_group)
+    elif len(media_group) > 0:
+        media_message_group.append(media_group)
+    media_message_group[0][0].caption = caption_text
+    return media_message_group
 
 # bot.infinity_polling()

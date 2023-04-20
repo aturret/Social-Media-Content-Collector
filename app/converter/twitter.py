@@ -35,11 +35,16 @@ class Twitter(object):
         twitter_item['title'] = twitter_item['origin'] + '\'s tweet'
         twitter_item['originurl'] = 'https://twitter.com/' + reqs['includes']['users'][0]['username']
         twitter_item['aurl'] = self.url
+        twitter_item['media_files'] = []
         picformat = ''  # 处理图片
         if 'attachments' in reqs['data']:
             for i in reqs['includes']['media']:
                 picformat += '<img src="' + i['url'] + '">' + '<br>'
+                media_item = {'type': 'image', 'url': i['url'], 'caption': ''}
+                twitter_item['media_files'].append(media_item)
             print(picformat)
         twitter_item['content'] = twitter_item['text'] + '<br>' + picformat
+        twitter_item['text'] = '<a href="' + self.url + '">@' + twitter_item['origin'] + '</a>: ' + twitter_item['text']
+        twitter_item['type'] = 'long' if len(twitter_item['content']) > 150 else 'short'
         print(twitter_item)
         return twitter_item

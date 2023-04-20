@@ -1,19 +1,13 @@
 import hashlib
-from html_telegraph_poster import TelegraphPoster
-import json
-import traceback
 # import logging
 import sys
 import time
 import requests
-from lxml import etree
 from html_sanitizer import Sanitizer
 from app import settings
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from app.api_functions import *
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
@@ -202,29 +196,3 @@ def download_file(format: set = ('html')):
     return '1'
 
 
-def telegraph_convert(tdict):
-    res = ''
-    try:
-        metadata_dict = tdict
-
-        # url = 'https://'+cfg['huginn']['url']+'/users/2/web_requests/'+cfg['huginn']['webrequest']['telegraph']
-        # definite the keys of the json file
-        author = 'origin'
-        author_url = 'originurl'
-        # metadata_dict = content_data
-        print('type of argument:' + str(type(metadata_dict)))
-        print('content of argument:' + str(metadata_dict))
-        # Use pyhtmltotelegraph to post telegraph article
-
-        t = TelegraphPoster(use_api=True)
-        short_name = metadata_dict[author]
-        t.create_api_token(short_name[0:14], author_name=metadata_dict[author])
-        telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author],text=metadata_dict['content'], author_url=metadata_dict[author_url])
-        print('telegraph url:' + telegraphPost['url'])
-        print('telegraph result type:' + str(type(telegraphPost)))
-        res = telegraphPost['url']
-    except Exception:
-        print(traceback.format_exc())
-    # check if the title is a duplicate
-
-    return res if res else 'nothing'

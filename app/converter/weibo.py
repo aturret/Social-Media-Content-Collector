@@ -16,6 +16,7 @@ ajax_host_longtext = 'https://weibo.com/ajax/statuses/longtext?id='
 short_limit = settings.env_var.get('SHORT_LIMIT', 200)
 weibo_cookie = settings.env_var.get('WEIBO_COOKIE', '')
 
+
 # def parse_emoji(str):
 #     result = pattern.search(str).group()
 #     for i in result:
@@ -29,7 +30,7 @@ class Weibo(object):
     def __init__(self, url):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
-            'Cookie': weibo_cookie if weibo_cookie else '',}
+            'Cookie': weibo_cookie if weibo_cookie else '', }
         self.url = url
         self.status_id = url.split('/')[-1]
         self.ajax_url = ajax_host + self.status_id
@@ -152,7 +153,6 @@ class Weibo(object):
         live_photo_list = self.get_live_photo(weibo_info)
         if live_photo_list:
             video_url_list += live_photo_list
-        print(video_url_list)
         return video_url_list
 
     def get_live_photo(self, weibo_info):
@@ -288,8 +288,6 @@ class Weibo(object):
         weibo['bid'] = weibo_info['bid']
         text_body = weibo_info['text']
         selector = etree.HTML(text_body)
-        # weibo['text'] = re.sub(pattern, "", text_body)
-        # weibo['text'] = selector.xpath('string(.)')
         weibo['text'] = text_body.replace('<br />', '<br>').replace('br/', 'br')
         print(weibo['text'])
         weibo['article_url'] = self.get_article_url(selector)
@@ -342,13 +340,9 @@ class Weibo(object):
     def new_get_weibo(self):
         url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
         ajax_json = get_response_json(url, headers=self.headers)
-        print(url)
+        print('ajax_json file url: ' + url)
         if ajax_json['ok'] == 0:
             return None
-        # if ajax_json['isLongText']:
-        #     longtext_json = get_response_json(self.longtext_url, headers=self.headers)
-        # print(json['text'])
-        # print(json)
         weibo = self.new_parse_weibo(ajax_json)
         return weibo
 
@@ -361,17 +355,21 @@ class Weibo(object):
             weibo['user_id'] = 'Unknown user id'
             weibo['screen_name'] = 'Unknown name'
         weibo['id'] = int(weibo_info['id'])
-        if weibo_info['isLongText']:
+        if not weibo_info['isLongText'] or (weibo_info['pic_num'] > 9 and weibo_info['isLongText']):
+            cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
+            print('cleaned weibo text:\n' + cleaned_text)
+            weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
+        else:
             self.isLongText = True
             if self.headers['Cookie']:
                 longtext_json = get_response_json(self.longtext_url, headers=self.headers)
                 weibo['text'] = weibo['text_raw'] = longtext_json['data']['longTextContent']
                 weibo['text'] = weibo['text'].replace('\n', '<br>')
-        else:
-            cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
-            print(cleaned_text)
-            weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
-        print(weibo['text'])
+            else:
+                cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
+                weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
+
+        print('weibo text:\n' + weibo['text'])
         # weibo['article_url'] = self.get_article_url(selector)
         # weibo['pics'] = self.get_pics(weibo_info)
         weibo['pics_new'] = self.get_pics_new(weibo_info)
@@ -433,20 +431,13 @@ class Weibo(object):
 
         weibo['text_raw'] = weibo_info['text_raw'] + rtweibo_info['text_raw'] if 'retweeted_status' in weibo_info \
             else weibo_info['text_raw']
-        print(len(weibo['text_raw']))
+        print('length of raw text:' + str(len(weibo['text_raw'])))
         weibo['type'] = 'long' if len(weibo['text_raw']) > short_limit else 'short'
-
 
         weibo['text'] = '<a href="' + weibo['aurl'] + '">@' + weibo['origin'] + \
                         '</a>：' + weibo['text'].replace('<br>', '\n')
         weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info else weibo[
             'text']
-
-
-
-
-        # print(weibo['content'])
-        # print(weibo)
         return self.standardize_info(weibo)
 
     def weibo_html_text_clean(self, text, method='bs4'):
