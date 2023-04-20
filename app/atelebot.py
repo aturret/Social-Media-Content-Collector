@@ -240,7 +240,7 @@ def message_formatting(data):
                                                                          'via #' + data['category'] + \
                    ' - <a href=\"' + data['originurl'] + ' \"> ' \
                    + data['origin'] + '</a>\n' + data['message'] + \
-                   '<a href=\"' + data['aurl'] + '\">阅读原文</a>'
+                   '\n<a href=\"' + data['aurl'] + '\">阅读原文</a>'
     return text
 
 
