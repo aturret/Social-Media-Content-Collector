@@ -8,6 +8,7 @@ import sys
 import re
 from bs4 import BeautifulSoup
 from app.utils.util import get_response_json
+from app.utils.util import get_html_text_length
 
 imgpattern = '<.?img[^>]*>'
 pattern = re.compile(imgpattern)
@@ -15,6 +16,7 @@ ajax_host = 'https://weibo.com/ajax/statuses/show?id='
 ajax_host_longtext = 'https://weibo.com/ajax/statuses/longtext?id='
 short_limit = settings.env_var.get('SHORT_LIMIT', 200)
 weibo_cookie = settings.env_var.get('WEIBO_COOKIE', '')
+cookie_mode = settings.env_var.get('COOKIE_MODE', 'False')
 
 
 # def parse_emoji(str):
@@ -36,6 +38,7 @@ class Weibo(object):
         self.ajax_url = ajax_host + self.status_id
         self.longtext_url = ajax_host_longtext + self.status_id
         self.isLongText = False
+        self.type = 'long'
 
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
@@ -66,11 +69,22 @@ class Weibo(object):
             else:
                 return weibo_info
 
+    def get_weibo_info_old(self):
+        old_weibo_url = 'http://m.weibo.cn/status/' + self.status_id
+        # print(old_weibo_url)
+        html = requests.get(old_weibo_url, headers=self.headers, verify=False).text
+        html = html[html.find('"status":'):]
+        html = html[:html.rfind('"hotScheme"')]
+        html = html[:html.rfind(',')]
+        html = html[:html.rfind('][0] || {};')]
+        html = '{' + html
+        # print(html)
+        js = json.loads(html, strict=False)
+        weibo_info = js.get('status')
+        return weibo_info
+
     def get_article_url(self, selector):
-        """获取微博中头条文章的url"""
         article_url = ''
-        # text = selector.xpath('string(.)')
-        # if text.startswith(u'发布了头条文章'):
         url = selector.xpath(
             '//a[.//img/@src="https://h5.sinaimg.cn/upload/2015/09/25/3/timeline_card_small_article_default.png"]/@href')
         if url is not None:
@@ -237,45 +251,12 @@ class Weibo(object):
         zmonth = '月份识别错误'
         parse = weibo_info['created_at'].split()
         day = parse[0]
-        if day == 'Mon':
-            zday = '星期一'
-        elif day == 'Tue':
-            zday = '星期二'
-        elif day == 'Wed':
-            zday = '星期三'
-        elif day == 'Thu':
-            zday = '星期四'
-        elif day == 'Fri':
-            zday = '星期五'
-        elif day == 'Sat':
-            zday = '星期六'
-        elif day == 'Sun':
-            zday = '星期日'
+        daydict = {'Mon': '星期一', 'Tue': '星期二', 'Wed': '星期三', 'Thu': '星期四', 'Fri': '星期五', 'Sat': '星期六', 'Sun': '星期日'}
+        zday = daydict[day]
         month = parse[1]
-        if month == 'Jan':
-            zmonth = '1'
-        elif month == 'Feb':
-            zmonth = '2'
-        elif month == 'Mar':
-            zmonth = '3'
-        elif month == 'Apr':
-            zmonth = '4'
-        elif month == 'May':
-            zmonth = '5'
-        elif month == 'Jun':
-            zmonth = '6'
-        elif month == 'Jul':
-            zmonth = '7'
-        elif month == 'Aug':
-            zmonth = '8'
-        elif month == 'Sep':
-            zmonth = '9'
-        elif month == 'Oct':
-            zmonth = '10'
-        elif month == 'Nov':
-            zmonth = '11'
-        elif month == 'Dec':
-            zmonth = '12'
+        monthdict = {'Jan': '1', 'Feb': '2', 'Mar': '3', 'Apr': '4', 'May': '5', 'Jun': '6', 'Jul': '7', 'Aug': '8',
+                        'Sep': '9', 'Oct': '10', 'Nov': '11', 'Dec': '12'}
+        zmonth = monthdict[month]
         date = int(parse[2])
         time = parse[3]
         year = parse[5]
@@ -362,18 +343,23 @@ class Weibo(object):
             weibo['user_id'] = 'Unknown user id'
             weibo['screen_name'] = 'Unknown name'
         weibo['id'] = int(weibo_info['id'])
+        # non-long text weibo
         if not weibo_info['isLongText'] or (weibo_info['pic_num'] > 9 and weibo_info['isLongText']):
             cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
             print('cleaned weibo text:\n' + cleaned_text)
             weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
+        # long-text weibo
         else:
-            self.isLongText = True
-            if self.headers['Cookie']:
+            self.type = 'long'
+            # if we have cookie to get long text from ajax request
+            if self.headers['Cookie'] and cookie_mode == 'True':
                 longtext_json = get_response_json(self.longtext_url, headers=self.headers)
                 weibo['text'] = weibo['text_raw'] = longtext_json['data']['longTextContent']
                 weibo['text'] = weibo['text'].replace('\n', '<br>')
+            # scrape long text from old method (http://m.weibo.cn)
             else:
-                cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
+                temp_info = self.get_weibo_info_old()
+                cleaned_text, fw_pics = self.weibo_html_text_clean(temp_info['text'])
                 weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
 
         print('weibo text:\n' + weibo['text'])
@@ -425,7 +411,7 @@ class Weibo(object):
         for i in weibo['video_url']:
             item = {'type': 'video', 'url': i, 'caption': ''}
             weibo['media_files'].append(item)
-
+        # get retweeted weibo
         if 'retweeted_status' in weibo_info:
             rtweibo_url = 'https://weibo.com/status/' + str(weibo_info['retweeted_status']['id'])
             weibo['rturl'] = rtweibo_url
@@ -435,17 +421,19 @@ class Weibo(object):
             weibo['media_files'].extend(rtweibo_info['media_files']) if rtweibo_info['media_files'] else ''
         else:
             weibo['rturl'] = ''
-
+        # combine text with original weibo
         weibo['text_raw'] = weibo_info['text_raw'] + rtweibo_info['text_raw'] if 'retweeted_status' in weibo_info \
             else weibo_info['text_raw']
         print('length of raw text:' + str(len(weibo['text_raw'])))
-        weibo['type'] = 'long' if len(weibo['text_raw']) > short_limit else 'short'
+        # check the type of combined weibo
 
+        self.type = 'long' if get_html_text_length(weibo['text']) > short_limit else 'short'
         weibo['text'] = '<a href="' + weibo['aurl'] + '">@' + weibo['origin'] + \
                         '</a>：' + weibo['text'].replace('<br>', '\n')
-        weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info else weibo[
-            'text']
+        weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info \
+            else weibo['text']
         weibo['text'] = weibo['text'].replace('href="//', 'href="https://')
+        weibo['type'] = self.type
         return self.standardize_info(weibo)
 
     def weibo_html_text_clean(self, text, method='bs4'):
@@ -460,13 +448,15 @@ class Weibo(object):
                     fw_pics.append(a.get('href'))
                 if '/n/' in a.get('href') and a.get('usercard'):
                     a['href'] = 'https://weibo.com' + a.get('href')
-            if self.isLongText:
+            if self.type == 'long':
+                # telegra.ph doesn't support span tag
                 for i in soup.find_all('span'):
                     i.decompose()
-            return str(soup), fw_pics
+            res = str(soup).replace('href="//', 'href="http://').replace('href="/n/', 'href="http://weibo.com/n/')
+            return res, fw_pics
+
         if method == 'lxml':
             selector = html.fromstring(text)
-
             # remove all img tags and replace with alt text
             for img in selector.xpath('//img'):
                 alt_text = img.get('alt', '')
@@ -478,6 +468,5 @@ class Weibo(object):
                 img.getparent().remove(img)
                 # make text_node become pure text
                 text_node.text = text_node.text_content()
-
             # return the html document after cleaning
             return html.tostring(selector, encoding='unicode')

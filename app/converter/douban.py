@@ -100,7 +100,7 @@ class Douban(object):
                 self.get_douban_group_article(url)
         except Exception:
             print(traceback.format_exc())
-        if len(html.fromstring(self.content).xpath('string()')) < 200:
+        if util.get_html_text_length(self.content) < 200:
             self.type = 'short'
         douban['title'] = self.title
         douban['content'] = self.content

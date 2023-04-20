@@ -177,7 +177,7 @@ def zhihu_converter(request_data, **kwargs):
 def inoreader_converter(request_data, **kwargs):
     try:
         ino = request_data
-        if len(html.fromstring(ino['content']).xpath('string()')) > 200:
+        if util.get_html_text_length(ino['content']) > 200:
             ino['type'] = 'long'
         else:
             ino['type'] = 'short'

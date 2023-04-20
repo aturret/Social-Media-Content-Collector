@@ -178,8 +178,10 @@ def callback_query(call):
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
-        if len(the_data['text']) > 1000:
-            the_data['text'] = the_data['text'][:1000] + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
+        if len(the_data['text'])+len(the_data['turl']) > 1000:
+            short_text = the_data['text'][:(1000-len(the_data['turl']))]
+            short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
+            the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
             if len(the_data['media_files']) > 9:
                 the_data['media_files'] = the_data['media_files'][:9]
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)

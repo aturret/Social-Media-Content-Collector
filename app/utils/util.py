@@ -8,6 +8,7 @@ from app import settings
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from app.api_functions import *
+from bs4 import BeautifulSoup
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
@@ -196,3 +197,9 @@ def download_file(format: set = ('html')):
     return '1'
 
 
+def get_html_text_length(html):
+    if html is None:
+        return 0
+    soup = BeautifulSoup(html, 'html.parser')
+    text = soup.get_text()
+    return len(text)
