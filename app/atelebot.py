@@ -179,7 +179,9 @@ def callback_query(call):
         the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
         if len(the_data['text']) > 1000:
-            the_data['text'] = the_data['text'][:1000] + '...'
+            the_data['text'] = the_data['text'][:1000] + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
+            if len(the_data['media_files']) > 9:
+                the_data['media_files'] = the_data['media_files'][:9]
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
         # bot.answer_callback_query(call.id, "Message sent to channel")
     except telebot.apihelper.ApiException as e:
@@ -202,7 +204,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
         if data['type'] == 'short':
             caption_text = data['text'] + '\n#' + data['category']
             if data['media_files'] and len(data['media_files']) > 0:
-                media_message_group = media_files_packaging(data['media_files'], caption_text)
+                media_message_group = media_files_packaging(media_files=data['media_files'], caption=caption_text)
                 for media_group in media_message_group:
                     telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
             else:
@@ -259,11 +261,14 @@ def media_files_packaging(media_files, caption=None):
             continue
         file_like_object = telebot.types.InputFile(io_object)
         if media['type'] == 'image':
-            media_group.append(telebot.types.InputMediaPhoto(file_like_object, caption=media['caption'], parse_mode='html'))
+            media_group.append(telebot.types.InputMediaPhoto(file_like_object, caption=media['caption'],
+                                                             parse_mode='html'))
         elif media['type'] == 'video':
-            media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'], parse_mode='html'))
+            media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
+                                                             parse_mode='html'))
         elif media['type'] == 'audio':
-            media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'], parse_mode='html'))
+            media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'],
+                                                             parse_mode='html'))
         counters += 1
     if len(media_message_group) == 0:
         print('the number of valid media files is ' + str(len(media_group)) +
@@ -272,6 +277,7 @@ def media_files_packaging(media_files, caption=None):
     elif len(media_group) > 0:
         media_message_group.append(media_group)
     media_message_group[0][0].caption = caption_text
+    print(media_message_group[0][0].caption)
     return media_message_group
 
 # bot.infinity_polling()

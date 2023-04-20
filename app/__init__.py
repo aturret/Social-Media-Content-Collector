@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 from flask import Flask
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 import json
 from flask import request
 from html_telegraph_poster import TelegraphPoster
@@ -15,13 +17,26 @@ from .converter import zhihu, twitter, douban, weibo
 import time
 import asyncio
 
+sentry_on = settings.env_var.get('SENTRY_ON', 'False')
+sentry_dsn = settings.env_var.get('SENTRY_DSN', '')
 
 # from time import sleep
 # import toml
 
 
 # from .verify import check
+if sentry_on == 'True':
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[
+            FlaskIntegration(),
+        ],
 
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0
+)
 
 def create_app():
     server = Flask(__name__)
@@ -98,6 +113,10 @@ def create_app():
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraph_convert(check=True):
         return 'ok'
+
+    @server.route('/debug-sentry')
+    def trigger_error():
+        division_by_zero = 1 / 0
 
     # if settings.env_var.get('BOT', 'True') == 'True':
     telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)

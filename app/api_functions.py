@@ -121,12 +121,7 @@ def twitter_converter(request_data, **kwargs):
         if not tw:
             raise Exception('No twitter found')
         if tw['type'] == 'long':
-            temp_html = DocumentPreprocessor(tw['content'])
-            temp_html.upload_all_images()
-            temp_content = temp_html.get_processed_html()
-            tdict = TelegraphDict(tw, content=temp_content).to_dict()
-            print('get telegraph dict: ' + str(tdict))
-            t_url = get_telegraph_url(tdict)
+            t_url = get_telegraph_url(tw)
         else:
             t_url = ''
         mdict = MetadataDict(tw, category='twitter', turl=t_url, message='').to_dict()
@@ -147,12 +142,7 @@ def douban_converter(request_data, **kwargs):
         if not db:
             raise Exception('No douban found')
         if db['type'] == 'long':
-            temp_html = DocumentPreprocessor(db['content'])
-            temp_html.upload_all_images()
-            temp_content = temp_html.get_processed_html()
-            tdict = TelegraphDict(db, content=temp_content).to_dict()
-            print('get telegraph dict: ' + str(tdict))
-            t_url = get_telegraph_url(tdict)
+            t_url = get_telegraph_url(db)
         else:
             t_url = ''
         mdict = MetadataDict(db, category='Douban', turl=t_url, message='').to_dict()
@@ -166,19 +156,14 @@ def douban_converter(request_data, **kwargs):
 def zhihu_converter(request_data, **kwargs):
     try:
         zdict = request_data
-        print('get zhihu url: '+zdict['url'])
+        print('get Zhihu url: '+zdict['url'])
         zurl = zdict['url']
-        zh = zhihu.Zhihu(zurl).get_fav_item()
+        zh = zhihu.Zhihu(url=zurl).get_fav_item()
         print('get zhihu item')
         if not zh:
             raise Exception('No zhihu found')
         if zh['type'] == 'long':
-            temp_html = DocumentPreprocessor(zh['content'])
-            temp_html.upload_all_images()
-            temp_content = temp_html.get_processed_html()
-            tdict = TelegraphDict(zh, content=temp_content).to_dict()
-            print('get telegraph dict: ' + str(tdict))
-            t_url = get_telegraph_url(tdict)
+            t_url = get_telegraph_url(zh)
         else:
             t_url = ''
         mdict = MetadataDict(zh, category='zhihu', turl=t_url, message='').to_dict()

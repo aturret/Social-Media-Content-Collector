@@ -29,5 +29,7 @@ toml = {version ="*"}
 aiohttp = {version = "*"}
 pytest = {version = "*"}
 selenium = "*"
+sentry_sdk = {version = "*"}
+blinker = {version = "*"}
 
 [dev-packages]

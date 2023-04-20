@@ -25,10 +25,12 @@ class Douban(object):
             'Connection': 'keep-alive'
         } if headers is None else headers
         self.url = url
+        self.aurl = ''
         self.content = ''
         self.origin = ''
         self.origin_url = ''
         self.title = ''
+        self.comment = ''
         self.fav_url = favurl
         self.work_title = ''
         self.work_url = ''
@@ -37,6 +39,25 @@ class Douban(object):
         self.scraper = scraper
         self.type = 'long'
         self.media_files = []
+
+    def to_dict(self):
+        return {
+            'url': self.url,
+            'aurl': self.aurl,
+            'content': self.content,
+            'origin': self.origin,
+            'origin_url': self.origin_url,
+            'title': self.title,
+            'comment': self.comment,
+            'fav_url': self.fav_url,
+            'work_title': self.work_title,
+            'work_url': self.work_url,
+            'group_name': self.group_name,
+            'group_url': self.group_url,
+            'type': self.type,
+            'media_files': self.media_files,
+            'scraper': self.scraper
+        }
 
     def get_fav_list(self):
         selector = util.get_selector(url=self.fav_url, headers=self.headers)
@@ -62,6 +83,7 @@ class Douban(object):
 
     def get_fav_item(self, comment=''):
         url = self.url
+        self.aurl = url
         douban = OrderedDict()
         douban['aurl'] = url
         douban['comment'] = comment

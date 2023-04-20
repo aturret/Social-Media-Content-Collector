@@ -2,9 +2,8 @@
 import requests
 import time
 # import cchardet as chardet
-
-from lxml import etree
-from lxml import html
+from bs4 import BeautifulSoup
+from lxml import etree, html
 from collections import OrderedDict
 from app.utils import util
 
@@ -27,7 +26,9 @@ class Zhihu(object):
             'Connection': 'keep-alive'
         }
         self.url = url
+        self.aurl = ''
         self.content = ''
+        self.text = ''
         self.origin = ''
         self.originurl = ''
         self.title = ''
@@ -37,13 +38,31 @@ class Zhihu(object):
         self.groupname = ''
         self.groupurl = ''
         self.retweet_html = ''
+        self.type = 'long'
+        self.media_files = []
+
+    def to_dict(self):
+        return {
+            'url': self.url,
+            'aurl': self.aurl,
+            'content': self.content,
+            'text': self.text,
+            'origin': self.origin,
+            'originurl': self.originurl,
+            'title': self.title,
+            'favurl': self.favurl,
+            'question': self.question,
+            'workurl': self.workurl,
+            'groupname': self.groupname,
+            'groupurl': self.groupurl,
+            'retweet_html': self.retweet_html,
+            'type': self.type,
+            'media_files': self.media_files
+        }
 
     def get_fav_item(self):
-        zhihu = OrderedDict()
-        # selector = util.get_selector(url=self.url, headers=self.headers)
-        print(util.local_time())
         url = self.url
-        # print(str(etree.tostring(selector.xpath('//body')[0], encoding="utf-8"),encoding='utf-8'))
+        self.aurl = url
         if url.find('zhuanlan.zhihu.com') != -1:
             print('检测到知乎专栏，摘取中')
             self.get_zhihu_article()
@@ -53,16 +72,30 @@ class Zhihu(object):
         elif url.find('zhihu.com/pin/') != -1:
             print('检测到知乎想法，摘取中')
             self.get_zhihu_status()
-        # elif url.find('status') != -1:
-        #     self.get_douban_status(url)
-        # elif url.find('group/topic') != -1:
-        #     self.get_douban_group_article(url)
-        print(self.__dict__)  # 测试调试
-        zhihu['title'] = self.title
-        zhihu['content'] = self.content
-        zhihu['origin'] = self.origin
-        zhihu['originurl'] = self.originurl
-        zhihu['aurl'] = self.url
+        if len(html.fromstring(self.content).xpath('string()')) < 200:
+            self.type = 'short'
+        soup = BeautifulSoup(self.content, 'html.parser')
+        for img in soup.find_all('img'):
+            if img['src'].find('data:image') != -1:
+                continue
+            media_item = {'type': 'image', 'url': img['src'], 'caption': ''}
+            self.media_files.append(media_item)
+        for figure in soup.find_all('figure'):
+            figure.decompose()
+        print(self.content)
+        self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b> - ' + self.origin + '的回答</a>：' + \
+                    str(soup)
+        soup = BeautifulSoup(self.text, 'html.parser')
+        for span in soup.find_all('span'):
+            span.unwrap()
+        for br in soup.find_all('br'):
+            br.decompose()
+        for p in soup.find_all('p'):
+            if p.text != '':
+                p.append(BeautifulSoup('<br>', 'html.parser'))
+            p.unwrap()
+        self.text = str(soup).replace('<br/>', '\n').replace('<br>', '\n').replace('<br />', '')
+        zhihu = self.to_dict()
         return zhihu
 
     def get_zhihu_article(self):
@@ -86,7 +119,7 @@ class Zhihu(object):
         self.originurl = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="url"]/@content)')
         if self.originurl == 'https://www.zhihu.com/people/':
             self.originurl = ''
-        self.content = upvote + '<br>' + content
+        self.content = '<p>' + upvote + '</p><br>' + content
         self.title = selector.xpath('string(//h1)')
 
     def get_zhihu_status(self):

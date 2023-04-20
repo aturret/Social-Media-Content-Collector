@@ -93,12 +93,19 @@ class Weibo(object):
             pic_info = weibo_info['pics']
             pic_list = [pic['large']['url'] for pic in pic_info]
             pics = pic_list
-        elif weibo_info.get('pic_num') > 0:
+        elif 'pic_infos' in weibo_info and weibo_info.get('pic_num') > 0:
             pic_info = weibo_info['pic_infos']
             pic_list = []
             for pic in pic_info:
                 pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
                     pic_list.append(pic_info[pic]['large']['url'])
+            pics = pic_list
+        elif 'mix_media_info' in weibo_info:
+            pic_list = []
+            for item in weibo_info['mix_media_info']['items']:
+                if item['type'] == 'pic':
+                    pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
+                        pic_list.append(item['data']['large']['url'])
             pics = pic_list
         else:
             pics = ''
@@ -438,6 +445,7 @@ class Weibo(object):
                         '</a>：' + weibo['text'].replace('<br>', '\n')
         weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info else weibo[
             'text']
+        weibo['text'] = weibo['text'].replace('href="//', 'href="https://')
         return self.standardize_info(weibo)
 
     def weibo_html_text_clean(self, text, method='bs4'):

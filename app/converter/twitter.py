@@ -1,7 +1,7 @@
 import json
 import requests
 from collections import OrderedDict
-from lxml import etree
+from lxml import etree,html
 import sys
 from app import settings
 import re
@@ -45,6 +45,6 @@ class Twitter(object):
             print(picformat)
         twitter_item['content'] = twitter_item['text'] + '<br>' + picformat
         twitter_item['text'] = '<a href="' + self.url + '">@' + twitter_item['origin'] + '</a>: ' + twitter_item['text']
-        twitter_item['type'] = 'long' if len(twitter_item['content']) > 150 else 'short'
+        twitter_item['type'] = 'long' if len(html.fromstring(twitter_item['text']).xpath('string()')) > 200 else 'short'
         print(twitter_item)
         return twitter_item

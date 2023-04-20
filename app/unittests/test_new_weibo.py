@@ -1,6 +1,6 @@
 import pytest
 from app.converter import weibo
-from app.atelebot import send_to_channel
+# from app.atelebot import send_to_channel
 import telebot
 
 bot = telebot.TeleBot('5684876402:AAH_GVpGi2G_FRI6JVkR7ba-2UIrSdZDxgg')
