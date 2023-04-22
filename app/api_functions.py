@@ -196,7 +196,7 @@ def inoreader_converter(request_data, **kwargs):
                 p.unwrap()
             for span in soup.find_all('span'):
                 span.unwrap()
-            ino['text'] = str(soup)
+            ino['text'] = str(soup).replace('<br/>', '\n')
             ino['text'] = '<a href="' + ino['aurl'] + '">' + ino['origin'] + '</a>: ' + ino['text']
         if ino['type'] == 'long':
             t_url = get_telegraph_url(ino)

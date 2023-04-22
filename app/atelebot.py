@@ -84,16 +84,6 @@ def get_social_media(message):
             print('Failure')
             bot.reply_to(message, 'Failure')
             return
-
-        # response = requests.post(url=target_url, data=json.dumps(request_data))
-        # if response.status_code == 200:
-        #     response_data = response.json()
-        #     data_id = str(uuid.uuid4())
-        #     formatted_data[data_id] = response_data
-        # else:
-        #     print('Failure')
-        #     bot.reply_to(message, 'Failure')
-        #     return
         bot.delete_message(message.chat.id, replying_message.message_id) if replying_message else None
         if default_channel_id:
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
@@ -116,7 +106,7 @@ def get_social_media(message):
             if buttons[0].callback_data == 'private':
                 send_formatted_message(data=response_data)
             elif buttons[0].callback_data == 'channel':
-                send_to_channel(data=response_data)
+                send_formatted_message(data=response_data, channel_id=default_channel_id)
             elif buttons[0].callback_data == 'extract':
                 send_formatted_message(data=response_data)
     except Exception as e:
@@ -203,8 +193,13 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
         chat_id = message.chat.id
     if channel_id:
         chat_id = channel_id
+    if not (data['type'] == 'short' or re.search(no_telegraph_regexp, data['aurl'])):
+        long_text = True
+    else:
+        long_text = False
     try:
-        if data['type'] == 'short':
+        print(data)
+        if long_text:
             caption_text = data['text'] + '\n#' + data['category']
             if data['media_files'] and len(data['media_files']) > 0:
                 media_message_group, file_message_group = media_files_packaging(media_files=data['media_files'],
@@ -232,7 +227,11 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
 def message_formatting(data):
     if data['type'] == 'short':
         if re.search(no_telegraph_regexp, data['aurl']):
-            text = data['text'] + '\n#' + data['category']
+            text = '<a href=\"' + data['aurl'] + '\">' \
+                                                 '<b>' + data['title'] + '</b></a>\n' \
+                                                                         'via #' + data['category'] + \
+                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
+                   + data['origin'] + '</a>\n' + data['message']
         else:
             text = data['text'] + '\n#' + data['category']
     else:
@@ -281,10 +280,6 @@ def media_files_packaging(media_files, caption=None):
             if file_size > 5 * 1024 * 1024 or img_width > 1280 or img_height > 1280:
                 # if the size is over 5MB or dimension is larger than 1280 px, send it as a file
                 print('will send ' + image_url + ' as a file')
-                # if file_counter == 4:
-                #     file_message_group.append(file_group)
-                #     file_group = []
-                #     file_counter = 0
                 io_object = download_a_iobytes_file(media['url'])
                 file_group.append(io_object)
                 file_counter += 1
@@ -309,12 +304,6 @@ def media_files_packaging(media_files, caption=None):
             media_message_group.append(media_group)
     elif len(media_group) > 0:
         media_message_group.append(media_group)
-    # if len(file_message_group) == 0:
-    #     print('the number of valid non-media format files is ' + str(len(file_group)) +
-    #           ' which is less than 4, send them in one document group')
-    #     file_message_group.append(file_group)
-    # elif len(file_group) > 0:
-    #     file_message_group.append(file_group)
     media_message_group[0][0].caption = caption_text
     print(media_message_group[0][0].caption)
     return media_message_group, file_group

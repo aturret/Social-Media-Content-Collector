@@ -221,7 +221,6 @@ def unix_timestamp_to_utc(timestamp):
 def get_image_dimension(image_file):
     image = Image.open(image_file)
     return image.size
-        # logger.exception(e)
 
 
 def download_a_iobytes_file(url, file_name=None):
