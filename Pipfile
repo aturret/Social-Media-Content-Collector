@@ -31,5 +31,6 @@ pytest = {version = "*"}
 selenium = "*"
 sentry_sdk = {version = "*"}
 blinker = {version = "*"}
+Pillow = {version = "*"}
 
 [dev-packages]

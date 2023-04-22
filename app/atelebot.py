@@ -6,9 +6,8 @@ import requests
 import json
 from . import settings
 from .utils.util import *
-from .utils.classes import NamedBytesIO
+from .utils.customized_classes import NamedBytesIO
 from .api_functions import *
-import uuid
 
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
@@ -122,7 +121,7 @@ def get_social_media(message):
                 send_formatted_message(data=response_data)
     except Exception as e:
         print(traceback.format_exc())
-        bot.reply_to(message, 'Failure'+traceback.format_exc())
+        bot.reply_to(message, 'Failure' + traceback.format_exc())
         return
 
 
@@ -143,7 +142,8 @@ def callback_query(call):
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
@@ -164,7 +164,8 @@ def callback_query(call):
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
@@ -177,8 +178,8 @@ def callback_query(call):
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
-        if len(the_data['text'])+len(the_data['turl']) > 1000:
-            short_text = the_data['text'][:(1000-len(the_data['turl']))]
+        if len(the_data['text']) + len(the_data['turl']) > 1000:
+            short_text = the_data['text'][:(1000 - len(the_data['turl']))]
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
             the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
             if len(the_data['media_files']) > 9:
@@ -192,7 +193,8 @@ def callback_query(call):
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=None)
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
@@ -205,9 +207,16 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
         if data['type'] == 'short':
             caption_text = data['text'] + '\n#' + data['category']
             if data['media_files'] and len(data['media_files']) > 0:
-                media_message_group = media_files_packaging(media_files=data['media_files'], caption=caption_text)
-                for media_group in media_message_group:
-                    telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                media_message_group, file_message_group = media_files_packaging(media_files=data['media_files'],
+                                                                                caption=caption_text)
+                if len(media_message_group) > 0:
+                    for media_group in media_message_group:
+                        telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                else:
+                    telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+                if len(file_message_group) > 0:
+                    for file_group in file_message_group:
+                        telegram_bot.send_document(chat_id=chat_id, document=file_group)
             else:
                 telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
         else:
@@ -217,7 +226,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
     except Exception:
         print(traceback.format_exc())
         if message:
-            bot.reply_to(message, 'Failure'+traceback.format_exc())
+            bot.reply_to(message, 'Failure' + traceback.format_exc())
 
 
 def message_formatting(data):
@@ -244,43 +253,70 @@ def message_formatting(data):
 
 
 def media_files_packaging(media_files, caption=None):
-    caption_text = caption
-    counters = 0
+    caption_text = caption if caption else ''
+    media_counter = file_counter = 0
     media_message_group = []
+    file_message_group = []
     media_group = []
+    file_group = []
     for media in media_files:
-        if counters == 9:
+        print('a new media file incoming...')
+        if media_counter == 9:
             print('the number of valid media files is greater than 9, divide them into new groups')
             media_message_group.append(media_group)
             media_group = []
-            counters = 0
+            media_counter = 0
         print(media['url'])
-        file_data = requests.get(media["url"]).content
-        io_object = NamedBytesIO(file_data, name='media'+str(uuid.uuid4()))
-        # if the size is over 50MB, skip this file
-        file_size = io_object.getbuffer().nbytes
-        print(file_size)
-        if file_size > 50 * 1024 * 1024:
+        io_object = download_a_iobytes_file(media['url'])
+        file_size = io_object.size
+        print('the size of this file is ' + str(file_size))
+        if file_size > 50 * 1024 * 1024:  # if the size is over 50MB, skip this file
             continue
         file_like_object = telebot.types.InputFile(io_object)
         if media['type'] == 'image':
-            media_group.append(telebot.types.InputMediaPhoto(file_like_object, caption=media['caption'],
+            image_url = media['url']
+            image = Image.open(io_object)
+            img_width, img_height = image.size
+            print(image_url, img_width, img_height)
+            if file_size > 5 * 1024 * 1024 or img_width > 1280 or img_height > 1280:
+                # if the size is over 5MB or dimension is larger than 1280 px, send it as a file
+                print('will send ' + image_url + ' as a file')
+                # if file_counter == 4:
+                #     file_message_group.append(file_group)
+                #     file_group = []
+                #     file_counter = 0
+                io_object = download_a_iobytes_file(media['url'])
+                file_group.append(io_object)
+                file_counter += 1
+                continue
+            media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
+            print('will send ' + image_url + ' as a photo')
         elif media['type'] == 'video':
             media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
                                                              parse_mode='html'))
         elif media['type'] == 'audio':
             media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'],
                                                              parse_mode='html'))
-        counters += 1
+        media_counter += 1
     if len(media_message_group) == 0:
-        print('the number of valid media files is ' + str(len(media_group)) +
-              ' which is less than 9, send them in one group')
-        media_message_group.append(media_group)
+        if len(media_group) == 0:
+            print('no valid media files')
+            return media_message_group, file_group
+        else:
+            print('the number of valid media files is ' + str(len(media_group)) +
+                  ' which is less than 9, send them in one media group')
+            media_message_group.append(media_group)
     elif len(media_group) > 0:
         media_message_group.append(media_group)
+    # if len(file_message_group) == 0:
+    #     print('the number of valid non-media format files is ' + str(len(file_group)) +
+    #           ' which is less than 4, send them in one document group')
+    #     file_message_group.append(file_group)
+    # elif len(file_group) > 0:
+    #     file_message_group.append(file_group)
     media_message_group[0][0].caption = caption_text
     print(media_message_group[0][0].caption)
-    return media_message_group
+    return media_message_group, file_group
 
 # bot.infinity_polling()

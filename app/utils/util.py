@@ -1,10 +1,13 @@
 import hashlib
 # import logging
 import json
+from .customized_classes import *
+import uuid
 import sys
 import time
 import datetime
 import requests
+from PIL import Image
 from html_sanitizer import Sanitizer
 from app import settings
 from selenium import webdriver
@@ -213,3 +216,20 @@ def unix_timestamp_to_utc(timestamp):
     utc_time = datetime.datetime.utcfromtimestamp(timestamp)
     beijing_time = utc_time + datetime.timedelta(hours=8)
     return beijing_time.strftime('%Y-%m-%d %H:%M')
+
+
+def get_image_dimension(image_file):
+    image = Image.open(image_file)
+    return image.size
+        # logger.exception(e)
+
+
+def download_a_iobytes_file(url, file_name=None):
+    file_data = requests.get(url).content
+    file_format = url.split('.')[-1]
+    if file_name is None:
+        file_name = 'media-' + str(uuid.uuid1())[:8] + '.' + file_format
+    else:
+        file_name = file_name + '.' + file_format
+    io_object = NamedBytesIO(file_data, name=file_name)
+    return io_object
