@@ -5,7 +5,7 @@ import re
 import requests
 import json
 from . import settings
-from .utils import util
+from .utils.util import *
 from .utils.classes import NamedBytesIO
 from .api_functions import *
 import uuid
@@ -18,28 +18,27 @@ youtube_api = settings.env_var.get('YOUTUBE_API', None)
 bot = telebot.TeleBot(telebot_key)
 # define api urls
 # weiboApiUrl = 'http://' + site_url + '/weiboConvert'
-weiboApiUrl = 'http://' + site_url + '/newWeiboConvert'
-twitterApiUrl = 'http://' + site_url + '/twitterConvert'
-zhihuApiUrl = 'http://' + site_url + '/zhihuConvert'
-doubanApiUrl = 'http://' + site_url + '/doubanConvert'
-mustodonApiUrl = 'http://' + site_url + '/mustodonConvert'
+# weiboApiUrl = 'http://' + site_url + '/newWeiboConvert'
+# twitterApiUrl = 'http://' + site_url + '/twitterConvert'
+# zhihuApiUrl = 'http://' + site_url + '/zhihuConvert'
+# doubanApiUrl = 'http://' + site_url + '/doubanConvert'
+# mustodonApiUrl = 'http://' + site_url + '/mustodonConvert'
 
-urlpattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
+url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
+http_parttern = '(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
 # no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
 no_telegraph_regexp = "youtube\.com|bilibili\.com"
 # no_telegraph_list = ['',]
 formatted_data = {}
 
 
-
-
-@bot.message_handler(regexp="(http|https)://([\w.!@#$%^&*()_+-=])*\s*")
+@bot.message_handler(regexp=http_parttern)
 def get_social_media(message):
     try:
         markup = telebot.types.InlineKeyboardMarkup()
         buttons = []
 
-        url = urlpattern.search(message.text).group()
+        url = url_pattern.search(message.text).group()
         print('the url is: ' + url)
         target_url = ''
         request_data = {'url': url}
@@ -57,12 +56,12 @@ def get_social_media(message):
             replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
             print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
             target_function = zhihu_converter
-            target_url = zhihuApiUrl
+            # target_url = zhihuApiUrl
         elif url.find('douban.com') != -1:
             replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
             print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
             target_function = douban_converter
-            target_url = doubanApiUrl
+            # target_url = doubanApiUrl
         elif url.find('youtube.com') != -1:
             if not youtube_api:
                 bot.reply_to(message,
@@ -70,10 +69,10 @@ def get_social_media(message):
             else:
                 replying_message = bot.reply_to(message, '检测到YouTubeURL，转化中\nYouTube URL detected, converting...')
         else:
-            if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
+            if '_mastodon_session' in requests.utils.dict_from_cookiejar(get_response(url).cookies):
                 replying_message = bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
                 print('检测到长毛象URL，转化中\nMustodon URL detected, converting...')
-                target_url = mustodonApiUrl
+                # target_url = mustodonApiUrl
             else:
                 bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
                 print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
@@ -240,7 +239,7 @@ def message_formatting(data):
                                                                          'via #' + data['category'] + \
                    ' - <a href=\"' + data['originurl'] + ' \"> ' \
                    + data['origin'] + '</a>\n' + data['message'] + \
-                   '\n<a href=\"' + data['aurl'] + '\">阅读原文</a>'
+                   '<a href=\"' + data['aurl'] + '\">阅读原文</a>'
     return text
 
 
@@ -259,7 +258,9 @@ def media_files_packaging(media_files, caption=None):
         file_data = requests.get(media["url"]).content
         io_object = NamedBytesIO(file_data, name='media'+str(uuid.uuid4()))
         # if the size is over 50MB, skip this file
-        if io_object.getbuffer().nbytes > 50 * 1024 * 1024:
+        file_size = io_object.getbuffer().nbytes
+        print(file_size)
+        if file_size > 50 * 1024 * 1024:
             continue
         file_like_object = telebot.types.InputFile(io_object)
         if media['type'] == 'image':

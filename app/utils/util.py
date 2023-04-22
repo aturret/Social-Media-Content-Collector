@@ -1,7 +1,9 @@
 import hashlib
 # import logging
+import json
 import sys
 import time
+import datetime
 import requests
 from html_sanitizer import Sanitizer
 from app import settings
@@ -37,8 +39,10 @@ wsanitizer = Sanitizer({
 })
 
 
-def get_response_json(url, headers=None):
+def get_response_json(url, headers=None, test=False):
     response = requests.get(url, headers=headers)
+    if test:
+        print(response.text)
     json_result = response.json()
     return json_result
 
@@ -203,3 +207,9 @@ def get_html_text_length(html):
     soup = BeautifulSoup(html, 'html.parser')
     text = soup.get_text()
     return len(text)
+
+
+def unix_timestamp_to_utc(timestamp):
+    utc_time = datetime.datetime.utcfromtimestamp(timestamp)
+    beijing_time = utc_time + datetime.timedelta(hours=8)
+    return beijing_time.strftime('%Y-%m-%d %H:%M')

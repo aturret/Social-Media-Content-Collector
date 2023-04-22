@@ -79,7 +79,7 @@ def create_app():
     def twitter_convert():
         try:
             twitter_data = request.get_data()
-            response_data = douban_converter(twitter_data)
+            response_data = twitter_converter(twitter_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
@@ -110,6 +110,11 @@ def create_app():
     @server.route('/telegraphConvert', methods=['get', 'post'])
     def telegraph_convert(check=True):
         return 'ok'
+
+    @server.route('/rachelConvert', methods=['get', 'post'])
+    def rachel_convert():
+        return 'ok'
+
 
     @server.route('/debug-sentry')
     def trigger_error():

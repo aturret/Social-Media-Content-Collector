@@ -202,6 +202,7 @@ def inoreader_converter(request_data, **kwargs):
             t_url = get_telegraph_url(ino)
         else:
             t_url = ''
+        ino['message'] = ino['message'] + '\n'
         mdict = MetadataDict(ino, category=ino['tag'], turl=t_url, message=ino['message']).to_dict()
         print(mdict)
         return mdict
