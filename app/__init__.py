@@ -6,7 +6,8 @@ import json
 from flask import request
 from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
-import threading
+# import threading
+from multiprocessing import Process
 import traceback
 
 import app.api_functions
@@ -126,7 +127,9 @@ def create_app():
         division_by_zero = 1 / 0
 
     # if settings.env_var.get('BOT', 'True') == 'True':
-    telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
+    # telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
+    # telebot_thread.start()  # start the bot in a thread instead
+    telebot_thread = Process(target=atelebot.bot_start(), daemon=True)
     telebot_thread.start()  # start the bot in a thread instead
 
     return server
