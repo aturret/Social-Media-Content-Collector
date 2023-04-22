@@ -211,6 +211,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
                     telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
                 if len(file_message_group) > 0:
                     for file_group in file_message_group:
+                        telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text='有部分图片超过尺寸或大小限制，以文件形式发送：')
                         telegram_bot.send_document(chat_id=chat_id, document=file_group)
             else:
                 telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
