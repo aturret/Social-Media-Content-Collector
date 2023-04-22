@@ -67,6 +67,9 @@ class MetadataDict(object):
         self.media_files = dict_data['media_files'] if 'media_files' in dict_data \
             else kwargs['media_files'] if 'media_files' in kwargs \
             else []
+        self.document_file = dict_data['document_file'] if 'document_file' in dict_data \
+            else kwargs['document_file'] if 'document_file' in kwargs \
+            else None
 
     def to_dict(self):
         return {

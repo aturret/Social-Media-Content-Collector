@@ -16,6 +16,7 @@ myfavlist = 'https://www.douban.com/doulist/145693559/'
 testurl = 'https://m.weibo.cn/status/4717569200881723'
 default_scraper = settings.env_var.get('SCRAPER', 'requests')
 
+
 class Douban(object):
     def __init__(self, favurl='',url='',headers=None,cookies='',scraper=default_scraper):
         self.headers = {

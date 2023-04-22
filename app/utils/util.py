@@ -223,6 +223,16 @@ def get_image_dimension(image_file):
     return image.size
 
 
+def image_compressing(image, limitation):
+    new_image = image
+    if image.size[0] > limitation or image.size[1] > limitation:
+        if image.size[0] > image.size[1]:
+            new_image = image.resize((limitation, int(image.size[1] * limitation / image.size[0])), Image.ANTIALIAS)
+        else:
+            new_image = image.resize((int(image.size[0] * limitation / image.size[1]), limitation), Image.ANTIALIAS)
+    return new_image
+
+
 def download_a_iobytes_file(url, file_name=None):
     file_data = requests.get(url).content
     file_format = url.split('.')[-1]

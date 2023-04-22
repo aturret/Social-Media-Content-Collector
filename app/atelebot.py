@@ -13,6 +13,7 @@ site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get(
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 default_channel_id = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
+image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1280)
 # initialize telebot
 bot = telebot.TeleBot(telebot_key)
 # define api urls
@@ -193,13 +194,12 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
         chat_id = message.chat.id
     if channel_id:
         chat_id = channel_id
-    if not (data['type'] == 'short' or re.search(no_telegraph_regexp, data['aurl'])):
-        long_text = True
-    else:
+    if data['type'] == 'short' or re.search(no_telegraph_regexp, data['aurl']):
         long_text = False
+    else:
+        long_text = True
     try:
-        print(data)
-        if long_text:
+        if not long_text and data['media_files'] and len(data['media_files']) > 0:
             caption_text = data['text'] + '\n#' + data['category']
             if data['media_files'] and len(data['media_files']) > 0:
                 media_message_group, file_message_group = media_files_packaging(media_files=data['media_files'],
@@ -255,7 +255,6 @@ def media_files_packaging(media_files, caption=None):
     caption_text = caption if caption else ''
     media_counter = file_counter = 0
     media_message_group = []
-    file_message_group = []
     media_group = []
     file_group = []
     for media in media_files:
@@ -265,7 +264,7 @@ def media_files_packaging(media_files, caption=None):
             media_message_group.append(media_group)
             media_group = []
             media_counter = 0
-        print(media['url'])
+        print('the '+str((media_counter+1))+'\'s media: '+media['url'])
         io_object = download_a_iobytes_file(media['url'])
         file_size = io_object.size
         print('the size of this file is ' + str(file_size))
@@ -277,13 +276,14 @@ def media_files_packaging(media_files, caption=None):
             image = Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            if file_size > 5 * 1024 * 1024 or img_width > 1280 or img_height > 1280:
-                # if the size is over 5MB or dimension is larger than 1280 px, send it as a file
-                print('will send ' + image_url + ' as a file')
+            if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
+                # if the size is over 5MB or dimension is larger than 1280 px, compress the image
+                image = image_compressing(image, image_size_limit)
+                # and also send it as a file
+                print('will also send ' + image_url + ' as a file')
                 io_object = download_a_iobytes_file(media['url'])
                 file_group.append(io_object)
                 file_counter += 1
-                continue
             media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
@@ -306,6 +306,9 @@ def media_files_packaging(media_files, caption=None):
         media_message_group.append(media_group)
     media_message_group[0][0].caption = caption_text
     print(media_message_group[0][0].caption)
+    if len(media_message_group) > 1:
+        for i in range(1, len(media_message_group)):
+            media_message_group[i][0].caption = '接上 - 第' + str(i+1) + '组媒体文件'
     return media_message_group, file_group
 
 # bot.infinity_polling()
