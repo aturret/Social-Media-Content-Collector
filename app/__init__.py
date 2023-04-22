@@ -117,7 +117,10 @@ def create_app():
     def rachel_convert():
         return 'ok'
 
-
+    @server.route('/ping')
+    def ping():
+        print('hello, world!')
+        return 'pong', 200
     @server.route('/debug-sentry')
     def trigger_error():
         division_by_zero = 1 / 0
