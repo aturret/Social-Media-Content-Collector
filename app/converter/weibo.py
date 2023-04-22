@@ -29,16 +29,75 @@ cookie_mode = settings.env_var.get('COOKIE_MODE', 'False')
 #     return
 
 class Weibo(object):
-    def __init__(self, url):
+    def __init__(self, url, **kwargs):
+        # scraping method info
+        self.method = kwargs.get('method', 'api')
+        self.scraper = kwargs.get('scraper', 'requests')
+        # request info
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
             'Cookie': weibo_cookie if weibo_cookie else '', }
+        # weibo meta info
         self.url = url
-        self.status_id = url.split('/')[-1]
-        self.ajax_url = ajax_host + self.status_id
-        self.longtext_url = ajax_host_longtext + self.status_id
+        self.aurl = url
+        self.id = url.split('/')[-1]
+        self.ajax_url = ajax_host + self.id
+        self.longtext_url = ajax_host_longtext + self.id
         self.isLongText = False
         self.type = 'long'
+        # weibo content info
+        self.title = ''
+        self.content = ''
+        self.text = ''
+        self.text_raw = ''
+        self.pics_url = []
+        self.videos_url = []
+        self.gifs_url = []
+        self.origin = ''
+        self.user_id = ''
+        self.screen_name = ''
+        self.originurl = ''
+        self.date = ''
+        self.region_name = ''
+        self.comment = ''
+        self.count = ''
+        self.rt_url = ''
+        self.rt_info = {}
+        self.media_files = []
+
+    def to_dict(self):
+        # only contains the weibo meta info and the weibo content info
+        weibo_dict = {
+            'url': self.url,
+            'aurl': self.aurl,
+            'id': self.id,
+            'ajax_url': self.ajax_url,
+            'longtext_url': self.longtext_url,
+            'isLongText': self.isLongText,
+            'type': self.type,
+            'title': self.title,
+            'content': self.content,
+            'text': self.text,
+            'text_raw': self.text_raw,
+            'pics_url': self.pics_url,
+            'videos_url': self.videos_url,
+            'gifs_url': self.gifs_url,
+            'origin': self.origin,
+            'user_id': self.user_id,
+            'screen_name': self.screen_name,
+            'originurl': self.originurl,
+            'date': self.date,
+            'region_name': self.region_name,
+            'comment': self.comment,
+            'count': self.count,
+            'rt_url': self.rt_url,
+            'rt_info': self.rt_info,
+            'media_files': self.media_files
+        }
+        return weibo_dict
+
+
+
 
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
@@ -103,27 +162,33 @@ class Weibo(object):
 
     def get_pics_new(self, weibo_info):
         """获取微博原始图片url，作为列表"""
+        pic_list, gif_list = [], []
         if weibo_info.get('pics'):
             pic_info = weibo_info['pics']
-            pic_list = [pic['large']['url'] for pic in pic_info]
-            pics = pic_list
+            pic_list = [pic_info[pic]['large']['url'] for pic in pic_info]
         elif 'pic_infos' in weibo_info and weibo_info.get('pic_num') > 0:
             pic_info = weibo_info['pic_infos']
-            pic_list = []
             for pic in pic_info:
-                pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
-                    pic_list.append(pic_info[pic]['large']['url'])
-            pics = pic_list
+                if pic_info[pic]['type'] == 'pic':
+                    pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
+                        pic_list.append(pic_info[pic]['large']['url'])
+                if pic_info[pic]['type'] == 'gif':
+                    pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
+                        pic_list.append(pic_info[pic]['large']['url'])
+                    gif_list.append(pic_info[pic]['video'])
         elif 'mix_media_info' in weibo_info:
             pic_list = []
             for item in weibo_info['mix_media_info']['items']:
                 if item['type'] == 'pic':
                     pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
                         pic_list.append(item['data']['large']['url'])
-            pics = pic_list
+                if item['type'] == 'gif':
+                    pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
+                        pic_list.append(item['data']['large']['url'])
+                    gif_list.append(item['data']['video']['url'])
         else:
-            pics = ''
-        return pics
+            return pic_list, gif_list
+        return pic_list, gif_list
 
     def get_video_url(self, weibo_info):
         """获取微博视频url"""
@@ -204,7 +269,8 @@ class Weibo(object):
         for k, v in weibo.items():
             if 'bool' not in str(type(v)) and 'int' not in str(
                     type(v)) and 'list' not in str(
-                type(v)) and 'long' not in str(type(v)):
+                type(v)) and 'long' not in str(type(v)) and 'float' not in str(
+                type(v)) and 'dict' not in str(type(v)):
                 weibo[k] = v.replace(u'\u200b', '').encode(
                     sys.stdout.encoding, 'ignore').decode(sys.stdout.encoding)
         return weibo
@@ -267,61 +333,61 @@ class Weibo(object):
     def parse_weibo(self, weibo_info):
         weibo = OrderedDict()
         if weibo_info['user']:
-            weibo['user_id'] = weibo_info['user']['id']
-            weibo['screen_name'] = weibo_info['user']['screen_name']
+            self.user_id = weibo_info['user']['id']
+            self.screen_name = weibo_info['user']['screen_name']
         else:
-            weibo['user_id'] = ''
-            weibo['screen_name'] = ''
-        weibo['id'] = int(weibo_info['id'])
-        weibo['bid'] = weibo_info['bid']
+            self.user_id = ''
+            self.screen_name = ''
+        self.id = int(weibo_info['id'])
+        self.bid = weibo_info['bid']
         text_body = weibo_info['text']
         selector = etree.HTML(text_body)
-        weibo['text'] = text_body.replace('<br />', '<br>').replace('br/', 'br')
-        print(weibo['text'])
-        weibo['article_url'] = self.get_article_url(selector)
-        weibo['pics'] = self.get_pics(weibo_info)
-        weibo['pics_new'] = self.get_pics_new(weibo_info)
-        weibo['video_url'] = self.get_video_url(weibo_info)
-        weibo['location'] = self.get_location(selector)
-        weibo['created_at'] = weibo_info['created_at']
-        weibo['source'] = weibo_info['source']
-        weibo['attitudes_count'] = self.string_to_int(
+        self.text = text_body.replace('<br />', '<br>').replace('br/', 'br')
+        print(self.text)
+        self.article_url = self.get_article_url(selector)
+        self.pics = self.get_pics(weibo_info)
+        self.pics_url = self.get_pics_new(weibo_info)
+        self.videos_url = self.get_video_url(weibo_info)
+        self.location = self.get_location(selector)
+        self.created_at = weibo_info['created_at']
+        self.source = weibo_info['source']
+        self.attitudes_count = self.string_to_int(
             weibo_info.get('attitudes_count', 0))
-        weibo['comments_count'] = self.string_to_int(
+        self.comments_count = self.string_to_int(
             weibo_info.get('comments_count', 0))
-        weibo['reposts_count'] = self.string_to_int(
+        self.reposts_count = self.string_to_int(
             weibo_info.get('reposts_count', 0))
-        weibo['topics'] = self.get_topics(selector)
-        weibo['at_users'] = self.get_at_users(selector)
+        self.topics = self.get_topics(selector)
+        self.at_users = self.get_at_users(selector)
         # 处理图片和视频
         picsformat = ''
         videoformat = ''
-        if weibo['pics_new'] != '':
-            piclist = weibo['pics_new']
+        if self.pics_url != '':
+            piclist = self.pics_url
             for i in piclist:
                 picsformat += '<img src="' + i + '"><br />'
-        if weibo['video_url'] != '':
-            for i in weibo['video_url']:
+        if self.videos_url != '':
+            for i in self.videos_url:
                 videoformat += '<video><source src="' + i + '" type="video/mp4">youcannotwatchthevideo</video>'
-        weibo['title'] = weibo['screen_name'] + '的微博'
-        weibo['origin'] = weibo['screen_name']
-        weibo['aurl'] = self.url
-        weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
-        weibo['date'] = self.parse_date(weibo_info)
-        weibo['count'] = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
+        self.title = self.screen_name + '的微博'
+        self.origin = self.screen_name
+        self.aurl = self.url
+        self.originurl = 'https://weibo.com/u/' + str(self.user_id)
+        self.date = self.parse_date(weibo_info)
+        self.count = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
             weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
-        weibo['content'] = '<br><p>' + weibo['date'] + '</p><br><p>' + weibo['count'] + '</p><br><a href="' + weibo[
-            'originurl'] + '">@' + weibo['origin'] + '</a>：<p>' + weibo['text'] + '</p><br>' + picsformat + videoformat
+        self.content = '<br><p>' + self.date + '</p><br><p>' + self.count + '</p><br><a href="' + weibo[
+            'originurl'] + '">@' + self.origin + '</a>：<p>' + self.text + '</p><br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url = 'https://m.weibo.cn/status/' + weibo_info['retweeted_status']['id']
-            weibo['rturl'] = rtweibo_url
+            self.rt_url = rtweibo_url
             rtweibo = Weibo(rtweibo_url)
-            rtweibo_info = rtweibo.get_weibo()
-            # rtweibo_info['content'] = '<a href="'+ rtweibo_info['originurl'] + '">@' + rtweibo_info['screen_name'] + '：</a>' + rtweibo_info['content']
-            weibo['content'] += '<br><hr>' + rtweibo_info['content']
+            self.rt_info = rtweibo.get_weibo()
+            # self.rt_info['content'] = '<a href="'+ self.rt_info['originurl'] + '">@' + self.rt_info['screen_name'] + '：</a>' + self.rt_info['content']
+            self.content += '<br><hr>' + self.rt_info['content']
         else:
-            weibo['rturl'] = ''
-        # print(weibo['content'])
+            self.rt_url = ''
+        # print(self.content)
         # print(weibo)
         return self.standardize_info(weibo)
 
@@ -335,105 +401,100 @@ class Weibo(object):
         return weibo
 
     def new_parse_weibo(self, weibo_info):
-        weibo = OrderedDict()
         if weibo_info['user']:
-            weibo['user_id'] = weibo_info['user']['id']
-            weibo['screen_name'] = weibo_info['user']['screen_name']
+            self.user_id = weibo_info['user']['id']
+            self.screen_name = weibo_info['user']['screen_name']
         else:
-            weibo['user_id'] = 'Unknown user id'
-            weibo['screen_name'] = 'Unknown name'
-        weibo['id'] = int(weibo_info['id'])
-        # non-long text weibo
-        if not weibo_info['isLongText'] or (weibo_info['pic_num'] > 9 and weibo_info['isLongText']):
+            self.user_id = 'Unknown user id'
+            self.screen_name = 'Unknown name'
+        self.id = int(weibo_info['id'])
+        if not weibo_info['isLongText'] or (weibo_info['pic_num'] > 9 and weibo_info['isLongText']):  # non-long text weibo
             cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
             print('cleaned weibo text:\n' + cleaned_text)
-            weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
-        # long-text weibo
-        else:
+            self.text = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
+        else:  # long-text weibo
             self.type = 'long'
-            # if we have cookie to get long text from ajax request
-            if self.headers['Cookie'] and cookie_mode == 'True':
+            if self.headers['Cookie'] and cookie_mode == 'True':  # if we have cookie to get long text from ajax request
                 longtext_json = get_response_json(self.longtext_url, headers=self.headers)
-                weibo['text'] = weibo['text_raw'] = longtext_json['data']['longTextContent']
-                weibo['text'] = weibo['text'].replace('\n', '<br>')
-            # scrape long text from old method (http://m.weibo.cn)
-            else:
+                cleaned_text, fw_pics = self.weibo_html_text_clean(longtext_json['data']['longTextContent'])
+                self.text = self.text_raw = longtext_json['data']['longTextContent']
+                self.text = self.text.replace('\n', '<br>')
+            else:  # scrape long text from old method (http://m.weibo.cn)
                 temp_info = self.get_weibo_info_old()
                 cleaned_text, fw_pics = self.weibo_html_text_clean(temp_info['text'])
-                weibo['text'] = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
-
-        print('weibo text:\n' + weibo['text'])
-        # weibo['article_url'] = self.get_article_url(selector)
-        # weibo['pics'] = self.get_pics(weibo_info)
-        weibo['pics_new'] = self.get_pics_new(weibo_info)
-        weibo['video_url'] = self.get_video_url(weibo_info)
-        # weibo['location'] = self.get_location(selector)
-        weibo['created_at'] = weibo_info['created_at']
-        weibo['source'] = weibo_info['source']
-        weibo['attitudes_count'] = self.string_to_int(
+                self.text = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
+        print('weibo text:\n' + self.text)
+        self.pics_url, self.gifs_url = self.get_pics_new(weibo_info)
+        self.videos_url = self.get_video_url(weibo_info)
+        self.created_at = weibo_info['created_at']
+        self.source = weibo_info['source']
+        self.attitudes_count = self.string_to_int(
             weibo_info.get('attitudes_count', 0))
-        weibo['comments_count'] = self.string_to_int(
+        self.comments_count = self.string_to_int(
             weibo_info.get('comments_count', 0))
-        weibo['reposts_count'] = self.string_to_int(
+        self.reposts_count = self.string_to_int(
             weibo_info.get('reposts_count', 0))
-        # weibo['topics'] = self.get_topics(selector)
-        # weibo['at_users'] = self.get_at_users(selector)
-        # 处理图片和视频
+        # process pics and video
         pics_format = ''
         video_format = ''
-        if weibo['pics_new']:
+        if self.pics_url:
             if not weibo_info['isLongText'] and len(fw_pics) > 0:
-                pic_list = fw_pics.extend(weibo['pics_new'])
+                pic_list = fw_pics.extend(self.pics_url)
             else:
-                pic_list = weibo['pics_new']
+                pic_list = self.pics_url
             for i in pic_list:
                 pics_format += '<img src="' + i + '"><br>'
-        if weibo['video_url']:
-            for i in weibo['video_url']:
+        if self.videos_url:
+            for i in self.videos_url:
                 video_format += '<video><source src="' + i + '" type="video/mp4">youcannotwatchthevideo</video>'
-        weibo['title'] = weibo['screen_name'] + '的微博'
-        weibo['origin'] = weibo['screen_name']
-        weibo['aurl'] = self.url
-        weibo['originurl'] = 'https://weibo.com/u/' + str(weibo['user_id'])
-        weibo['date'] = self.parse_date(weibo_info)
-        weibo['count'] = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
+        if self.gifs_url:
+            for i in self.gifs_url:
+                pics_format += '<img src="' + i + '"><br>'
+        self.title = self.screen_name + '的微博'
+        self.origin = self.screen_name
+        self.aurl = self.url
+        self.originurl = 'https://weibo.com/u/' + str(self.user_id)
+        self.date = self.parse_date(weibo_info)
+        self.count = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
             weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
-        weibo['region_name'] = weibo_info['region_name'] if 'region_name' in weibo_info else ''
-        weibo['content'] = '<br><p>' + weibo['date'] + '</p><br><p>' + \
-                           weibo['count'] + ' ' + weibo['region_name'] + \
-                           '</p><br><a href="' + weibo['originurl'] + '">@' + weibo['origin'] + \
-                           '</a>：<p>' + weibo['text'] + '</p><br>' + pics_format + video_format
-
-        weibo['media_files'] = []
-        for i in weibo['pics_new']:
+        self.region_name = weibo_info['region_name'] if 'region_name' in weibo_info else ''
+        self.content = '<br><p>' + self.date + '</p><br><p>' + \
+                           self.count + ' ' + self.region_name + \
+                           '</p><br><a href="' + self.originurl + '">@' + self.origin + \
+                           '</a>：<p>' + self.text + '</p><br>' + pics_format + video_format
+        # format the media files
+        self.media_files = []
+        for i in self.pics_url:
             item = {'type': 'image', 'url': i, 'caption': ''}
-            weibo['media_files'].append(item)
-        for i in weibo['video_url']:
+            self.media_files.append(item)
+        for i in self.videos_url:
             item = {'type': 'video', 'url': i, 'caption': ''}
-            weibo['media_files'].append(item)
-        # get retweeted weibo
-        if 'retweeted_status' in weibo_info:
+            self.media_files.append(item)
+        for i in self.gifs_url:
+            item = {'type': 'gif', 'url': i, 'caption': ''}
+            self.media_files.append(item)
+        if 'retweeted_status' in weibo_info:  # get retweeted weibo
             rtweibo_url = 'https://weibo.com/status/' + str(weibo_info['retweeted_status']['id'])
-            weibo['rturl'] = rtweibo_url
+            self.rt_url = rtweibo_url
             rtweibo = Weibo(rtweibo_url)
-            rtweibo_info = rtweibo.new_get_weibo()
-            weibo['content'] += '<br><hr>' + rtweibo_info['content']
-            weibo['media_files'].extend(rtweibo_info['media_files']) if rtweibo_info['media_files'] else ''
+            self.rt_info = rtweibo.new_get_weibo()
+            self.content += '<br><hr>' + self.rt_info['content']
+            self.media_files.extend(self.rt_info['media_files']) if self.rt_info['media_files'] else ''
         else:
-            weibo['rturl'] = ''
+            self.rt_url = ''
         # combine text with original weibo
-        weibo['text_raw'] = weibo_info['text_raw'] + rtweibo_info['text_raw'] if 'retweeted_status' in weibo_info \
+        self.text_raw = weibo_info['text_raw'] + self.rt_info['text_raw'] if 'retweeted_status' in weibo_info \
             else weibo_info['text_raw']
-        print('length of raw text:' + str(len(weibo['text_raw'])))
+        print('length of raw text:' + str(len(self.text_raw)))
         # check the type of combined weibo
-
-        self.type = 'long' if get_html_text_length(weibo['text']) > short_limit else 'short'
-        weibo['text'] = '<a href="' + weibo['aurl'] + '">@' + weibo['origin'] + \
-                        '</a>：' + weibo['text'].replace('<br>', '\n')
-        weibo['text'] = weibo['text'] + ('\n' + rtweibo_info['text']) if 'retweeted_status' in weibo_info \
-            else weibo['text']
-        weibo['text'] = weibo['text'].replace('href="//', 'href="https://')
-        weibo['type'] = self.type
+        self.type = 'long' if get_html_text_length(self.text) > short_limit else 'short'
+        self.text = '<a href="' + self.aurl + '">@' + self.origin + \
+                        '</a>：' + self.text.replace('<br>', '\n')
+        self.text = self.text + ('\n' + self.rt_info['text']) if 'retweeted_status' in weibo_info \
+            else self.text
+        self.text = self.text.replace('href="//', 'href="https://')
+        self.type = self.type
+        weibo = self.to_dict()
         return self.standardize_info(weibo)
 
     def weibo_html_text_clean(self, text, method='bs4'):

@@ -202,17 +202,22 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
         if not long_text and data['media_files'] and len(data['media_files']) > 0:
             caption_text = data['text'] + '\n#' + data['category']
             if data['media_files'] and len(data['media_files']) > 0:
-                media_message_group, file_message_group = media_files_packaging(media_files=data['media_files'],
-                                                                                caption=caption_text)
+                media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
+                                                                        caption=caption_text)
                 if len(media_message_group) > 0:
                     for media_group in media_message_group:
                         telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
                 else:
                     telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
-                if len(file_message_group) > 0:
-                    for file_group in file_message_group:
-                        telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text='有部分图片超过尺寸或大小限制，以文件形式发送：')
-                        telegram_bot.send_document(chat_id=chat_id, document=file_group)
+                if len(file_group) > 0:
+                    telegram_bot.send_message(chat_id=chat_id, parse_mode='html',
+                                              text='有部分图片超过尺寸或大小限制，以文件形式发送：')
+                    for file in file_group:
+                        if file.name.endswith('.gif'):
+                            print('sending gif')
+                            telegram_bot.send_animation(chat_id=chat_id, animation=file)
+                        else:
+                            telegram_bot.send_document(chat_id=chat_id, document=file)
             else:
                 telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
         else:
@@ -265,33 +270,38 @@ def media_files_packaging(media_files, caption=None):
             media_message_group.append(media_group)
             media_group = []
             media_counter = 0
-        print('the '+str((media_counter+1))+'\'s media: '+media['url'])
+        print('the ' + str((media_counter + 1)) + '\'s media: ' + media['type'] + ': ' + media['url'])
         io_object = download_a_iobytes_file(media['url'])
         file_size = io_object.size
         print('the size of this file is ' + str(file_size))
         if file_size > 50 * 1024 * 1024:  # if the size is over 50MB, skip this file
             continue
-        file_like_object = telebot.types.InputFile(io_object)
+        print(io_object.name)
         if media['type'] == 'image':
             image_url = media['url']
             image = Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
-                # if the size is over 5MB or dimension is larger than 1280 px, compress the image
-                image = image_compressing(image, image_size_limit)
-                # and also send it as a file
-                print('will also send ' + image_url + ' as a file')
-                io_object = download_a_iobytes_file(media['url'])
-                file_group.append(io_object)
-                file_counter += 1
             media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
+            if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
+                # if the size is over 5MB or dimension is larger than 1280 px, compress the image
+                image = image_compressing(image, image_size_limit)
+                print('will also send ' + image_url + ' as a file')  # and also send it as a file
+                io_object = download_a_iobytes_file(media['url'])
+                if not io_object.name.endswith('.gif'):
+                    file_group.append(io_object)
+                    file_counter += 1
+        elif media['type'] == 'gif':
+            io_object.name = io_object.name + '.gif'
+            file_group.append(io_object)
         elif media['type'] == 'video':
+            file_like_object = telebot.types.InputFile(io_object)
             media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
                                                              parse_mode='html'))
         elif media['type'] == 'audio':
+            file_like_object = telebot.types.InputFile(io_object)
             media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'],
                                                              parse_mode='html'))
         media_counter += 1
@@ -309,7 +319,7 @@ def media_files_packaging(media_files, caption=None):
     print(media_message_group[0][0].caption)
     if len(media_message_group) > 1:
         for i in range(1, len(media_message_group)):
-            media_message_group[i][0].caption = '接上 - 第' + str(i+1) + '组媒体文件'
+            media_message_group[i][0].caption = '接上 - 第' + str(i + 1) + '组媒体文件'
     return media_message_group, file_group
 
 # bot.infinity_polling()

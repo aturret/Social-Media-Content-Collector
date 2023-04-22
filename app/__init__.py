@@ -79,6 +79,8 @@ def create_app():
     def twitter_convert():
         try:
             twitter_data = request.get_data()
+            if twitter_data == b'':
+                return 'ok'
             response_data = twitter_converter(twitter_data)
             return response_data
         except Exception:
