@@ -215,7 +215,8 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
                     for file in file_group:
                         if file.name.endswith('.gif'):
                             print('sending gif')
-                            telegram_bot.send_animation(chat_id=chat_id, animation=file)
+                            telegram_bot.send_video(chat_id=chat_id, video=file)
+                            # telegram_bot.send_animation(chat_id=chat_id, animation=file)
                         else:
                             telegram_bot.send_document(chat_id=chat_id, document=file)
             else:
@@ -292,8 +293,8 @@ def media_files_packaging(media_files, caption=None):
                 io_object = download_a_iobytes_file(media['url'])
                 if not io_object.name.endswith('.gif'):
                     file_group.append(io_object)
-                    file_counter += 1
         elif media['type'] == 'gif':
+            io_object = download_a_iobytes_file(media['url'], 'gif_image-' + str(media_counter) + '.gif')
             io_object.name = io_object.name + '.gif'
             file_group.append(io_object)
         elif media['type'] == 'video':

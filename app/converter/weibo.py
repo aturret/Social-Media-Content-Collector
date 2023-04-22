@@ -173,9 +173,10 @@ class Weibo(object):
                     pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
                         pic_list.append(pic_info[pic]['large']['url'])
                 if pic_info[pic]['type'] == 'gif':
-                    pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
-                        pic_list.append(pic_info[pic]['large']['url'])
-                    gif_list.append(pic_info[pic]['video'])
+                    # pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
+                    #     pic_list.append(pic_info[pic]['large']['url'])
+                    # gif_list.append(pic_info[pic]['video'])
+                    self.videos_url.append(pic_info[pic]['video'])
         elif 'mix_media_info' in weibo_info:
             pic_list = []
             for item in weibo_info['mix_media_info']['items']:
@@ -183,9 +184,10 @@ class Weibo(object):
                     pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
                         pic_list.append(item['data']['large']['url'])
                 if item['type'] == 'gif':
-                    pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
-                        pic_list.append(item['data']['large']['url'])
-                    gif_list.append(item['data']['video']['url'])
+                    # pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
+                    #     pic_list.append(item['data']['large']['url'])
+                    # gif_list.append(item['data']['video']['url'])
+                    self.videos_url.append(item['data']['video']['url'])
         else:
             return pic_list, gif_list
         return pic_list, gif_list
@@ -425,7 +427,8 @@ class Weibo(object):
                 self.text = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
         print('weibo text:\n' + self.text)
         self.pics_url, self.gifs_url = self.get_pics_new(weibo_info)
-        self.videos_url = self.get_video_url(weibo_info)
+        videos = self.get_video_url(weibo_info)
+        self.videos_url = self.videos_url.extend(videos) if videos else self.videos_url
         self.created_at = weibo_info['created_at']
         self.source = weibo_info['source']
         self.attitudes_count = self.string_to_int(

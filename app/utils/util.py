@@ -235,10 +235,8 @@ def image_compressing(image, limitation):
 
 def download_a_iobytes_file(url, file_name=None):
     file_data = requests.get(url).content
-    file_format = url.split('.')[-1]
     if file_name is None:
+        file_format = url.split('.')[-1]
         file_name = 'media-' + str(uuid.uuid1())[:8] + '.' + file_format
-    else:
-        file_name = file_name + '.' + file_format
     io_object = NamedBytesIO(file_data, name=file_name)
     return io_object
