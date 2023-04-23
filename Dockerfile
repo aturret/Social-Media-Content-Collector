@@ -7,7 +7,7 @@ RUN #curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
     && pipenv install
     # && pipenv run gunicorn -w 4 -b 0.0.0.0:1045 wsgi:app
 # CMD 
-ENTRYPOINT pipenv run gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
+# ENTRYPOINT pipenv run gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
 # ENTRYPOINT ["/app/run.sh"]
 
 # docker build -t aturret/socialmediacollector .

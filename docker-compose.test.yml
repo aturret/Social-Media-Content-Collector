@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  socialmediacollector:
+    image: aturret/socialmediacollector:latest
+    container_name: socialmediacollector
+    environment:
+      - TELEGRAM_BOT_KEY
+      - TWITTER_APP_KEY
+      - SITE_URL
+      - CHANNEL_ID
+      - PORT=1045
+    ports:
+      - 1045:1045
+    command:
+      - pipenv
+      - run
+      - python
+      - run.py
+#      - gunicorn
+#      - -w 1
+#      - -b 0.0.0.0:${PORT}
+#      - wsgi:app
