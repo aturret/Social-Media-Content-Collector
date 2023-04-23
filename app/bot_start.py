@@ -1,5 +1,5 @@
 from . import atelebot
-import threading, multiprocessing, logging
+import multiprocessing, logging
 import time
 
 def bot_polling():

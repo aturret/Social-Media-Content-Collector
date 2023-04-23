@@ -125,7 +125,8 @@ def create_app():
     # telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     # telebot_thread = Process(target=atelebot.bot.polling(), daemon=True)
     # telebot_thread.start()  # start the bot in a thread instead
-
-
+    bot_process = bot_start.start_bot_process()  # Start the Telegram bot process
+    monitor_thread = threading.Thread(target=bot_start.monitor_bot_process, args=(bot_process,))
+    monitor_thread.start()
 
     return server

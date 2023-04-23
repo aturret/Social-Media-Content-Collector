@@ -1,1 +1,1 @@
-web: pipenv run python ./run.py
+web: pipenv run waitress-serve --listen=*:1045 wsgi:app
