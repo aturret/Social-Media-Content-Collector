@@ -8,6 +8,7 @@ telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 default_channel_id = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
 image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1280)
+telegram_text_limit = settings.env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
 # initialize telebot
 bot = telebot.TeleBot(telebot_key, num_threads=3)
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
@@ -157,12 +158,12 @@ def callback_query(call):
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
-        if len(the_data['text']) + len(the_data['turl']) > 1000:
-            short_text = the_data['text'][:(1000 - len(the_data['turl']))]
+        if get_html_text_length(the_data['text']) > telegram_text_limit:
+            short_text = the_data['text'][:(telegram_text_limit - len(the_data['turl']))]
+            print(short_text)
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
+            print(short_text)
             the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
-            if len(the_data['media_files']) > 9:
-                the_data['media_files'] = the_data['media_files'][:9]
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
         # bot.answer_callback_query(call.id, "Message sent to channel")
     except telebot.apihelper.ApiException as e:
