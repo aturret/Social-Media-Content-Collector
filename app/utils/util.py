@@ -7,6 +7,7 @@ import sys
 import time
 import datetime
 import requests
+import logging
 from PIL import Image
 from html_sanitizer import Sanitizer
 from app import settings

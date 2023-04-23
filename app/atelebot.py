@@ -328,12 +328,12 @@ def media_files_packaging(media_files, caption=None):
     return media_message_group, file_group
 
 
-# bot.infinity_polling()
-# def bot_start():
-#     while True:
-#         try:
-#             bot.polling()
-#         except Exception as e:
-#             print(f"Error: {e}")
-#             print(traceback.format_exc())
-#             time.sleep(10)
+def bot_polling():
+    while True:
+        try:
+            bot.polling(none_stop=False)
+        except Exception as e:
+            logging.error(f"An exception occurred in the bot thread: {e}")
+            time.sleep(10)  # Sleep for a while before retrying
+        else:
+            break

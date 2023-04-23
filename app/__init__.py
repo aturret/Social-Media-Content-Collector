@@ -2,21 +2,15 @@
 from flask import Flask
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
-import json
 from flask import request
-from html_telegraph_poster import TelegraphPoster
-from html_telegraph_poster.utils import DocumentPreprocessor
 import threading
 from multiprocessing import Process
-import traceback
-
 import app.api_functions
-from . import atelebot, combination, settings
+from . import atelebot, combination, settings, bot_start
 from .api_functions import *
-from .utils import telegraph, util
+from .utils import telegraph
+from .utils.util import *
 from .converter import zhihu, twitter, douban, weibo
-import time
-import asyncio
 
 sentry_on = settings.env_var.get('SENTRY_ON', 'False')
 sentry_dsn = settings.env_var.get('SENTRY_DSN', '')
@@ -111,24 +105,27 @@ def create_app():
         return mdict
 
     @server.route('/telegraphConvert', methods=['get', 'post'])
-    def telegraph_convert(check=True):
-        return 'ok'
+    def telegraph_convert():
+        return 'ok', 200
 
     @server.route('/rachelConvert', methods=['get', 'post'])
     def rachel_convert():
-        return 'ok'
+        return 'ok', 200
 
     @server.route('/ping')
     def ping():
         print('hello, world!')
         return 'pong', 200
+
     @server.route('/debug-sentry')
     def trigger_error():
         division_by_zero = 1 / 0
 
     # if settings.env_var.get('BOT', 'True') == 'True':
-    telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
+    # telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     # telebot_thread = Process(target=atelebot.bot.polling(), daemon=True)
-    telebot_thread.start()  # start the bot in a thread instead
+    # telebot_thread.start()  # start the bot in a thread instead
+
+
 
     return server
