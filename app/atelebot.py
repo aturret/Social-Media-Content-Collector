@@ -1,12 +1,6 @@
-import io
-import traceback
 import telebot
 import re
-import requests
-import json
-from . import settings
 from .utils.util import *
-from .utils.customized_classes import NamedBytesIO
 from .api_functions import *
 
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
@@ -15,15 +9,7 @@ default_channel_id = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
 image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1280)
 # initialize telebot
-bot = telebot.TeleBot(telebot_key)
-# define api urls
-# weiboApiUrl = 'http://' + site_url + '/weiboConvert'
-# weiboApiUrl = 'http://' + site_url + '/newWeiboConvert'
-# twitterApiUrl = 'http://' + site_url + '/twitterConvert'
-# zhihuApiUrl = 'http://' + site_url + '/zhihuConvert'
-# doubanApiUrl = 'http://' + site_url + '/doubanConvert'
-# mustodonApiUrl = 'http://' + site_url + '/mustodonConvert'
-
+bot = telebot.TeleBot(telebot_key, num_threads=3)
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
 http_parttern = '(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
 # no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
@@ -190,7 +176,6 @@ def callback_query(call):
             bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                           reply_markup=None)
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-
 
 
 def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, channel_id=None):

@@ -1,12 +1,14 @@
-from . import atelebot
-import multiprocessing, logging, threading
+import logging
+import multiprocessing
+import threading
 import time
+import app.atelebot
 
 
 def bot_polling():
     while True:
         try:
-            atelebot.bot.polling(none_stop=False)
+            app.atelebot.bot.polling()
         except Exception as e:
             logging.error(f"An exception occurred in the bot process: {e}")
             time.sleep(10)  # Sleep for a while before retrying
