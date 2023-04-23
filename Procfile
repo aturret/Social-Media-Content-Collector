@@ -1,1 +1,1 @@
-web: pipenv run waitress-serve --listen=*:1045 wsgi:app
+web: pipenv run waitress-serve --listen=*:$PORT wsgi:app
