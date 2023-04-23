@@ -1,1 +1,1 @@
-web: pipenv run ./run.py
+web: pipenv run python ./run.py
