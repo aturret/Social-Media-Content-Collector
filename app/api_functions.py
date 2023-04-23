@@ -1,11 +1,9 @@
 import traceback
-from lxml import etree,html
 from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
 from .converter import weibo, twitter, douban, zhihu, mustodon
 from bs4 import BeautifulSoup
 from .utils import util
-import json
 
 
 class TelegraphDict(object):

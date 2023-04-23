@@ -1,6 +1,7 @@
 from . import atelebot
-import multiprocessing, logging
+import multiprocessing, logging, threading
 import time
+
 
 def bot_polling():
     while True:
@@ -17,6 +18,20 @@ def start_bot_process():
     bot_process = multiprocessing.Process(target=bot_polling)
     bot_process.start()
     return bot_process
+
+
+def start_bot_thread():
+    bot_thread = threading.Thread(target=bot_polling)
+    bot_thread.start()
+    return bot_thread
+
+
+def monitor_bot_thread(bot_thread):
+    while True:
+        time.sleep(30)  # Check the bot thread status every 30 seconds
+        if not bot_thread.is_alive():
+            logging.warning("Bot thread has stopped, restarting...")
+            bot_thread = start_bot_thread()
 
 
 def monitor_bot_process(bot_process):

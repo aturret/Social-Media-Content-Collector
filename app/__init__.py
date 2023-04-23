@@ -2,9 +2,9 @@
 from flask import Flask
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+from concurrent.futures import ThreadPoolExecutor
 from flask import request
 import threading
-from multiprocessing import Process
 import app.api_functions
 from . import atelebot, combination, settings, bot_start
 from .api_functions import *
@@ -32,13 +32,9 @@ if sentry_on == 'True':
 
 def create_app():
     server = Flask(__name__)
-    c_title = ""
-    c_list = [""]
     site_url = 'http://' + settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
     default_channel = settings.env_var.get('CHANNEL_ID', '')
-    print(site_url)
     print(settings.env_var.get('PORT', 'no port'))
-    telegraph_url = site_url + '/telegraphConvert'
 
     @server.route('/newWeiboConvert', methods=['get', 'post'])
     def newWeiboConvert():
@@ -112,7 +108,7 @@ def create_app():
     def rachel_convert():
         return 'ok', 200
 
-    @server.route('/ping')
+    @server.route('/ping', methods=['get', 'post', 'head'])
     def ping():
         print('hello, world!')
         return 'pong', 200
@@ -125,8 +121,5 @@ def create_app():
     # telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
     # telebot_thread = Process(target=atelebot.bot.polling(), daemon=True)
     # telebot_thread.start()  # start the bot in a thread instead
-    bot_process = bot_start.start_bot_process()  # Start the Telegram bot process
-    monitor_thread = threading.Thread(target=bot_start.monitor_bot_process, args=(bot_process,))
-    monitor_thread.start()
 
     return server
