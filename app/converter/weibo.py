@@ -129,7 +129,7 @@ class Weibo(object):
                 return weibo_info
 
     def get_weibo_info_old(self):
-        old_weibo_url = 'http://m.weibo.cn/status/' + self.status_id
+        old_weibo_url = 'http://m.weibo.cn/status/' + str(self.id)
         # print(old_weibo_url)
         html = requests.get(old_weibo_url, headers=self.headers, verify=False).text
         html = html[html.find('"status":'):]
@@ -194,7 +194,6 @@ class Weibo(object):
 
     def get_video_url(self, weibo_info):
         """获取微博视频url"""
-        video_url = ''
         video_url_list = []
         if weibo_info.get('page_info'):
 
@@ -269,6 +268,7 @@ class Weibo(object):
 
     def standardize_info(self, weibo):
         for k, v in weibo.items():
+            # print(k, type(v))
             if 'bool' not in str(type(v)) and 'int' not in str(
                     type(v)) and 'list' not in str(
                 type(v)) and 'long' not in str(type(v)) and 'float' not in str(
@@ -370,7 +370,7 @@ class Weibo(object):
                 picsformat += '<img src="' + i + '"><br />'
         if self.videos_url != '':
             for i in self.videos_url:
-                videoformat += '<video><source src="' + i + '" type="video/mp4">youcannotwatchthevideo</video>'
+                videoformat += '<figure src="' + i + '" type="video/mp4">youcannotwatchthevideo</figure>'
         self.title = self.screen_name + '的微博'
         self.origin = self.screen_name
         self.aurl = self.url
@@ -428,7 +428,8 @@ class Weibo(object):
         print('weibo text:\n' + self.text)
         self.pics_url, self.gifs_url = self.get_pics_new(weibo_info)
         videos = self.get_video_url(weibo_info)
-        self.videos_url = self.videos_url.extend(videos) if videos else self.videos_url
+        if videos:
+            self.videos_url = videos
         self.created_at = weibo_info['created_at']
         self.source = weibo_info['source']
         self.attitudes_count = self.string_to_int(
@@ -442,7 +443,7 @@ class Weibo(object):
         video_format = ''
         if self.pics_url:
             if not weibo_info['isLongText'] and len(fw_pics) > 0:
-                pic_list = fw_pics.extend(self.pics_url)
+                pic_list = fw_pics.extend(self.pics_url) if fw_pics else self.pics_url
             else:
                 pic_list = self.pics_url
             for i in pic_list:
@@ -467,15 +468,19 @@ class Weibo(object):
                            '</a>：<p>' + self.text + '</p><br>' + pics_format + video_format
         # format the media files
         self.media_files = []
-        for i in self.pics_url:
-            item = {'type': 'image', 'url': i, 'caption': ''}
-            self.media_files.append(item)
-        for i in self.videos_url:
-            item = {'type': 'video', 'url': i, 'caption': ''}
-            self.media_files.append(item)
-        for i in self.gifs_url:
-            item = {'type': 'gif', 'url': i, 'caption': ''}
-            self.media_files.append(item)
+        print(self.pics_url)
+        if self.pics_url:
+            for i in self.pics_url:
+                item = {'type': 'image', 'url': i, 'caption': ''}
+                self.media_files.append(item)
+        if self.videos_url:
+            for i in self.videos_url:
+                item = {'type': 'video', 'url': i, 'caption': ''}
+                self.media_files.append(item)
+        if self.gifs_url:
+            for i in self.gifs_url:
+                item = {'type': 'gif', 'url': i, 'caption': ''}
+                self.media_files.append(item)
         if 'retweeted_status' in weibo_info:  # get retweeted weibo
             rtweibo_url = 'https://weibo.com/status/' + str(weibo_info['retweeted_status']['id'])
             self.rt_url = rtweibo_url
