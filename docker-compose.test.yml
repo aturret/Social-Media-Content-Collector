@@ -13,8 +13,6 @@ services:
     ports:
       - 1045:1045
     command:
-      - pipenv
-      - run
       - python
       - run.py
 #      - gunicorn
