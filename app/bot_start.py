@@ -21,8 +21,7 @@ def start_bot_process():
 
 def monitor_bot_process(bot_process):
     while True:
-        time.sleep(60)  # Check the bot process status every 60 seconds
-
+        time.sleep(30)  # Check the bot process status every 30 seconds
         if not bot_process.is_alive():
             logging.warning("Bot process has stopped, restarting...")
             bot_process.terminate()

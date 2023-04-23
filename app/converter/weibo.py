@@ -14,7 +14,7 @@ imgpattern = '<.?img[^>]*>'
 pattern = re.compile(imgpattern)
 ajax_host = 'https://weibo.com/ajax/statuses/show?id='
 ajax_host_longtext = 'https://weibo.com/ajax/statuses/longtext?id='
-short_limit = settings.env_var.get('SHORT_LIMIT', 200)
+short_limit = settings.env_var.get('SHORT_LIMIT', 300)
 weibo_cookie = settings.env_var.get('WEIBO_COOKIE', '')
 cookie_mode = settings.env_var.get('COOKIE_MODE', 'False')
 

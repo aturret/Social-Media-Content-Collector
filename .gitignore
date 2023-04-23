@@ -1,8 +1,8 @@
 # my config file
-app/abondoned
+abondoned
 app/test.py
+app/unittests
 
-#Pipfile.lock
 __pycache__
 app/__pycache__
 Dockerfile
