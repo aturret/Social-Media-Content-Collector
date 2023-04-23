@@ -1,4 +1,4 @@
-web: pipenv run waitress-serve --listen=*:$PORT --threads=5 wsgi:app
+#web: pipenv run waitress-serve --listen=*:$PORT --threads=5 wsgi:app
 #worker: pipenv run python bot_run.py
-#web: pipenv run gunicorn -w 1 -b 0.0.0.0:$PORT --timeout 30
+web: pipenv run gunicorn -w 1 -b 0.0.0.0:$PORT --timeout 30
 #web: pipenv run python ./run.py
