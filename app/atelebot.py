@@ -133,9 +133,10 @@ def callback_query(call):
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+        if call.message:
+            bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                          reply_markup=None)
+            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
@@ -155,9 +156,10 @@ def callback_query(call):
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+        if call.message:
+            bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                          reply_markup=None)
+            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
@@ -184,9 +186,11 @@ def callback_query(call):
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+        if call.message:
+            bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                          reply_markup=None)
+            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
 
 
 def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, channel_id=None):
@@ -322,6 +326,7 @@ def media_files_packaging(media_files, caption=None):
         for i in range(1, len(media_message_group)):
             media_message_group[i][0].caption = '接上 - 第' + str(i + 1) + '组媒体文件'
     return media_message_group, file_group
+
 
 # bot.infinity_polling()
 def bot_start():

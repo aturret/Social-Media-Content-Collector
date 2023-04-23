@@ -389,8 +389,6 @@ class Weibo(object):
             self.content += '<br><hr>' + self.rt_info['content']
         else:
             self.rt_url = ''
-        # print(self.content)
-        # print(weibo)
         return self.standardize_info(weibo)
 
     def new_get_weibo(self):
