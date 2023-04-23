@@ -330,10 +330,4 @@ def media_files_packaging(media_files, caption=None):
 
 # bot.infinity_polling()
 def bot_start():
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            print(f"Error: {e}")
-            print(traceback.format_exc())
-            time.sleep(10)
+    bot.polling(none_stop=True)
