@@ -79,7 +79,7 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           key: ${{ secrets.VPS_KEY }}
           passphrase: ${{ secrets.VPS_PASSPHRASE }}
-          timeout: 300
+          timeout: 300s
           script: |
             cd ~/vpsdockerconf/socialmediacollector
             docker-compose down            
