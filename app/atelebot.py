@@ -106,13 +106,12 @@ def get_social_media(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
 def callback_query(call):
     try:
+        bot.answer_callback_query(call.id, "Sending message to channel")
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
-            bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         send_formatted_message(data=the_data, channel_id=call.data.split('+')[1])
-        # bot.answer_callback_query(call.id, "Message sent to channel")
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -129,13 +128,12 @@ def callback_query(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
 def callback_query(call):
     try:
+        bot.answer_callback_query(call.id, "Message sent to private chat")
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
-            bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
-        # bot.answer_callback_query(call.id, "Message sent to channel")
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -152,9 +150,9 @@ def callback_query(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
 def callback_query(call):
     try:
+        bot.answer_callback_query(call.id, "extracting...")
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
-            bot.answer_callback_query(call.id, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
@@ -165,7 +163,6 @@ def callback_query(call):
             print(short_text)
             the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
-        # bot.answer_callback_query(call.id, "Message sent to channel")
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -206,7 +203,6 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
                         if file.name.endswith('.gif'):
                             print('sending gif')
                             telegram_bot.send_video(chat_id=chat_id, video=file)
-                            # telegram_bot.send_animation(chat_id=chat_id, animation=file)
                         else:
                             telegram_bot.send_document(chat_id=chat_id, document=file)
             else:
@@ -314,12 +310,3 @@ def media_files_packaging(media_files, caption=None):
     return media_message_group, file_group
 
 
-def bot_polling():
-    while True:
-        try:
-            bot.polling(none_stop=False)
-        except Exception as e:
-            logging.error(f"An exception occurred in the bot thread: {e}")
-            time.sleep(10)  # Sleep for a while before retrying
-        else:
-            break
