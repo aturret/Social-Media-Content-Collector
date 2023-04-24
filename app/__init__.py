@@ -31,7 +31,6 @@ if sentry_on == 'True':
 
 def create_app():
     server = Flask(__name__)
-    site_url = 'http://' + settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
     default_channel = settings.env_var.get('CHANNEL_ID', '')
     print(settings.env_var.get('PORT', 'no port'))
 
@@ -118,7 +117,7 @@ def create_app():
 
     # if settings.env_var.get('BOT', 'True') == 'True':
     # telebot_thread = Process(target=atelebot.bot.polling(), daemon=True)
-    telebot_thread = threading.Thread(target=atelebot.bot.polling(), daemon=True)
-    telebot_thread.start()  # start the bot in a thread instead
+    # telebot_thread = threading.Thread(target=atelebot.bot.polling(), daemon=True)
+    # telebot_thread.start()  # start the bot in a thread instead
 
     return server

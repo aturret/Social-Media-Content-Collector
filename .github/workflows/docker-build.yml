@@ -8,6 +8,7 @@ on:
 env:
   APP_NAME: socialmediacollector
   DOCKERHUB_REPO: aturret/socialmediacollector
+  APP_VERSION: latest
 
 jobs:
 #  test:
@@ -50,7 +51,7 @@ jobs:
           context: .
           platforms: |
             linux/amd64
-            linux/arm64
+#            linux/arm64
 #            linux/386
 #            linux/arm/v5
 #            linux/arm/v7
@@ -81,7 +82,7 @@ jobs:
           script: |
             cd ~/vpsdockerconf/socialmediacollector
             docker-compose down            
-            docker rmi ${{ env.DOCKERHUB_REPO }}:current || true            
+            docker rmi ${{ env.DOCKERHUB_REPO }} || true            
             docker-compose up -d
 #            docker rm ${{ env.APP_NAME }} || true
 #            docker pull ${{ env.DOCKERHUB_REPO }}:latest
