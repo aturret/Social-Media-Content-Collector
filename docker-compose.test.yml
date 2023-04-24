@@ -13,9 +13,9 @@ services:
     ports:
       - 1045:1045
     command:
-      - python
-      - run.py
-#      - gunicorn
-#      - -w 1
-#      - -b 0.0.0.0:${PORT}
-#      - wsgi:app
+#      - python
+#      - run.py
+      - gunicorn
+      - -w 1
+      - -b 0.0.0.0:${PORT}
+      - wsgi:app
