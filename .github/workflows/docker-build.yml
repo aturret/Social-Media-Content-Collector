@@ -69,8 +69,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker
     steps:
-      -
-        name: Checkout
+      - name: Check commit message if it contians [test]
+        run : |
+          if [[ ${{ github.event.head_commit.message }} == *"[test]"* ]]; then
+            echo "heroku deploy test, exiting"
+            exit 0
+          fi
+      - name: Checkout
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
