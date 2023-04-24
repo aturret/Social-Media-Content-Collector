@@ -2,13 +2,20 @@ import logging
 import multiprocessing
 import threading
 import time
-import app.atelebot
+from . import settings, atelebot
+
+telebot_timeout = int(settings.env_var.get('TELEBOT_TIMEOUT', '60'))
+the_telebot = atelebot.bot
 
 
-def bot_polling():
+def bot_polling(bot=the_telebot, timeout=telebot_timeout):
+    return bot.polling(timeout=timeout, long_polling_timeout=timeout, non_stop=True)
+
+
+def bot_inf_polling(timeout=telebot_timeout):
     while True:
         try:
-            app.atelebot.bot.polling()
+            the_telebot.polling(timeout=timeout, long_polling_timeout=timeout, non_stop=True)
         except Exception as e:
             logging.error(f"An exception occurred in the bot process: {e}")
             time.sleep(10)  # Sleep for a while before retrying
@@ -17,13 +24,13 @@ def bot_polling():
 
 
 def start_bot_process():
-    bot_process = multiprocessing.Process(target=bot_polling)
+    bot_process = multiprocessing.Process(target=bot_inf_polling)
     bot_process.start()
     return bot_process
 
 
 def start_bot_thread():
-    bot_thread = threading.Thread(target=bot_polling)
+    bot_thread = threading.Thread(target=bot_inf_polling)
     bot_thread.start()
     return bot_thread
 
@@ -37,6 +44,7 @@ def monitor_bot_thread(bot_thread):
 
 
 def monitor_bot_process(bot_process):
+    print("Bot process started")
     while True:
         time.sleep(30)  # Check the bot process status every 30 seconds
         if not bot_process.is_alive():

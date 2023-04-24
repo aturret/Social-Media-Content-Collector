@@ -32,6 +32,7 @@ if sentry_on == 'True':
 def create_app():
     server = Flask(__name__)
     default_channel = settings.env_var.get('CHANNEL_ID', '')
+
     print(settings.env_var.get('PORT', 'no port'))
 
     @server.route('/newWeiboConvert', methods=['get', 'post'])
@@ -116,8 +117,10 @@ def create_app():
         division_by_zero = 1 / 0
 
     if settings.env_var.get('BOT', 'True') == 'True':
-    # telebot_thread = Process(target=atelebot.bot.polling(), daemon=True)
-        telebot_thread = threading.Thread(target=atelebot.bot.polling(), daemon=True)
-        telebot_thread.start()  # start the bot in a thread instead
+        telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
+        telebot_thread.start()
+  # start the bot in a thread instead
 
     return server
+
+

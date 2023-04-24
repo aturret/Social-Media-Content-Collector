@@ -7,5 +7,5 @@ __pycache__
 app/__pycache__
 Dockerfile
 docker-compose.yml
-.env
+abondoned/.env
 .gitignore
