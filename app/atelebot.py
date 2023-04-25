@@ -1,3 +1,5 @@
+import time
+
 import telebot
 import re
 from .utils.util import *
@@ -5,22 +7,30 @@ from .api_functions import *
 
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
-default_channel_id = settings.env_var.get('CHANNEL_ID', None)
+default_channel_name = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
 image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1280)
 telegram_text_limit = settings.env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
+allowed_users = settings.env_var.get('ALLOWED_USERS', '').split(',')
 # initialize telebot
-bot = telebot.TeleBot(telebot_key, num_threads=3)
+bot = telebot.TeleBot(telebot_key, num_threads=4)
+default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
 http_parttern = '(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
 # no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
 no_telegraph_regexp = "youtube\.com|bilibili\.com"
 # no_telegraph_list = ['',]
 formatted_data = {}
+latest_channel_message = []
 
 
-@bot.message_handler(regexp=http_parttern)
+@bot.message_handler(regexp=http_parttern, chat_types=['private'])
 def get_social_media(message):
+    user_id = message.from_user.id
+    print('user_id: ' + str(user_id) + ' is trying to convert a social media URL')
+    if str(user_id) not in allowed_users:
+        bot.reply_to(message, '你没有使用该bot的权限')
+        return
     try:
         markup = telebot.types.InlineKeyboardMarkup()
         buttons = []
@@ -73,9 +83,9 @@ def get_social_media(message):
             bot.reply_to(message, 'Failure')
             return
         bot.delete_message(message.chat.id, replying_message.message_id) if replying_message else None
-        if default_channel_id:
+        if default_channel_name:
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
-                                                                callback_data='chan+' + str(default_channel_id) +
+                                                                callback_data='chan+' + str(default_channel_name) +
                                                                               '+' + data_id)
             buttons.append(forward_button)
         show_button = telebot.types.InlineKeyboardButton(text='发送到私聊',
@@ -94,7 +104,7 @@ def get_social_media(message):
             if buttons[0].callback_data == 'private':
                 send_formatted_message(data=response_data)
             elif buttons[0].callback_data == 'channel':
-                send_formatted_message(data=response_data, channel_id=default_channel_id)
+                send_formatted_message(data=response_data)
             elif buttons[0].callback_data == 'extract':
                 send_formatted_message(data=response_data)
     except Exception as e:
@@ -111,7 +121,7 @@ def callback_query(call):
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
-        send_formatted_message(data=the_data, channel_id=call.data.split('+')[1])
+        send_formatted_message(data=the_data, message=call.message, chat_id=call.data.split('+')[1])
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -176,11 +186,28 @@ def callback_query(call):
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
-def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, channel_id=None):
+# @bot.message_handler(func=lambda message: message.sender_chat.id == default_channel_id)
+# def handle_message(message):
+#     try:
+#         latest_channel_message.append(message)
+#     except Exception as e:
+#         print(traceback.format_exc())
+#         bot.reply_to(message, 'Failure' + traceback.format_exc())
+#         return
+
+
+
+
+def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
     if (not chat_id) and message:
         chat_id = message.chat.id
-    if channel_id:
-        chat_id = channel_id
+    else:
+        chat_id = bot.get_chat(chat_id=chat_id).id
+    discussion_chat_id = chat_id
+    the_chat = telegram_bot.get_chat(chat_id=chat_id)
+    if the_chat.type == 'channel':
+        if the_chat.linked_chat_id:
+            discussion_chat_id = the_chat.linked_chat_id
     if data['type'] == 'short' or re.search(no_telegraph_regexp, data['aurl']):
         long_text = False
     else:
@@ -191,20 +218,42 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
             if data['media_files'] and len(data['media_files']) > 0:
                 media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
                                                                         caption=caption_text)
-                if len(media_message_group) > 0:
+                if len(media_message_group) > 0:  # if there are some media groups to send, send it
                     for media_group in media_message_group:
-                        telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
-                else:
-                    telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
-                if len(file_group) > 0:
-                    telegram_bot.send_message(chat_id=chat_id, parse_mode='html',
+                        # sent_message = None  # set a variable to mark the first media group message
+                        # if sent_message:
+                        #     telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                        # else:  # note the first media group message to reply to it then
+                        sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                else:   # if there are no media groups to send, send the caption text and also note the message
+                    sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+                sent_message = sent_message[-1] if type(sent_message) == list else sent_message
+                if discussion_chat_id != chat_id:  # if the chat is a channel, get the latest message from the channel
+                    # for _ in range(10):
+                    #     pinned_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.forward_from_message_id
+                    #     print(pinned_message_id, sent_message.message_id)
+                    #     if pinned_message_id == sent_message.message_id:
+                    #         break
+                    #     time.sleep(3)
+                    # print('final', pinned_message_id, sent_message.message_id)
+                    # if pinned_message_id == sent_message.message_id:
+                    #     sent_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
+                    # else:
+                    #     discussion_chat_id = chat_id
+                    time.sleep(7)
+                    sent_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
+                if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
+                    telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
+                                              reply_to_message_id=sent_message.message_id,
                                               text='有部分图片超过尺寸或大小限制，以文件形式发送：')
                     for file in file_group:
                         if file.name.endswith('.gif'):
                             print('sending gif')
-                            telegram_bot.send_video(chat_id=chat_id, video=file)
+                            telegram_bot.send_video(chat_id=discussion_chat_id,
+                                                    reply_to_message_id=sent_message.message_id, video=file)
                         else:
-                            telegram_bot.send_document(chat_id=chat_id, document=file)
+                            telegram_bot.send_document(chat_id=discussion_chat_id,
+                                                       reply_to_message_id=sent_message.message_id, document=file)
             else:
                 telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
         else:
@@ -214,7 +263,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot, c
     except Exception:
         print(traceback.format_exc())
         if message:
-            bot.reply_to(message, 'Failure' + traceback.format_exc())
+            bot.reply_to(message, 'Failure\n' + traceback.format_exc())
 
 
 def message_formatting(data):
