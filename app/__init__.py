@@ -32,6 +32,7 @@ if sentry_on == 'True':
 def create_app():
     server = Flask(__name__)
     default_channel = settings.env_var.get('CHANNEL_ID', '')
+    telebot_timeout = int(settings.env_var.get('TELEBOT_TIMEOUT', '60'))
 
     print(settings.env_var.get('PORT', 'no port'))
 
@@ -118,7 +119,7 @@ def create_app():
 
     if settings.env_var.get('BOT', 'True') == 'True':
         # telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
-        telebot_thread = threading.Thread(target=atelebot.bot.polling, daemon=True)
+        telebot_thread = threading.Thread(target=atelebot.bot.polling(timeout=telebot_timeout), daemon=True)
         telebot_thread.start()
   # start the bot in a thread instead
 
