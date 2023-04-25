@@ -86,7 +86,7 @@ class Zhihu(object):
         elif url.find('zhihu.com/pin/') != -1:
             print('检测到知乎想法，摘取中')
             self.get_zhihu_status()
-        if len(html.fromstring(self.content).xpath('string()')) < 200:
+        if get_html_text_length(self.content) < 200:
             self.type = 'short'
         result = self.to_dict()
         return result
@@ -129,7 +129,6 @@ class Zhihu(object):
         if self.originurl == 'https://www.zhihu.com/people/':
             self.originurl = ''
         self.content = '<p>' + upvote + '</p><br>' + self.content
-
 
     def get_zhihu_status(self):
         self.zhihu_type = 'status'
@@ -195,14 +194,7 @@ class Zhihu(object):
             self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b> - ' + self.origin + '的' + \
                         zhihu_type_translate[self.zhihu_type] + '</a>：' + str(soup)
         soup = BeautifulSoup(self.text, 'html.parser')
-        for span in soup.find_all('span'):
-            span.unwrap()
-        for div in soup.find_all('div'):
-            div.unwrap()
-        for br in soup.find_all('br'):
-            br.decompose()
-        for h2 in soup.find_all('h2'):
-            h2.unwrap()
+        soup = format_telegram_short_text(soup)
         for p in soup.find_all('p'):
             if p.text != '':
                 p.append(BeautifulSoup('<br>', 'html.parser'))
