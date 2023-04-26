@@ -26,8 +26,18 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Check commit message
+        id: check_message
+        run: |
+          MESSAGE=$(git log --format=%B -n 1 ${{ github.sha }})
+          if [[ "$MESSAGE" == *"[github-action]"* ]]; then
+            echo "::set-output name=skip::true"
+          else
+            echo "::set-output name=skip::false"
+          fi
       -
         name: Checkout
+        if: steps.check_message.outputs.skip == 'false'
         uses: actions/checkout@v2
       -
         name: Set up QEMU
@@ -46,6 +56,7 @@ jobs:
         run: echo APP_VERSION=`git describe --tags --always` >> $GITHUB_ENV
       -
         name: Build and push
+        if: steps.check_message.outputs.skip == 'false'
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -69,13 +80,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker
     steps:
-      - name: Check commit message if it contians [test]
+      - name: Check commit message
+        id: check_message
         run : |
-          if [[ ${{ github.event.head_commit.message }} == *"[test]"* ]]; then
-              echo "Commit message contains [test], exiting..."
-              exit 0
+          MESSAGE=$(git log --format=%B -n 1 ${{ github.sha }})
+          if [[ "$MESSAGE" == *"[test]"* ]]; then
+            echo "::set-output name=skip::true"
+          else
+            echo "::set-output name=skip::false"
           fi
       - name: Checkout
+        if: steps.check_message.outputs.skip == 'false'
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
