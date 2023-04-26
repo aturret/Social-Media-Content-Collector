@@ -9,7 +9,6 @@ from . import atelebot, combination, settings, bot_start
 from .api_functions import *
 from .utils import telegraph
 from .utils.util import *
-from .converter import zhihu, twitter, douban, weibo
 
 sentry_on = settings.env_var.get('SENTRY_ON', 'False')
 sentry_dsn = settings.env_var.get('SENTRY_DSN', '')

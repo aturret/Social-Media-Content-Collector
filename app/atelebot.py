@@ -33,9 +33,8 @@ def get_social_media(message):
         bot.reply_to(message, '你没有使用该bot的权限')
         return
     try:
-        markup = telebot.types.InlineKeyboardMarkup()
-        buttons = []
-
+        func_buttons = []
+        basic_buttons = []
         url = url_pattern.search(message.text).group()
         print('the url is: ' + url)
         target_url = ''
@@ -77,38 +76,38 @@ def get_social_media(message):
                 return False
         response_data = target_function(request_data)
         if response_data:
-            data_id = str(uuid.uuid4())
+            data_id = str(uuid.uuid4())[:16]
             formatted_data[data_id] = response_data
         else:
             print('Failure')
             bot.reply_to(message, 'Failure')
             return
-        bot.delete_message(message.chat.id, replying_message.message_id) if replying_message else None
-
+        if replying_message:
+            bot.delete_message(message.chat.id, replying_message.message_id)
+        # add function buttons
         if default_channel_name and str(message.from_user.id) in allowed_admin_users:
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
-                                                                callback_data='chan+' + str(default_channel_name) +
-                                                                              '+' + data_id)
-            buttons.append(forward_button)
-        show_button = telebot.types.InlineKeyboardButton(text='发送到私聊',
-                                                         callback_data='priv+' + str(message.chat.id) +
-                                                                       '+' + data_id)
-        buttons.append(show_button)
+                                                                callback_data='chan+' + str(message.id) +
+                                                                              '+' + data_id + '+' + str(
+                                                                    default_channel_name))
+            print(forward_button.callback_data)
+            func_buttons.append(forward_button)
         if 'media_files' in response_data:
             extract_button = telebot.types.InlineKeyboardButton(text='提取短文格式',
-                                                                callback_data='extr+' + str(message.chat.id) +
+                                                                callback_data='extr+' + str(message.id) +
                                                                               '+' + data_id)
-            buttons.append(extract_button)
-        if len(buttons) > 1:
-            markup.add(*buttons)
-            bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
+            func_buttons.append(extract_button)
+        show_button = telebot.types.InlineKeyboardButton(text='发送到私聊',
+                                                         callback_data='priv+' + str(message.id) +
+                                                                       '+' + data_id)
+        cancel_button = telebot.types.InlineKeyboardButton(text='取消',
+                                                           callback_data='back+' + str(message.id))
+        basic_buttons = [cancel_button, show_button]
+        if len(func_buttons) > 0:
+            markup = telebot.types.InlineKeyboardMarkup([func_buttons, basic_buttons])
         else:
-            if buttons[0].callback_data == 'private':
-                send_formatted_message(data=response_data)
-            elif buttons[0].callback_data == 'channel':
-                send_formatted_message(data=response_data)
-            elif buttons[0].callback_data == 'extract':
-                send_formatted_message(data=response_data)
+            markup = telebot.types.InlineKeyboardMarkup([basic_buttons])
+        bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
     except Exception as e:
         print(traceback.format_exc())
         bot.reply_to(message, 'Failure' + traceback.format_exc())
@@ -118,12 +117,17 @@ def get_social_media(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
 def callback_query(call):
     try:
+        message_id = call.data.split('+')[1]
         bot.answer_callback_query(call.id, "Sending message to channel")
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='正在把消息发送至绑定的频道……')
         if len(formatted_data) == 0:
-            bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
-        send_formatted_message(data=the_data, message=call.message, chat_id=call.data.split('+')[1])
+        send_formatted_message(data=the_data, message=call.message, chat_id=call.data.split('+')[3])
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -132,20 +136,24 @@ def callback_query(call):
         bot.answer_callback_query(call.id, "Failure")
     finally:
         if call.message:
-            bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                          reply_markup=None)
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
 def callback_query(call):
     try:
+        message_id = call.data.split('+')[1]
         bot.answer_callback_query(call.id, "Message sent to private chat")
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='正在把摘取的内容发送至本对话……')
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -154,15 +162,18 @@ def callback_query(call):
         bot.answer_callback_query(call.id, "Failure")
     finally:
         if call.message:
-            bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                          reply_markup=None)
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
 def callback_query(call):
     try:
+        message_id = call.data.split('+')[1]
         bot.answer_callback_query(call.id, "extracting...")
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='正在提取内容至 Telegram 消息……')
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
@@ -175,6 +186,7 @@ def callback_query(call):
             print(short_text)
             the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
@@ -183,9 +195,19 @@ def callback_query(call):
         bot.answer_callback_query(call.id, "Failure")
     finally:
         if call.message:
-            bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                          reply_markup=None)
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('back'))
+def callback_query(call):
+    try:
+        bot.answer_callback_query(call.id, "cancel...")
+    except:
+        pass
+    finally:
+        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                      reply_markup=None)
+        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 # @bot.message_handler(func=lambda message: message.sender_chat.id == default_channel_id)
@@ -196,9 +218,6 @@ def callback_query(call):
 #         print(traceback.format_exc())
 #         bot.reply_to(message, 'Failure' + traceback.format_exc())
 #         return
-
-
-
 
 def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
     if (not chat_id) and message:
@@ -222,15 +241,14 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
                                                                         caption=caption_text)
                 if len(media_message_group) > 0:  # if there are some media groups to send, send it
                     for media_group in media_message_group:
-                        sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
-                else:   # if there are no media groups to send, send the caption text and also note the message
-                    sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
-                sent_message = sent_message[-1] if type(sent_message) == list else sent_message
-                sent_message_id = sent_message.id
+                        telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                else:  # if there are no media groups to send, send the caption text and also note the message
+                    telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+                sent_message_id = None
                 if discussion_chat_id != chat_id:  # if the chat is a channel, get the latest message from the channel
                     pinned_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id
                     time.sleep(5)
-                    sent_message_id = pinned_message_id+1
+                    sent_message_id = pinned_message_id + 1
                 if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
                     telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
                                               reply_to_message_id=sent_message_id,
@@ -346,5 +364,3 @@ def media_files_packaging(media_files, caption=None):
         for i in range(1, len(media_message_group)):
             media_message_group[i][0].caption = '接上 - 第' + str(i + 1) + '组媒体文件'
     return media_message_group, file_group
-
-
