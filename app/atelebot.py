@@ -12,6 +12,7 @@ youtube_api = settings.env_var.get('YOUTUBE_API', None)
 image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1280)
 telegram_text_limit = settings.env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
 allowed_users = settings.env_var.get('ALLOWED_USERS', '').split(',')
+allowed_admin_users = settings.env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 # initialize telebot
 bot = telebot.TeleBot(telebot_key, num_threads=4)
 default_channel_id = bot.get_chat(default_channel_name).id
@@ -83,7 +84,8 @@ def get_social_media(message):
             bot.reply_to(message, 'Failure')
             return
         bot.delete_message(message.chat.id, replying_message.message_id) if replying_message else None
-        if default_channel_name:
+
+        if default_channel_name and str(message.from_user.id) in allowed_admin_users:
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
                                                                 callback_data='chan+' + str(default_channel_name) +
                                                                               '+' + data_id)
@@ -93,7 +95,7 @@ def get_social_media(message):
                                                                        '+' + data_id)
         buttons.append(show_button)
         if 'media_files' in response_data:
-            extract_button = telebot.types.InlineKeyboardButton(text='强制提取',
+            extract_button = telebot.types.InlineKeyboardButton(text='提取短文格式',
                                                                 callback_data='extr+' + str(message.chat.id) +
                                                                               '+' + data_id)
             buttons.append(extract_button)

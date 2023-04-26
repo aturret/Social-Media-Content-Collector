@@ -71,9 +71,9 @@ jobs:
     steps:
       - name: Check commit message if it contians [test]
         run : |
-          if [[ ${{ github.event.head_commit.message }} != *"[test]"* ]]; then
-            echo "heroku deploy test, exiting"
-            exit 0
+          if [[ ${{ github.event.head_commit.message }} == *"[test]"* ]]; then
+              echo "Commit message contains [test], exiting..."
+              exit 0
           fi
       - name: Checkout
         uses: appleboy/ssh-action@master
