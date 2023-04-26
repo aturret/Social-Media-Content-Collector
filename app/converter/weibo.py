@@ -163,7 +163,8 @@ class Weibo(object):
         pic_list, gif_list = [], []
         if weibo_info.get('pics'):
             pic_info = weibo_info['pics']
-            pic_list = [pic['large']['url'] for pic in pic_info]
+            for pic in pic_info:
+                pic_list.append(pic['large']['url'])
         elif 'pic_infos' in weibo_info and weibo_info.get('pic_num') > 0:
             pic_info = weibo_info['pic_infos']
             for pic in pic_info:
@@ -397,22 +398,29 @@ class Weibo(object):
             self.rt_url = ''
         return self.standardize_info(weibo)
 
-    def new_get_weibo(self):
+    def new_get_weibo(self, old_method=False):
         url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
-        ajax_json = get_response_json(url, headers=self.headers)
-        print('ajax_json file url: ' + url)
-        print('ajax_json file: ' + str(ajax_json))
-        if ajax_json['ok'] == 0:
-            print('new api failed, get weibo info from old api')
+        if not old_method:
+            ajax_json = get_response_json(url, headers=self.headers)
+            print('ajax_json file url: ' + url)
+            print('ajax_json file: ' + str(ajax_json))
+            if ajax_json['ok'] == 0:
+                print('new api failed, get weibo info from old api')
+                json_file = self.get_weibo_info_old()
+                if json_file:
+                    print('get weibo info from old api successfully')
+                    weibo = self.new_parse_weibo(json_file)
+                else:
+                    print('get weibo info from old api failed, totally failed')
+                    return None
+            else:
+                weibo = self.new_parse_weibo(ajax_json)
+        else:
             json_file = self.get_weibo_info_old()
             if json_file:
-                print('get weibo info from old api successfully')
-                weibo = self.parse_weibo(json_file)
+                weibo = self.new_parse_weibo(json_file)
             else:
-                print('get weibo info from old api failed, totally failed')
                 return None
-        else:
-            weibo = self.new_parse_weibo(ajax_json)
         return weibo
 
     def new_parse_weibo(self, weibo_info):
@@ -504,9 +512,6 @@ class Weibo(object):
             self.media_files.extend(self.rt_info['media_files']) if self.rt_info['media_files'] else ''
         else:
             self.rt_url = ''
-        # combine text with original weibo
-        self.text_raw = weibo_info['text_raw'] + self.rt_info['text_raw'] if 'retweeted_status' in weibo_info \
-            else weibo_info['text_raw']
         print('length of raw text:' + str(len(self.text_raw)))
         # check the type of combined weibo
         self.type = 'long' if get_html_text_length(self.text) > short_limit else 'short'
