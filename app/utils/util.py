@@ -44,10 +44,14 @@ wsanitizer = Sanitizer({
 
 
 def get_response_json(url, headers=None, test=False):
-    response = requests.get(url, headers=headers)
-    if test:
-        print(response.text)
-    json_result = response.json()
+    try:
+        response = requests.get(url, headers=headers)
+        if test:
+            print(response.text)
+        json_result = response.json()
+    except Exception as e:
+        print(e, traceback.format_exc())
+        json_result = None
     return json_result
 
 
@@ -212,6 +216,17 @@ def get_html_text_length(html):
     text = soup.get_text()
     return len(text)
 
+
+def format_telegram_short_text(soup):
+    decompose_list = ['br']
+    unwrap_list = ['span', 'div', 'blockquote', 'h2']
+    for decompose in decompose_list:
+        for item in soup.find_all(decompose):
+            item.decompose()
+    for unwrap in unwrap_list:
+        for item in soup.find_all(unwrap):
+            item.unwrap()
+    return soup
 
 def unix_timestamp_to_utc(timestamp):
     utc_time = datetime.datetime.utcfromtimestamp(timestamp)
