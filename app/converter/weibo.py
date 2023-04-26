@@ -136,6 +136,7 @@ class Weibo(object):
         html = '{' + html
         # print(html)
         js = json.loads(html, strict=False)
+        print(js)
         weibo_info = js.get('status')
         return weibo_info
 
@@ -162,7 +163,7 @@ class Weibo(object):
         pic_list, gif_list = [], []
         if weibo_info.get('pics'):
             pic_info = weibo_info['pics']
-            pic_list = [pic_info[pic]['large']['url'] for pic in pic_info]
+            pic_list = [pic['large']['url'] for pic in pic_info]
         elif 'pic_infos' in weibo_info and weibo_info.get('pic_num') > 0:
             pic_info = weibo_info['pic_infos']
             for pic in pic_info:
