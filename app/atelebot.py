@@ -220,40 +220,27 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
                                                                         caption=caption_text)
                 if len(media_message_group) > 0:  # if there are some media groups to send, send it
                     for media_group in media_message_group:
-                        # sent_message = None  # set a variable to mark the first media group message
-                        # if sent_message:
-                        #     telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
-                        # else:  # note the first media group message to reply to it then
                         sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
                 else:   # if there are no media groups to send, send the caption text and also note the message
                     sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
                 sent_message = sent_message[-1] if type(sent_message) == list else sent_message
+                sent_message_id = sent_message.id
                 if discussion_chat_id != chat_id:  # if the chat is a channel, get the latest message from the channel
-                    # for _ in range(10):
-                    #     pinned_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.forward_from_message_id
-                    #     print(pinned_message_id, sent_message.message_id)
-                    #     if pinned_message_id == sent_message.message_id:
-                    #         break
-                    #     time.sleep(3)
-                    # print('final', pinned_message_id, sent_message.message_id)
-                    # if pinned_message_id == sent_message.message_id:
-                    #     sent_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
-                    # else:
-                    #     discussion_chat_id = chat_id
-                    time.sleep(7)
-                    sent_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
+                    pinned_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id
+                    time.sleep(5)
+                    sent_message_id = pinned_message_id+1
                 if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
                     telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
-                                              reply_to_message_id=sent_message.message_id,
+                                              reply_to_message_id=sent_message_id,
                                               text='有部分图片超过尺寸或大小限制，以文件形式发送：')
                     for file in file_group:
                         if file.name.endswith('.gif'):
                             print('sending gif')
                             telegram_bot.send_video(chat_id=discussion_chat_id,
-                                                    reply_to_message_id=sent_message.message_id, video=file)
+                                                    reply_to_message_id=sent_message_id, video=file)
                         else:
                             telegram_bot.send_document(chat_id=discussion_chat_id,
-                                                       reply_to_message_id=sent_message.message_id, document=file)
+                                                       reply_to_message_id=sent_message_id, document=file)
             else:
                 telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
         else:
