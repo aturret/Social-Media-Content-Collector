@@ -1,14 +1,7 @@
 # -*- coding: UTF-8 -*-
-# import requests
-import traceback
-# import time
-# import cchardet as chardet
-from lxml import etree, html
 from collections import OrderedDict
 import re
-# from threading import Timer
-from lxml.html import tostring
-from app.utils import util
+from app.utils.util import *
 from app import settings
 # import utils
 
@@ -61,8 +54,8 @@ class Douban(object):
         }
 
     def get_fav_list(self):
-        selector = util.get_selector(url=self.fav_url, headers=self.headers)
-        print(util.local_time())
+        selector = get_selector(url=self.fav_url, headers=self.headers)
+        print(local_time())
         print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.url)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         self.url = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
@@ -101,7 +94,7 @@ class Douban(object):
                 self.get_douban_group_article(url)
         except Exception:
             print(traceback.format_exc())
-        if util.get_html_text_length(self.content) < 200:
+        if get_html_text_length(self.content) < 200:
             self.type = 'short'
         douban['title'] = self.title
         douban['content'] = self.content
@@ -116,9 +109,9 @@ class Douban(object):
 
     def get_douban_note(self, url):
         if self.scraper == 'Selenium':
-            selector = util.get_page_by_selenium(url, headers=self.headers)
+            selector = get_page_by_selenium(url, headers=self.headers)
         else:
-            selector = util.get_selector(url, headers=self.headers)
+            selector = get_selector(url, headers=self.headers)
             self.title = selector.xpath('string(//div[@id="content"]//h1)')
             self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                                encoding='utf-8')
@@ -129,7 +122,7 @@ class Douban(object):
 
 
     def get_douban_book_review(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -139,7 +132,7 @@ class Douban(object):
         self.work_url = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_movie_review(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(etree.tostring(selector.xpath('//div[contains(@class,\'review-content\')]')[0], encoding="utf-8"),
                            encoding='utf-8')
@@ -149,7 +142,7 @@ class Douban(object):
         self.work_url = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_status(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = get_selector(url, headers=self.headers)
         self.content = str(etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
                            encoding='utf-8').replace('<blockquote>','').replace('</blockquote>','').replace('>+<','><').replace('&#13;','<br>')
         self.origin = selector.xpath('string(//div[@class="content"]/a)')
@@ -157,8 +150,9 @@ class Douban(object):
         self.title = self.origin + '的广播'
 
     def get_douban_group_article(self, url):
-        selector = util.get_selector(url, headers=self.headers)
+        selector = get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1)')
+        self.title = self.title.replace('\n', '').strip()
         self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
         self.origin = selector.xpath('string(//span[@class="from"]//a)')
