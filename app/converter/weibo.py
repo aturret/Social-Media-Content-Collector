@@ -96,9 +96,6 @@ class Weibo(object):
         }
         return weibo_dict
 
-
-
-
     def get_weibo(self, raw=False):
         html = requests.get(self.url, headers=self.headers, verify=False).text
         html = html[html.find('"status":'):]
@@ -172,6 +169,10 @@ class Weibo(object):
                 if pic_info[pic]['type'] == 'pic':
                     pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
                         pic_list.append(pic_info[pic]['large']['url'])
+                if pic_info[pic]['type'] == 'live_photo' or pic_info[pic]['type'] == 'livephoto':
+                    pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
+                        pic_list.append(pic_info[pic]['large']['url'])
+                    self.videos_url.append(pic_info[pic]['video'])
                 if pic_info[pic]['type'] == 'gif':
                     # pic_list.append(pic_info[pic]['original']['url']) if pic_info[pic]['original'] else \
                     #     pic_list.append(pic_info[pic]['large']['url'])
@@ -183,6 +184,10 @@ class Weibo(object):
                 if item['type'] == 'pic':
                     pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
                         pic_list.append(item['data']['large']['url'])
+                if item['type'] == 'live_photo' or item['type'] == 'livephoto':
+                    pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
+                        pic_list.append(item['data']['large']['url'])
+                    self.videos_url.append(item['data']['video']['url'])
                 if item['type'] == 'gif':
                     # pic_list.append(item['data']['original']['url']) if item['data']['original'] else \
                     #     pic_list.append(item['data']['large']['url'])
@@ -395,20 +400,30 @@ class Weibo(object):
         url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
         ajax_json = get_response_json(url, headers=self.headers)
         print('ajax_json file url: ' + url)
+        print('ajax_json file: ' + str(ajax_json))
         if ajax_json['ok'] == 0:
-            return None
-        weibo = self.new_parse_weibo(ajax_json)
+            print('new api failed, get weibo info from old api')
+            json_file = self.get_weibo_info_old()
+            if json_file:
+                print('get weibo info from old api successfully')
+                weibo = self.parse_weibo(json_file)
+            else:
+                print('get weibo info from old api failed, totally failed')
+                return None
+        else:
+            weibo = self.new_parse_weibo(ajax_json)
         return weibo
 
     def new_parse_weibo(self, weibo_info):
-        if weibo_info['user']:
+        if weibo_info['user']:  # get the user info successfully
             self.user_id = weibo_info['user']['id']
             self.screen_name = weibo_info['user']['screen_name']
-        else:
+        else:  # if not, set user id and screen name to unknown
             self.user_id = 'Unknown user id'
             self.screen_name = 'Unknown name'
-        self.id = int(weibo_info['id'])
-        if not weibo_info['isLongText'] or (weibo_info['pic_num'] > 9 and weibo_info['isLongText']):  # non-long text weibo
+        self.id = int(weibo_info['id'])  # weibo id
+        if not weibo_info['isLongText'] or (weibo_info['pic_num'] > 9 and weibo_info['isLongText']):
+            # for non-long text weibo, or for weibo that has more than 9 pics, we want to get the short text of it
             cleaned_text, fw_pics = self.weibo_html_text_clean(weibo_info['text'])
             print('cleaned weibo text:\n' + cleaned_text)
             self.text = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
@@ -464,7 +479,7 @@ class Weibo(object):
                            self.count + ' ' + self.region_name + \
                            '</p><br><a href="' + self.originurl + '">@' + self.origin + \
                            '</a>：<p>' + self.text + '</p><br>' + pics_format + video_format
-        # format the media files
+        # format the media files for download
         self.media_files = []
         print(self.pics_url)
         if self.pics_url:
