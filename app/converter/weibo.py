@@ -472,7 +472,7 @@ class Weibo(object):
                 pics_format += '<img src="' + i + '"><br>'
         if self.videos_url:
             for i in self.videos_url:
-                video_format += '<video><source src="' + i + '" type="video/mp4">youcannotwatchthevideo</video>'
+                video_format += '<video controls="controls" src="' + i + '">' + '<br>'
         if self.gifs_url:
             for i in self.gifs_url:
                 pics_format += '<img src="' + i + '"><br>'
