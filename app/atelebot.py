@@ -86,22 +86,18 @@ def get_social_media(message):
             bot.delete_message(message.chat.id, replying_message.message_id)
         # add function buttons
         if default_channel_name and str(message.from_user.id) in allowed_admin_users:
-            forward_button = telebot.types.InlineKeyboardButton(text='发送到频道',
-                                                                callback_data='chan+' + str(message.id) +
-                                                                              '+' + data_id + '+' + str(
-                                                                    default_channel_name))
+            forward_button_data = 'chan+' + str(message.id) + '+' + data_id + '+' + str(default_channel_name)
+            forward_button = telebot.types.InlineKeyboardButton(text='发送到频道', callback_data=forward_button_data)
             print(forward_button.callback_data)
             func_buttons.append(forward_button)
         if 'media_files' in response_data:
-            extract_button = telebot.types.InlineKeyboardButton(text='提取短文格式',
-                                                                callback_data='extr+' + str(message.id) +
-                                                                              '+' + data_id)
+            extract_button_data = 'extr+' + str(message.id) + '+' + data_id
+            extract_button = telebot.types.InlineKeyboardButton(text='提取短文格式', callback_data=extract_button_data)
             func_buttons.append(extract_button)
-        show_button = telebot.types.InlineKeyboardButton(text='发送到私聊',
-                                                         callback_data='priv+' + str(message.id) +
-                                                                       '+' + data_id)
-        cancel_button = telebot.types.InlineKeyboardButton(text='取消',
-                                                           callback_data='back+' + str(message.id))
+        show_button_data = 'priv+' + str(message.id) + '+' + data_id
+        show_button = telebot.types.InlineKeyboardButton(text='发送到私聊', callback_data=show_button_data)
+        cancel_button_data = 'back+' + str(message.id)
+        cancel_button = telebot.types.InlineKeyboardButton(text='取消', callback_data=cancel_button_data)
         basic_buttons = [cancel_button, show_button]
         if len(func_buttons) > 0:
             markup = telebot.types.InlineKeyboardMarkup([func_buttons, basic_buttons])
@@ -181,9 +177,7 @@ def callback_query(call):
         the_data['type'] = 'short'
         if get_html_text_length(the_data['text']) > telegram_text_limit:
             short_text = the_data['text'][:(telegram_text_limit - len(the_data['turl']))]
-            print(short_text)
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
-            print(short_text)
             the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
         send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
         bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
@@ -241,26 +235,31 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
                                                                         caption=caption_text)
                 if len(media_message_group) > 0:  # if there are some media groups to send, send it
                     for media_group in media_message_group:
-                        telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                        sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                    time.sleep(3)
                 else:  # if there are no media groups to send, send the caption text and also note the message
-                    telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
-                sent_message_id = None
-                if discussion_chat_id != chat_id:  # if the chat is a channel, get the latest message from the channel
-                    pinned_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id
-                    time.sleep(5)
-                    sent_message_id = pinned_message_id + 1
+                    sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+                reply_to_message_id = None
+                # if the chat is a channel, get the latest pinned message from the channel
+                if discussion_chat_id != chat_id and len(media_message_group) > 0:
+                    pinned_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
+                    if pinned_message.forward_from_message_id == sent_message[-1].message_id:
+                        reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id \
+                                            - len(sent_message)+1
+                    else:
+                        reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id+1
                 if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
                     telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
-                                              reply_to_message_id=sent_message_id,
+                                              reply_to_message_id=reply_to_message_id,
                                               text='有部分图片超过尺寸或大小限制，以文件形式发送：')
                     for file in file_group:
                         if file.name.endswith('.gif'):
                             print('sending gif')
                             telegram_bot.send_video(chat_id=discussion_chat_id,
-                                                    reply_to_message_id=sent_message_id, video=file)
+                                                    reply_to_message_id=reply_to_message_id, video=file)
                         else:
                             telegram_bot.send_document(chat_id=discussion_chat_id,
-                                                       reply_to_message_id=sent_message_id, document=file)
+                                                       reply_to_message_id=reply_to_message_id, document=file)
             else:
                 telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
         else:
@@ -276,26 +275,17 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
 def message_formatting(data):
     if data['type'] == 'short':
         if re.search(no_telegraph_regexp, data['aurl']):
-            text = '<a href=\"' + data['aurl'] + '\">' \
-                                                 '<b>' + data['title'] + '</b></a>\n' \
-                                                                         'via #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
-                   + data['origin'] + '</a>\n' + data['message']
+            text = '<a href=\"' + data['aurl'] + '\"><b>' + data['title'] + '</b></a>\n'  'via #' + data['category'] + \
+                   ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
         else:
             text = data['text'] + '\n#' + data['category']
     else:
         if re.search(no_telegraph_regexp, data['aurl']):
-            text = '<a href=\"' + data['aurl'] + '\">' \
-                                                 '<b>' + data['title'] + '</b></a>\n' \
-                                                                         'via #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
-                   + data['origin'] + '</a>\n' + data['message']
+            text = '<a href=\"' + data['aurl'] + '\">' '<b>' + data['title'] + '</b></a>\nvia #' + data['category'] + \
+                   ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
         else:
-            text = '<a href=\"' + data['turl'] + '\">' \
-                                                 '<b>' + data['title'] + '</b></a>\n' \
-                                                                         'via #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' \
-                   + data['origin'] + '</a>\n' + data['message'] + \
+            text = '<a href=\"' + data['turl'] + '\"><b>' + data['title'] + '</b></a>\nvia #' + data['category'] + \
+                   ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message'] + \
                    '<a href=\"' + data['aurl'] + '\">阅读原文</a>'
     return text
 
@@ -325,7 +315,7 @@ def media_files_packaging(media_files, caption=None):
             image = Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
+            media_group.append(telebot.types.InputMediaPhoto(io_object, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
             if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
