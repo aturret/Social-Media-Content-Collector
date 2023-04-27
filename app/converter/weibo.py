@@ -542,7 +542,7 @@ class Weibo(object):
             if self.type == 'long':
                 # telegra.ph doesn't support span tag
                 for i in soup.find_all('span'):
-                    i.decompose()
+                    i.unwrap()
             res = str(soup).replace('href="//', 'href="http://').replace('href="/n/', 'href="http://weibo.com/n/')
             return res, fw_pics
 
