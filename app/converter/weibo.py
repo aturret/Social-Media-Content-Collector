@@ -484,10 +484,13 @@ class Weibo(object):
         self.count = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
             weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
         self.region_name = weibo_info['region_name'] if 'region_name' in weibo_info else ''
+        content = self.text
+        parts = re.split(r'\<br\>+', content)
+        content = ''.join([f'<p>{part}</p>' for part in parts])
         self.content = '<br><p>' + self.date + '</p><br><p>' + \
                            self.count + ' ' + self.region_name + \
                            '</p><br><a href="' + self.originurl + '">@' + self.origin + \
-                           '</a>：<p>' + self.text + '</p><br>' + pics_format + video_format
+                           '</a>：<p>' + content + '</p><br>' + pics_format + video_format
         # format the media files for download
         self.media_files = []
         print(self.pics_url)
