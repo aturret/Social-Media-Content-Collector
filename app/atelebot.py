@@ -315,7 +315,7 @@ def media_files_packaging(media_files, caption=None):
             image = Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            media_group.append(telebot.types.InputMediaPhoto(io_object, caption=media['caption'],
+            media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
             if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
