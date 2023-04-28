@@ -118,7 +118,8 @@ def create_app():
 
     if settings.env_var.get('BOT', 'True') == 'True':
         # telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
-        telebot_thread = threading.Thread(target=atelebot.bot.polling(timeout=telebot_timeout), daemon=True)
+        telebot_thread = threading.Thread(target=atelebot.bot.polling(non_stop=True, timeout=telebot_timeout),
+                                          daemon=True)
         telebot_thread.start()
   # start the bot in a thread instead
 
