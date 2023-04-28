@@ -9,7 +9,7 @@ site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get(
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 default_channel_name = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
-image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1280)
+image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1600)
 telegram_text_limit = settings.env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
 allowed_users = settings.env_var.get('ALLOWED_USERS', '').split(',')
 allowed_admin_users = settings.env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
@@ -315,12 +315,13 @@ def media_files_packaging(media_files, caption=None):
             image = Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
+            image = image_compressing(image, 2*image_size_limit)
             media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
             if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
                 # if the size is over 5MB or dimension is larger than 1280 px, compress the image
-                image = image_compressing(image, image_size_limit)
+
                 print('will also send ' + image_url + ' as a file')  # and also send it as a file
                 io_object = download_a_iobytes_file(media['url'])
                 if not io_object.name.endswith('.gif'):
