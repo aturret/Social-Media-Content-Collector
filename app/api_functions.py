@@ -1,7 +1,7 @@
 import traceback
 from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
-from .converter import weibo, twitter, douban, zhihu, mustodon
+from .converter import weibo, twitter, douban, zhihu, mustodon, instagram
 from bs4 import BeautifulSoup
 from .utils import util
 
@@ -174,6 +174,26 @@ def zhihu_converter(request_data, **kwargs):
         print('zhihu_scraping_failed')
         print(traceback.format_exc())
 
+
+def instagram_converter(request_data, **kwargs):
+    try:
+        idict = request_data
+        print('get instagram url: '+idict['url'])
+        iurl = idict['url']
+        ins = instagram.Instagram(url=iurl).get_single_ins_item()
+        print('get instagram item')
+        if not ins:
+            raise Exception('No instagram found')
+        if ins['type'] == 'long':
+            t_url = get_telegraph_url(ins)
+        else:
+            t_url = ''
+        mdict = MetadataDict(ins, category='Instagram', turl=t_url, message='').to_dict()
+        print(mdict)
+        return mdict
+    except Exception as e:
+        print('instagram_scraping_failed')
+        print(traceback.format_exc())
 
 def inoreader_converter(request_data, **kwargs):
     try:

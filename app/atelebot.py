@@ -59,6 +59,10 @@ def get_social_media(message):
             print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
             target_function = douban_converter
             # target_url = doubanApiUrl
+        elif url.find('instagram.com') != -1:
+            replying_message = bot.reply_to(message, '检测到InstagramURL，转化中\nInstagram URL detected, converting...')
+            print('检测到InstagramURL，转化中\nInstagram URL detected, converting...')
+            target_function = instagram_converter
         elif url.find('youtube.com') != -1:
             if not youtube_api:
                 bot.reply_to(message,
