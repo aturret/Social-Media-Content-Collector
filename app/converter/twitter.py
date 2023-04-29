@@ -1,9 +1,4 @@
-import json
-import requests
-from collections import OrderedDict
-from lxml import etree, html
-import sys
-from app import settings
+from app.utils.util import *
 import re
 
 X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')
@@ -36,7 +31,7 @@ class Twitter(object):
             'tweet.fields': 'created_at',
             'media.fields': 'duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text'
         }
-        self.scraper = kwargs['api_method'] if 'api_method' in kwargs else 'Twitter135'
+        self.scraper = kwargs['scraper'] if 'scraper' in kwargs else 'Twitter135'
         if self.scraper == 'Twitter154':
             self.api_url = 'https://twitter154.p.rapidapi.com/tweet/details'
             self.headers = twitter154_headers
@@ -121,22 +116,20 @@ class Twitter(object):
             tweet_info = self.single_tweet_process_Twitter135(tweet)
             self.content += tweet_info['content'] + '<hr>'
             self.text += '<a href=\"' + tweet_info['aurl'] + '">@' + tweet_info['origin'] + '</a>: ' + tweet_info[
-                'text'] + '\n'
+                'text']
         self.type = 'long' if len(self.text) > 300 else 'short'
         self.tweet_raw_text_to_html()
 
-
-
-
-
-
-    def single_tweet_process_Twitter135(self,tweet):
+    def single_tweet_process_Twitter135(self, tweet):
         tweet_info = {}
         tweet_info['title'] = tweet['core']['user_results']['result']['legacy']['name'] + '\'s tweet'
         tweet_info['origin'] = tweet['core']['user_results']['result']['legacy']['name']
-        tweet_info['originurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy']['screen_name']
-        tweet_info['aurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy']['screen_name'] + '/status/' + tweet['legacy']['id_str']
-        tweet_info['text'] = tweet['note_tweet']['note_tweet_results']['result']['text'] if 'note_tweet' in tweet else tweet['legacy']['full_text']
+        tweet_info['originurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy'][
+            'screen_name']
+        tweet_info['aurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy'][
+            'screen_name'] + '/status/' + tweet['legacy']['id_str']
+        tweet_info['text'] = tweet['note_tweet']['note_tweet_results']['result']['text'] if 'note_tweet' in tweet else \
+        tweet['legacy']['full_text']
         tweet_info['content'] = tweet_info['text'] + '<br>'
         if 'extended_entities' in tweet['legacy']:
             for i in tweet['legacy']['extended_entities']['media']:
