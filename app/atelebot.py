@@ -1,9 +1,8 @@
 import random
-import time
-
 import telebot
 import re
 from .utils.util import *
+from .utils import reply_messages
 from .api_functions import *
 
 site_url = settings.env_var.get('SITE_URL', '127.0.0.1')
@@ -27,24 +26,7 @@ no_telegraph_regexp = "youtube\.com|bilibili\.com"
 # no_telegraph_list = ['',]
 formatted_data = {}
 latest_channel_message = []
-chougou_stickers = [
-    'CAACAgUAAxkBAAIJrWRO90gsvIQEeQcxa0oTPEtcDP2kAAK_BAAC4UXJV8gS4LDMP2scLwQ',
-    'CAACAgUAAxkBAAIJr2RO91-mgsfAyDO-_kILYq_DsxMOAAKaBwACfojIV3DtmXeAIXMuLwQ',
-    'CAACAgUAAxkBAAIJsWRO92aqX_dMWVCBn4MiP911ifueAAKgBAACFEjQVy6hn3A-L6RBLwQ',
-    'CAACAgUAAxkBAAIJs2RO920q9ofDz7Vmg7IutFLhwaDAAALABAAC2MPJV3_bl7_ItRVbLwQ',
-    'CAACAgUAAxkBAAIJtWRO93HBJSZWrKhu1M_mhpEGMRj3AAKPBAACeQTIV2odHWSAsY-lLwQ',
-    'CAACAgUAAxkBAAIJt2RO93aIont55FVz3SzM8DxWorrhAAKmBAAC4J_IV9ktThJwxgk6LwQ',
-    'CAACAgUAAxkBAAIJuWRO94JYyckisHrMFfUf-UEbk9VrAAL0AwACLl7QV1p1Lmk6eJgVLwQ'
-]
-reply_texts = [
-    '我只是一只小臭狗，嗷呜～',
-    '大家好，我是臭狗狗',
-    '呜呜呜，小臭狗做错了什么…',
-    '呼……臭狗困咯',
-    '臭狗狗走咯，再见啦～',
-    '不是不是不是，我不是一条臭狗，我是一条小臭狗',
-    '小臭狗爱你哟',
-]
+
 
 
 @bot.message_handler(regexp=http_parttern, chat_types=['private'])
@@ -230,10 +212,11 @@ def handle_message(message):
 def handle_message(message):
     try:
         # get a random number from the length of the list
-        random_number = random.randint(0, len(reply_texts) - 1)
+        messages = reply_messages.reply_message_groups
+        random_number = random.randint(0, len(messages) - 1)
         # reply to the message
-        bot.send_sticker(message.chat.id, chougou_stickers[random_number])
-        bot.send_message(message.chat.id, reply_texts[random_number])
+        bot.send_sticker(message.chat.id, messages[random_number]['sticker'])
+        bot.send_message(message.chat.id, messages[random_number]['text'])
     except Exception as e:
         print(traceback.format_exc())
         bot.reply_to(message, 'Failure' + traceback.format_exc())
