@@ -87,7 +87,7 @@ def create_app():
             print(traceback.format_exc())
             return False
 
-    @server.route('/inoreaderConvert', methods=['get', 'post'])
+    @server.route('/inoreaderConvert', methods=['post'])
     def inoreader_convert():
         try:
             inoreader_data = request.get_data()
@@ -122,6 +122,7 @@ def create_app():
         if request.headers.get('content-type') == 'application/json':
             json_string = request.get_data().decode('utf-8')
             update = types.Update.de_json(json_string)
+            print(update)
             atelebot.bot.process_new_updates([update])
             return '', 200
         else:

@@ -20,6 +20,7 @@ if settings.env_var.get('RUN_MODE', 'webhook') == 'webhook':
 default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
 http_parttern = '(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
+douban_http_pattern = '(http|https)://(www\.)+douban\.com/'
 # no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
 no_telegraph_regexp = "youtube\.com|bilibili\.com"
 # no_telegraph_list = ['',]
@@ -38,43 +39,8 @@ def get_social_media(message):
         func_buttons = []
         url = url_pattern.search(message.text).group()
         print('the url is: ' + url)
+        target_function, replying_message = check_url_type(url, message)
         request_data = {'url': url}
-        if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
-            replying_message = bot.reply_to(message, '检测到微博URL，转化中\nWeibo URL detected, converting...')
-            print('检测到微博URL，转化中\nWeibo URL detected, converting...')
-            target_function = new_weibo_converter
-        elif url.find('twitter.com') != -1:
-            replying_message = bot.reply_to(message, '检测到TwitterURL，转化中\nTwitter URL detected, converting...')
-            print('检测到TwitterURL，转化中\nTwitter URL detected, converting...')
-            target_function = twitter_converter
-            # target_url = twitterApiUrl
-        elif url.find('zhihu.com') != -1:
-            replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
-            print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
-            target_function = zhihu_converter
-        elif url.find('douban.com') != -1:
-            replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
-            print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
-            target_function = douban_converter
-        elif url.find('instagram.com') != -1:
-            replying_message = bot.reply_to(message, '检测到InstagramURL，转化中\nInstagram URL detected, converting...')
-            print('检测到InstagramURL，转化中\nInstagram URL detected, converting...')
-            target_function = instagram_converter
-        elif url.find('youtube.com') != -1:
-            if not youtube_api:
-                bot.reply_to(message,
-                             '未配置YouTube API，无法抓取\nYouTube API is not configured. Cannot extract metadata from YouTube.')
-            else:
-                replying_message = bot.reply_to(message, '检测到YouTubeURL，转化中\nYouTube URL detected, converting...')
-        else:
-            if '_mastodon_session' in requests.utils.dict_from_cookiejar(get_response(url).cookies):
-                replying_message = bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
-                print('检测到长毛象URL，转化中\nMustodon URL detected, converting...')
-                # target_url = mustodonApiUrl
-            else:
-                bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
-                print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
-                return False
         response_data = target_function(request_data)
         if response_data:
             data_id = str(uuid.uuid4())[:16]
@@ -205,6 +171,33 @@ def callback_query(call):
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
+@bot.message_handler(chat_types=['group'])
+def handle_message(message):
+    try:
+        bot.reply_to(message, '请在群组中使用')
+    except Exception as e:
+        print(traceback.format_exc())
+        bot.reply_to(message, 'Failure' + traceback.format_exc())
+
+
+@bot.message_handler(regexp=douban_http_pattern, chat_types=['group', 'supergroup'])
+def handle_message(message):
+    print('douban')
+    try:
+        url = url_pattern.search(message.text).group()
+        print('the url is: ' + url)
+        target_function, replying_message = check_url_type(url, message)
+        request_data = {'url': url}
+        response_data = target_function(request_data)
+        if response_data:
+            send_formatted_message(data=response_data, message=replying_message, chat_id=message.chat.id)
+        bot.delete_message(chat_id=message.chat.id, message_id=replying_message.message_id)
+    except Exception as e:
+        print(traceback.format_exc())
+        # bot.reply_to(message, 'Failure' + traceback.format_exc())
+        return
+
+
 # @bot.message_handler(func=lambda message: message.sender_chat.id == default_channel_id)
 # def handle_message(message):
 #     try:
@@ -246,9 +239,9 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
                     pinned_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
                     if pinned_message.forward_from_message_id == sent_message[-1].message_id:
                         reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id \
-                                            - len(sent_message)+1
+                                              - len(sent_message) + 1
                     else:
-                        reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id+1
+                        reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id + 1
                 if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
                     telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
                                               reply_to_message_id=reply_to_message_id,
@@ -316,7 +309,7 @@ def media_files_packaging(media_files, caption=None):
             image = Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            image = image_compressing(image, 2*image_size_limit)
+            image = image_compressing(image, 2 * image_size_limit)
             media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
@@ -356,3 +349,43 @@ def media_files_packaging(media_files, caption=None):
         for i in range(1, len(media_message_group)):
             media_message_group[i][0].caption = '接上 - 第' + str(i + 1) + '组媒体文件'
     return media_message_group, file_group
+
+
+def check_url_type(url, message):
+    if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
+        replying_message = bot.reply_to(message, '检测到微博URL，转化中\nWeibo URL detected, converting...')
+        print('检测到微博URL，转化中\nWeibo URL detected, converting...')
+        target_function = new_weibo_converter
+    elif url.find('twitter.com') != -1:
+        replying_message = bot.reply_to(message, '检测到TwitterURL，转化中\nTwitter URL detected, converting...')
+        print('检测到TwitterURL，转化中\nTwitter URL detected, converting...')
+        target_function = twitter_converter
+        # target_url = twitterApiUrl
+    elif url.find('zhihu.com') != -1:
+        replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
+        print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
+        target_function = zhihu_converter
+    elif url.find('douban.com') != -1:
+        replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
+        print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
+        target_function = douban_converter
+    elif url.find('instagram.com') != -1:
+        replying_message = bot.reply_to(message, '检测到InstagramURL，转化中\nInstagram URL detected, converting...')
+        print('检测到InstagramURL，转化中\nInstagram URL detected, converting...')
+        target_function = instagram_converter
+    elif url.find('youtube.com') != -1:
+        if not youtube_api:
+            bot.reply_to(message,
+                         '未配置YouTube API，无法抓取\nYouTube API is not configured. Cannot extract metadata from YouTube.')
+        else:
+            replying_message = bot.reply_to(message, '检测到YouTubeURL，转化中\nYouTube URL detected, converting...')
+    else:
+        if '_mastodon_session' in requests.utils.dict_from_cookiejar(get_response(url).cookies):
+            replying_message = bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
+            print('检测到长毛象URL，转化中\nMustodon URL detected, converting...')
+            # target_url = mustodonApiUrl
+        else:
+            replying_message = bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
+            print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
+            return None, replying_message
+    return target_function, replying_message
