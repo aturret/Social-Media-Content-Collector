@@ -12,7 +12,7 @@ from .utils.util import *
 
 sentry_on = settings.env_var.get('SENTRY_ON', 'False')
 sentry_dsn = settings.env_var.get('SENTRY_DSN', '')
-
+telebot_timeout = int(settings.env_var.get('TELEBOT_TIMEOUT', '60'))
 # from time import sleep
 # import toml
 
@@ -31,7 +31,6 @@ if sentry_on == 'True':
 def create_app():
     server = Flask(__name__)
     default_channel = settings.env_var.get('CHANNEL_ID', '')
-    telebot_timeout = int(settings.env_var.get('TELEBOT_TIMEOUT', '60'))
 
     print(settings.env_var.get('PORT', 'no port'))
 
@@ -116,13 +115,15 @@ def create_app():
     def trigger_error():
         division_by_zero = 1 / 0
 
-    if settings.env_var.get('BOT', 'True') == 'True':
-        # telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
-        telebot_thread = threading.Thread(target=atelebot.bot.polling(non_stop=True, timeout=telebot_timeout),
-                                          daemon=True)
-        telebot_thread.start()
-  # start the bot in a thread instead
+    # start the bot in a thread instead
 
     return server
 
 
+
+
+if settings.env_var.get('BOT', 'True') == 'True':
+    # telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
+    telebot_thread = threading.Thread(target=atelebot.bot.polling(non_stop=True, timeout=telebot_timeout),
+                                      daemon=True)
+    telebot_thread.start()
