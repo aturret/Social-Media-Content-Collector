@@ -9,6 +9,7 @@ from . import atelebot, combination, settings, bot_start
 from .api_functions import *
 from .utils import telegraph
 from .utils.util import *
+from telebot import types
 
 sentry_on = settings.env_var.get('SENTRY_ON', 'False')
 sentry_dsn = settings.env_var.get('SENTRY_DSN', '')
@@ -106,10 +107,25 @@ def create_app():
     def rachel_convert():
         return 'ok', 200
 
-    @server.route('/ping', methods=['get', 'post', 'head'])
+    # @server.route('/ping', methods=['get', 'post', 'head'])
+    # def ping():
+    #     print('hello, world!')
+    #     return 'pong', 200
+
+    @server.route('/', methods=['get', 'post', 'head'])
     def ping():
         print('hello, world!')
         return 'pong', 200
+
+    @server.route('/bot', methods=['post'])
+    def webhook():
+        if request.headers.get('content-type') == 'application/json':
+            json_string = request.get_data().decode('utf-8')
+            update = types.Update.de_json(json_string)
+            atelebot.bot.process_new_updates([update])
+            return '', 200
+        else:
+            return '', 403
 
     @server.route('/debug-sentry')
     def trigger_error():
@@ -122,8 +138,8 @@ def create_app():
 
 
 
-if settings.env_var.get('BOT', 'True') == 'True':
-    # telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
-    telebot_thread = threading.Thread(target=atelebot.bot.polling(non_stop=True, timeout=telebot_timeout),
-                                      daemon=True)
-    telebot_thread.start()
+# if settings.env_var.get('BOT', 'True') == 'True':
+#     # telebot_thread = threading.Thread(target=bot_start.bot_polling(), daemon=True)
+#     telebot_thread = threading.Thread(target=atelebot.bot.polling(non_stop=True, timeout=telebot_timeout),
+#                                       daemon=True)
+#     telebot_thread.start()

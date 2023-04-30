@@ -5,7 +5,7 @@ import re
 from .utils.util import *
 from .api_functions import *
 
-site_url = settings.env_var.get('SITE_URL', '127.0.0.1:' + settings.env_var.get('PORT', '1045'))
+site_url = settings.env_var.get('SITE_URL', '127.0.0.1')
 telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
 default_channel_name = settings.env_var.get('CHANNEL_ID', None)
 youtube_api = settings.env_var.get('YOUTUBE_API', None)
@@ -15,6 +15,8 @@ allowed_users = settings.env_var.get('ALLOWED_USERS', '').split(',')
 allowed_admin_users = settings.env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 # initialize telebot
 bot = telebot.TeleBot(telebot_key, num_threads=4)
+if settings.env_var.get('RUN_MODE', 'webhook') == 'webhook':
+    bot.set_webhook(site_url + 'bot')
 default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
 http_parttern = '(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
@@ -34,12 +36,9 @@ def get_social_media(message):
         return
     try:
         func_buttons = []
-        basic_buttons = []
         url = url_pattern.search(message.text).group()
         print('the url is: ' + url)
-        target_url = ''
         request_data = {'url': url}
-        response_data = None
         if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
             replying_message = bot.reply_to(message, '检测到微博URL，转化中\nWeibo URL detected, converting...')
             print('检测到微博URL，转化中\nWeibo URL detected, converting...')
@@ -53,12 +52,10 @@ def get_social_media(message):
             replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
             print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
             target_function = zhihu_converter
-            # target_url = zhihuApiUrl
         elif url.find('douban.com') != -1:
             replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
             print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
             target_function = douban_converter
-            # target_url = doubanApiUrl
         elif url.find('instagram.com') != -1:
             replying_message = bot.reply_to(message, '检测到InstagramURL，转化中\nInstagram URL detected, converting...')
             print('检测到InstagramURL，转化中\nInstagram URL detected, converting...')

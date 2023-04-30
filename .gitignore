@@ -10,3 +10,4 @@ docker-compose.yml
 abondoned/.env
 .gitignore
 pytest.ini
+ngrok.ps1

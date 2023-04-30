@@ -14,7 +14,7 @@ services:
       - 1045:1045
     command:
 #      - python
-#      - run.py
+#      - run_multiprocessing.py
       - gunicorn
       - -w 1
       - -b 0.0.0.0:${PORT}
