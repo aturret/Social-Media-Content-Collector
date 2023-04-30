@@ -1,1 +1,1 @@
-web: pipenv run gunicorn -w 4 -b 0.0.0.0:$PORT --timeout=0 wsgi:app
+web: pipenv run gunicorn -w 1 -b 0.0.0.0:$PORT --timeout=0 wsgi:app
