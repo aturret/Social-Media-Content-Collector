@@ -93,7 +93,7 @@ def create_app():
             inoreader_data = request.get_data()
             data_dict = json.loads(inoreader_data)
             mdict = inoreader_converter(data_dict)
-            atelebot.send_formatted_message(data=mdict, channel_id=default_channel)
+            atelebot.send_formatted_message(data=mdict, chat_id=default_channel)
         except Exception:
             print(traceback.format_exc())
             return 'Failed'
