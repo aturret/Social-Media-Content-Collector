@@ -15,8 +15,8 @@ allowed_users = settings.env_var.get('ALLOWED_USERS', '').split(',')
 allowed_admin_users = settings.env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 # initialize telebot
 bot = telebot.TeleBot(telebot_key, num_threads=4)
-if settings.env_var.get('RUN_MODE', 'webhook') == 'webhook':
-    bot.delete_webhook()
+bot.delete_webhook()
+if settings.env_var.get('RUN_MODE', 'webhook') == 'webhook' and not settings.env_var.get('BOT', 'True') :
     bot.set_webhook(site_url + '/bot')
 default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern

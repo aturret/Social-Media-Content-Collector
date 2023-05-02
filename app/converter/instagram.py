@@ -88,8 +88,9 @@ class Instagram(object):
     def ins_post_item_process(self, ins_info):
         self.__dict__.update(ins_info)
         self.title = self.origin + '\'s Instagram post'
+        self.text = self.text.replace('<', '&lt;').replace('>', '&gt;')
         self.text = "<a href='" + self.aurl + "'>" + self.title + "</a>\n" + self.text
-        self.type = 'short' if len(self.text) < 300 else 'long'
+        self.type = 'short' if get_html_text_length(self.text) < 300 else 'long'
 
     def get_ins_post_looter2(self, ins_data):
         ins_info = {}
