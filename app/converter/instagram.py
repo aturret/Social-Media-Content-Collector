@@ -11,7 +11,7 @@ class Instagram(object):
         self.url = url
         self.status = False
         self.aurl = re.sub(r"/\?.*", "/", self.url)
-        self.post_id = re.sub(r".*[(/p/)(/reel/)]", "", self.aurl).replace('/', '')
+        self.post_id = re.sub(r".*((/p/)|(/reel/))", "", self.aurl).replace('/', '')
         self.params = {
         }
         self.scraper = kwargs['scraper'] if 'scraper' in kwargs else 'looter2'
@@ -61,6 +61,7 @@ class Instagram(object):
                 ins_info = self.get_ins_post_looter2(ins_data)
             elif self.scraper == 'ins28' or self.scraper == 'scraper2':
                 ins_info = self.get_ins_post_ins28_scraper2(ins_data)
+            break
         if ins_info is not None:
             self.ins_post_item_process(ins_info)
         return self.to_dict()
@@ -102,6 +103,9 @@ class Instagram(object):
             ins_info['media_files'].append({'type': 'video', 'url': ins_data['video_url'], 'caption': ''}) if ins_data[
                 'video_url'] else []
             ins_info['content'] += '<video controls src="' + ins_data['video_url'] + '"></video>'
+        elif ins_data['__typename'] == 'GraphImage':
+            ins_info['media_files'].append({'type': 'image', 'url': ins_data['display_url'], 'caption': ''})
+            ins_info['content'] += '<img src="' + ins_data['display_url'] + '">' if ins_data['display_url'] else ''
         elif ins_data['__typename'] == 'GraphSidecar':
             for item in ins_data['edge_sidecar_to_children']['edges']:
                 if item['node']['__typename'] == 'GraphVideo':
@@ -123,6 +127,9 @@ class Instagram(object):
         if ins_data['items'][0]['media_type'] == 2:
             ins_info['media_files'].append({'type': 'video', 'url': ins_data['items'][0]['video_versions'][0]['url'], 'caption': ''})
             ins_info['content'] += '<video controls src="' + ins_data['items'][0]['video_versions'][0]['url'] + '"></video>'
+        elif ins_data['items'][0]['media_type'] == 1:
+            ins_info['media_files'].append({'type': 'image', 'url': ins_data['items'][0]['image_versions2']['candidates'][0]['url'], 'caption': ''})
+            ins_info['content'] += '<img src="' + ins_data['items'][0]['image_versions2']['candidates'][0]['url'] + '">'
         elif ins_data['items'][0]['media_type'] == 8:
             for item in ins_data['items'][0]['carousel_media']:
                 if item['media_type'] == 2:
