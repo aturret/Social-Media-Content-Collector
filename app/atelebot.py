@@ -1,22 +1,25 @@
 import random
 import telebot
 import re
-from .utils.util import *
+import time
+import requests
+from .utils import util
 from .utils import reply_messages
 from .api_functions import *
+from .settings import env_var
 
-site_url = settings.env_var.get('SITE_URL', '127.0.0.1')
-telebot_key = settings.env_var.get('TELEGRAM_BOT_KEY')
-default_channel_name = settings.env_var.get('CHANNEL_ID', None)
-youtube_api = settings.env_var.get('YOUTUBE_API', None)
-image_size_limit = settings.env_var.get('IMAGE_SIZE_LIMIT', 1600)
-telegram_text_limit = settings.env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
-allowed_users = settings.env_var.get('ALLOWED_USERS', '').split(',')
-allowed_admin_users = settings.env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
+site_url = env_var.get('SITE_URL', '127.0.0.1')
+telebot_key = env_var.get('TELEGRAM_BOT_KEY')
+default_channel_name = env_var.get('CHANNEL_ID', None)
+youtube_api = env_var.get('YOUTUBE_API', None)
+image_size_limit = env_var.get('IMAGE_SIZE_LIMIT', 1600)
+telegram_text_limit = env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
+allowed_users = env_var.get('ALLOWED_USERS', '').split(',')
+allowed_admin_users = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 # initialize telebot
 bot = telebot.TeleBot(telebot_key, num_threads=4)
 bot.delete_webhook()
-if settings.env_var.get('RUN_MODE', 'webhook') == 'webhook' and not settings.env_var.get('BOT', 'True') :
+if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'True') == 'False':
     bot.set_webhook(site_url + '/bot')
 default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
@@ -27,7 +30,6 @@ no_telegraph_regexp = "youtube\.com|bilibili\.com"
 # no_telegraph_list = ['',]
 formatted_data = {}
 latest_channel_message = []
-
 
 
 @bot.message_handler(regexp=http_parttern, chat_types=['private'])
@@ -45,7 +47,7 @@ def get_social_media(message):
         request_data = {'url': url}
         response_data = target_function(request_data)
         if response_data:
-            data_id = str(uuid.uuid4())[:16]
+            data_id = str(util.uuid.uuid4())[:16]
             formatted_data[data_id] = response_data
         else:
             print('Failure')
@@ -61,7 +63,7 @@ def get_social_media(message):
             func_buttons.append(forward_button)
         if 'media_files' in response_data:
             extract_button_data = 'extr+' + str(message.id) + '+' + data_id
-            extract_button = telebot.types.InlineKeyboardButton(text='提取短文格式', callback_data=extract_button_data)
+            extract_button = telebot.types.InlineKeyboardButton(text='强制直接提取', callback_data=extract_button_data)
             func_buttons.append(extract_button)
         show_button_data = 'priv+' + str(message.id) + '+' + data_id
         show_button = telebot.types.InlineKeyboardButton(text='发送到私聊', callback_data=show_button_data)
@@ -144,7 +146,7 @@ def callback_query(call):
             raise Exception('No data to send')
         the_data = formatted_data.pop(call.data.split('+')[2])
         the_data['type'] = 'short'
-        if get_html_text_length(the_data['text']) > telegram_text_limit:
+        if util.get_html_text_length(the_data['text']) > telegram_text_limit:
             short_text = the_data['text'][:(telegram_text_limit - len(the_data['turl']))]
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
             the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
@@ -314,7 +316,7 @@ def media_files_packaging(media_files, caption=None):
             media_group = []
             media_counter = 0
         print('the ' + str((media_counter + 1)) + '\'s media: ' + media['type'] + ': ' + media['url'])
-        io_object = download_a_iobytes_file(media['url'])
+        io_object = util.download_a_iobytes_file(media['url'])
         file_size = io_object.size
         print('the size of this file is ' + str(file_size))
         if file_size > 50 * 1024 * 1024:  # if the size is over 50MB, skip this file
@@ -322,10 +324,10 @@ def media_files_packaging(media_files, caption=None):
         print(io_object.name)
         if media['type'] == 'image':
             image_url = media['url']
-            image = Image.open(io_object)
+            image = util.Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            image = image_compressing(image, 2 * image_size_limit)
+            image = util.image_compressing(image, 2 * image_size_limit)
             media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
@@ -333,11 +335,11 @@ def media_files_packaging(media_files, caption=None):
                 # if the size is over 5MB or dimension is larger than 1280 px, compress the image
 
                 print('will also send ' + image_url + ' as a file')  # and also send it as a file
-                io_object = download_a_iobytes_file(media['url'])
+                io_object = util.download_a_iobytes_file(media['url'])
                 if not io_object.name.endswith('.gif'):
                     file_group.append(io_object)
         elif media['type'] == 'gif':
-            io_object = download_a_iobytes_file(media['url'], 'gif_image-' + str(media_counter) + '.gif')
+            io_object = util.download_a_iobytes_file(media['url'], 'gif_image-' + str(media_counter) + '.gif')
             io_object.name = io_object.name + '.gif'
             file_group.append(io_object)
         elif media['type'] == 'video':
@@ -396,7 +398,7 @@ def check_url_type(url, message):
         else:
             replying_message = bot.reply_to(message, '检测到YouTubeURL，转化中\nYouTube URL detected, converting...')
     else:
-        if '_mastodon_session' in requests.utils.dict_from_cookiejar(get_response(url).cookies):
+        if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
             replying_message = bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
             print('检测到长毛象URL，转化中\nMustodon URL detected, converting...')
             # target_url = mustodonApiUrl

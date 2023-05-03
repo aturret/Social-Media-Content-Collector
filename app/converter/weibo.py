@@ -67,33 +67,10 @@ class Weibo(object):
 
     def to_dict(self):
         # only contains the weibo meta info and the weibo content info
-        weibo_dict = {
-            'url': self.url,
-            'aurl': self.aurl,
-            'id': self.id,
-            'ajax_url': self.ajax_url,
-            'longtext_url': self.longtext_url,
-            'isLongText': self.isLongText,
-            'type': self.type,
-            'title': self.title,
-            'content': self.content,
-            'text': self.text,
-            'text_raw': self.text_raw,
-            'pics_url': self.pics_url,
-            'videos_url': self.videos_url,
-            'gifs_url': self.gifs_url,
-            'origin': self.origin,
-            'user_id': self.user_id,
-            'screen_name': self.screen_name,
-            'originurl': self.originurl,
-            'date': self.date,
-            'region_name': self.region_name,
-            'comment': self.comment,
-            'count': self.count,
-            'rt_url': self.rt_url,
-            'rt_info': self.rt_info,
-            'media_files': self.media_files
-        }
+        weibo_dict = {}
+        for key in self.__dict__:
+            if key not in ['headers', 'method', 'scraper']:
+                weibo_dict[key] = self.__dict__[key]
         return weibo_dict
 
     def get_weibo(self, raw=False):

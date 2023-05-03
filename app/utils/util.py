@@ -7,7 +7,8 @@ import sys
 import time
 import datetime
 import requests
-from lxml import etree, html
+from lxml import etree, html as lhtml
+from html import escape
 from PIL import Image
 from html_sanitizer import Sanitizer
 from app import settings

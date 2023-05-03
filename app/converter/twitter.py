@@ -88,7 +88,7 @@ class Twitter(object):
             print(picformat)
         self.content = self.text + '<br>' + picformat
         self.text = '<a href="' + self.url + '">@' + self.origin + '</a>: ' + self.text
-        self.type = 'long' if len(html.fromstring(self.text).xpath('string()')) > 200 else 'short'
+        self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
 
     def get_tweet_Twitter135(self):
@@ -130,6 +130,7 @@ class Twitter(object):
             'screen_name'] + '/status/' + tweet['legacy']['id_str']
         tweet_info['text'] = tweet['note_tweet']['note_tweet_results']['result']['text'] if 'note_tweet' in tweet else \
         tweet['legacy']['full_text']
+        tweet_info['text'] = util.escape(tweet_info['text'])
         tweet_info['content'] = tweet_info['text'] + '<br>'
         if 'extended_entities' in tweet['legacy']:
             for i in tweet['legacy']['extended_entities']['media']:

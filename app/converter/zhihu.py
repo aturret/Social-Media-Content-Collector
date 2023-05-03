@@ -2,7 +2,8 @@
 import requests
 import time  # import cchardet as chardet
 from collections import OrderedDict
-from app.utils.util import *
+from app.utils import util
+from bs4 import BeautifulSoup
 
 import re
 
@@ -23,7 +24,6 @@ zhihu_type_translate = {
 
 
 class Zhihu(object):
-
 
     def __init__(self, favurl='', url='', **kwargs):
         self.headers = {
@@ -55,24 +55,12 @@ class Zhihu(object):
         self.updated = ''
 
     def to_dict(self):
-        return {
-            'zhihu_type': self.zhihu_type,
-            'url': self.url,
-            'aurl': self.aurl,
-            'content': self.content,
-            'text': self.text,
-            'origin': self.origin,
-            'originurl': self.originurl,
-            'title': self.title,
-            'favurl': self.favurl,
-            'question': self.question,
-            'workurl': self.workurl,
-            'groupname': self.groupname,
-            'groupurl': self.groupurl,
-            'retweet_html': self.retweet_html,
-            'type': self.type,
-            'media_files': self.media_files
-        }
+        zhihu_dict = {}
+        for key in self.__dict__:
+            if key == 'headers':
+                continue
+            zhihu_dict[key] = self.__dict__[key]
+        return zhihu_dict
 
     def get_fav_item(self):
         url = self.url
@@ -86,7 +74,7 @@ class Zhihu(object):
         elif url.find('zhihu.com/pin/') != -1:
             print('检测到知乎想法，摘取中')
             self.get_zhihu_status()
-        if get_html_text_length(self.content) < 200:
+        if util.get_html_text_length(self.content) < 200:
             self.type = 'short'
         result = self.to_dict()
         return result
@@ -95,7 +83,7 @@ class Zhihu(object):
         self.zhihu_type = 'article'
         if self.method == 'api':
             self.api_url = zhihu_columns_api_host + '/articles/' + re.findall(r'/p/(\d+)\D*', self.url)[0]
-            json_data = get_response_json(self.api_url, headers=self.headers)
+            json_data = util.get_response_json(self.api_url, headers=self.headers)
             self.title = json_data['title']
             self.content = json_data['content']
             self.origin = json_data['author']['name']
@@ -104,11 +92,11 @@ class Zhihu(object):
             self.get_zhihu_short_text()
         elif self.method == 'html':
             self.zhihu_type = 'article'
-            selector = get_selector(url=self.url, headers=self.headers)
+            selector = util.get_selector(url=self.url, headers=self.headers)
             self.title = selector.xpath('string(//h1)')
             upvote = selector.xpath('string(//button[@class="Button VoteButton VoteButton--up"])')
             self.content = str(
-                etree.tostring(selector.xpath('//div[contains(@class,"RichText") and contains(@class,"ztext")]')[0],
+                util.etree.tostring(selector.xpath('//div[contains(@class,"RichText") and contains(@class,"ztext")]')[0],
                                encoding="utf-8"), encoding='utf-8')
             self.get_zhihu_short_text()
             self.content = upvote + '<br>' + self.content
@@ -117,9 +105,9 @@ class Zhihu(object):
 
     def get_zhihu_answer(self):
         self.zhihu_type = 'answer'
-        selector = get_selector(url=self.url, headers=self.headers)
+        selector = util.get_selector(url=self.url, headers=self.headers)
         upvote = selector.xpath('string(//button[contains(@class,"VoteButton")])')
-        self.content = str(etree.tostring(selector.xpath(
+        self.content = str(util.etree.tostring(selector.xpath(
             '//div[contains(@class,"RichContent-inner")]//span[contains(@class,"RichText") and @itemprop="text"]')[0],
                                      encoding="utf-8"), encoding='utf-8')
         self.title = selector.xpath('string(//h1)')
@@ -142,32 +130,32 @@ class Zhihu(object):
             self.title = self.origin + '的想法'
             self.content = json_data['content_html']
             self.get_zhihu_short_text()
-            self.created = unix_timestamp_to_utc(json_data['created'])
-            self.updated = unix_timestamp_to_utc(json_data['updated'])
+            self.created = util.unix_timestamp_to_utc(json_data['created'])
+            self.updated = util.unix_timestamp_to_utc(json_data['updated'])
             timestamp = '修改于：' + self.updated if json_data['updated'] > json_data['created'] \
                 else '发布于：' + self.created
             upvote = json_data['like_count']
             self.content = '点赞数：' + str(upvote) + '<br>' + self.content + '<br>' + self.retweet_html + '<br>' + timestamp
         elif self.method == 'html':
-            selector = get_selector(url=self.url, headers=self.headers)
-            content = str(etree.tostring(selector.xpath('//span[contains(@class,"RichText") and @itemprop="text"]')[0],
+            selector = util.get_selector(url=self.url, headers=self.headers)
+            content = str(util.etree.tostring(selector.xpath('//span[contains(@class,"RichText") and @itemprop="text"]')[0],
                                          encoding="utf-8"), encoding='utf-8')
             upvote = selector.xpath('string(//button[contains(@class,"VoteButton")]//span)')
             timestamp = selector.xpath('string(//div[@class="ContentItem-time"]//span)')
             if selector.xpath('string(//div[@class="RichContent"]/div[2]/div[2]/@class)').find(
                     'PinItem-content-originpin') != -1:  # 是否存在转发
-                if str(etree.tostring(selector.xpath('//div[contains(@class,"PinItem-content-originpin")]/div[3]')[0],
+                if str(util.etree.tostring(selector.xpath('//div[contains(@class,"PinItem-content-originpin")]/div[3]')[0],
                                       encoding="utf-8"),
                        encoding='utf-8') != '<div class="RichText ztext PinItem-remainContentRichText"/>':  # 如果转发内容有图
-                    pichtml = html.fromstring(
-                        str(etree.tostring(selector.xpath('//div[contains(@class,"PinItem-content-originpin")]')[0],
+                    pichtml = util.lhtml.fromstring(
+                        str(util.etree.tostring(selector.xpath('//div[contains(@class,"PinItem-content-originpin")]')[0],
                                            encoding="utf-8"), encoding='utf-8'))
-                    self.retweet_html = str(html.tostring(pichtml, pretty_print=True)).replace('b\'<div', '<div')
+                    self.retweet_html = str(util.lhtml.tostring(pichtml, pretty_print=True)).replace('b\'<div', '<div')
                     print(type(self.retweet_html))
                     print(self.retweet_html)
                 else:
                     self.retweet_html = str(
-                        etree.tostring(selector.xpath('//div[contains(@class,"PinItem-content-originpin")]')[0],
+                        util.etree.tostring(selector.xpath('//div[contains(@class,"PinItem-content-originpin")]')[0],
                                        encoding="utf-8"), encoding='utf-8')
                     print(self.retweet_html)
             self.content = '点赞数：' + upvote + '<br>' + content + '<br>' + self.retweet_html + '<br>' + timestamp
@@ -194,7 +182,7 @@ class Zhihu(object):
             self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b> - ' + self.origin + '的' + \
                         zhihu_type_translate[self.zhihu_type] + '</a>：' + str(soup)
         soup = BeautifulSoup(self.text, 'html.parser')
-        soup = format_telegram_short_text(soup)
+        soup = util.format_telegram_short_text(soup)
         for p in soup.find_all('p'):
             if p.text != '':
                 p.append(BeautifulSoup('<br>', 'html.parser'))
@@ -203,8 +191,8 @@ class Zhihu(object):
 
 
 def get_zhihu_json_data(url, headers):
-    soup = BeautifulSoup(get_response(url).text, 'html.parser')
+    soup = BeautifulSoup(util.get_response(url).text, 'html.parser')
     print(soup.text)
     # json_data = json.loads(soup.find('script', attrs={'id': 'js-initialData'}).text)
-    json_data = json.loads(soup.text)
+    json_data = util.json.loads(soup.text)
     return json_data

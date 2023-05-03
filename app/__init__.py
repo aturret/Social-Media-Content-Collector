@@ -8,7 +8,7 @@ import app.api_functions
 from . import atelebot, combination, settings, bot_start
 from .api_functions import *
 from .utils import telegraph
-from .utils.util import *
+from .utils import util
 from telebot import types
 
 sentry_on = settings.env_var.get('SENTRY_ON', 'False')
@@ -49,7 +49,7 @@ def create_app():
     def weibo_convert():
         try:
             weiboData = request.get_data()
-            wdict = json.loads(weiboData)
+            wdict = util.json.loads(weiboData)
         except Exception:
             print(traceback.format_exc())
             return False
@@ -91,7 +91,7 @@ def create_app():
     def inoreader_convert():
         try:
             inoreader_data = request.get_data()
-            data_dict = json.loads(inoreader_data)
+            data_dict = util.json.loads(inoreader_data)
             mdict = inoreader_converter(data_dict)
             atelebot.send_formatted_message(data=mdict, chat_id=default_channel)
         except Exception:
