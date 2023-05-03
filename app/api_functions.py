@@ -7,7 +7,7 @@ from .utils import util
 
 
 class TelegraphDict(object):
-    def __init__(self,dict_data: dict,**kwargs):
+    def __init__(self, dict_data: dict, **kwargs):
         self.title = dict_data['title'] if 'title' in dict_data \
             else kwargs['title'] if 'title' in kwargs \
             else 'undefined_title'
@@ -223,7 +223,7 @@ def inoreader_converter(request_data, **kwargs):
             t_url = get_telegraph_url(ino)
         else:
             t_url = ''
-        ino['message'] = ino['message'] + '\n'
+        ino['message'] = ino['message'] + '\n' if ino['message'] else ''
         mdict = MetadataDict(ino, category=ino['tag'], turl=t_url, message=ino['message']).to_dict()
         print(mdict)
         return mdict
