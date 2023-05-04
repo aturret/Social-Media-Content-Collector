@@ -44,7 +44,7 @@ class MetadataDict(object):
             else 'undefined_title'
         self.text = dict_data['text'] if 'text' in dict_data \
             else kwargs['text'] if 'text' in kwargs \
-            else 'undefined_text'
+            else ''
         self.origin = dict_data['origin'] if 'origin' in dict_data \
             else kwargs['origin'] if 'origin' in kwargs \
             else 'undefined_origin'
@@ -206,23 +206,19 @@ def inoreader_converter(request_data, **kwargs):
         print('get inoreader item')
         if not ino:
             raise Exception('No inoreader found')
-        if ino['type'] == 'short':
-            soup = BeautifulSoup(ino['content'], 'html.parser')
-            ino['media_files'] = []
-            for img in soup.find_all('img'):
-                media_item = {'type': 'image', 'url': img['src'], 'caption':''}
-                ino['media_files'].append(media_item)
-                img.extract()
-            for p in soup.find_all('p'):
-                p.unwrap()
-            for span in soup.find_all('span'):
-                span.unwrap()
-            ino['text'] = str(soup).replace('<br/>', '\n')
-            ino['text'] = '<a href="' + ino['aurl'] + '">' + ino['origin'] + '</a>: ' + ino['text']
-        if ino['type'] == 'long':
-            t_url = get_telegraph_url(ino)
-        else:
-            t_url = ''
+        soup = BeautifulSoup(ino['content'], 'html.parser')
+        ino['media_files'] = []
+        for img in soup.find_all('img'):
+            media_item = {'type': 'image', 'url': img['src'], 'caption':''}
+            ino['media_files'].append(media_item)
+            img.extract()
+        for p in soup.find_all('p'):
+            p.unwrap()
+        for span in soup.find_all('span'):
+            span.unwrap()
+        ino['text'] = str(soup).replace('<br/>', '\n')
+        ino['text'] = '<a href="' + ino['aurl'] + '">' + ino['origin'] + '</a>: ' + ino['text']
+        t_url = get_telegraph_url(ino)
         ino['message'] = ino['message'] + '\n' if ino['message'] else ''
         mdict = MetadataDict(ino, category=ino['tag'], turl=t_url, message=ino['message']).to_dict()
         print(mdict)

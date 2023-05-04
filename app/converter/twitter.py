@@ -1,4 +1,6 @@
-from app.utils.util import *
+from app.utils import util
+from app import settings
+import requests
 import re
 
 X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')

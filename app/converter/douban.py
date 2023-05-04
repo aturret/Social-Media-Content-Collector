@@ -1,7 +1,9 @@
 # -*- coding: UTF-8 -*-
+import traceback
 from collections import OrderedDict
+from bs4 import BeautifulSoup
 import re
-from app.utils.util import *
+from app.utils import util
 from app import settings
 # import utils
 
@@ -54,8 +56,8 @@ class Douban(object):
         }
 
     def get_fav_list(self):
-        selector = get_selector(url=self.fav_url, headers=self.headers)
-        print(local_time())
+        selector = util.get_selector(url=self.fav_url, headers=self.headers)
+        print(util.local_time())
         print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.url)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         self.url = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
@@ -94,7 +96,8 @@ class Douban(object):
                 self.get_douban_group_article(url)
         except Exception:
             print(traceback.format_exc())
-        if get_html_text_length(self.content) < 200:
+        self.douban_short_text_process()
+        if util.get_html_text_length(self.text) < 200:
             self.type = 'short'
         douban['title'] = self.title
         douban['content'] = self.content
@@ -109,11 +112,11 @@ class Douban(object):
 
     def get_douban_note(self, url):
         if self.scraper == 'Selenium':
-            selector = get_page_by_selenium(url, headers=self.headers)
+            selector = util.get_page_by_selenium(url, headers=self.headers)
         else:
-            selector = get_selector(url, headers=self.headers)
+            selector = util.get_selector(url, headers=self.headers)
             self.title = selector.xpath('string(//div[@id="content"]//h1)')
-            self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
+            self.content = str(util.etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                                encoding='utf-8')
             self.origin = selector.xpath('string(//div[@class="content"]/a)')
             self.origin_url = selector.xpath('string(//div[@class="content"]/a/@href)')
@@ -122,9 +125,9 @@ class Douban(object):
 
 
     def get_douban_book_review(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
-        self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
+        self.content = str(util.etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
         self.origin = selector.xpath('string(//header[@class="main-hd"]//span)')
         self.origin_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
@@ -132,9 +135,9 @@ class Douban(object):
         self.work_url = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_movie_review(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
-        self.content = str(etree.tostring(selector.xpath('//div[contains(@class,\'review-content\')]')[0], encoding="utf-8"),
+        self.content = str(util.etree.tostring(selector.xpath('//div[contains(@class,\'review-content\')]')[0], encoding="utf-8"),
                            encoding='utf-8')
         self.origin = selector.xpath('string(//header[@class="main-hd"]//span)')
         self.origin_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
@@ -142,24 +145,39 @@ class Douban(object):
         self.work_url = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
     def get_douban_status(self, url):
-        selector = get_selector(url, headers=self.headers)
-        self.content = str(etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
-                           encoding='utf-8').replace('<blockquote>','').replace('</blockquote>','').replace('>+<','><').replace('&#13;','<br>')
+        selector = util.get_selector(url, headers=self.headers)
+        self.content = str(util.etree.tostring(selector.xpath('//div[@class="status-saying"]')[0], encoding="utf-8"),
+                           encoding='utf-8').replace('<blockquote>', '').replace('</blockquote>', '').replace('>+<',
+                                                                                                              '><').replace(
+            '&#13;', '<br>')
         self.origin = selector.xpath('string(//div[@class="content"]/a)')
         self.origin_url = selector.xpath('string(//div[@class="content"]/a/@href)')
         self.title = self.origin + '的广播'
 
     def get_douban_group_article(self, url):
-        selector = get_selector(url, headers=self.headers)
+        selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1)')
         self.title = self.title.replace('\n', '').strip()
-        self.content = str(etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
+        self.content = str(util.etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
         self.origin = selector.xpath('string(//span[@class="from"]//a)')
         self.origin_url = selector.xpath('string(//span[@class="from"]//a/@href)')
         self.group_name = selector.xpath('string(//div[@id="g-side-info"]//div[@class="title"]/a)')
         self.group_url = selector.xpath('string(//div[@id="g-side-info"]//div[@class="title"]/a/@href)')
 
+    def douban_short_text_process(self):
+        soup = BeautifulSoup(self.content, 'html.parser')
+        self.media_files = []
+        for img in soup.find_all('img'):
+            media_item = {'type': 'image', 'url': img['src'], 'caption': ''}
+            self.media_files.append(media_item)
+            img.extract()
+        for p in soup.find_all('p'):
+            p.unwrap()
+        for span in soup.find_all('span'):
+            span.unwrap()
+        self.text = str(soup).replace('<br/>', '\n')
+        self.text = '<a href="' + self.aurl + '">' + self.origin + '</a>: ' + self.text
 
 # douban = Douban(favurl=myfavlist)
 # douban.get_fav_list()
