@@ -23,11 +23,9 @@ if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False
     bot.set_webhook(site_url + '/bot')
 default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
-http_parttern = '(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
-douban_http_pattern = '(http|https)://(www\.)+douban\.com/'
-# no_telegraph_regexp="weibo\.com|m\.weibo\.cn|twitter\.com|zhihu\.com|douban\.com"
-no_telegraph_regexp = "youtube\.com|bilibili\.com"
-# no_telegraph_list = ['',]
+http_parttern = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
+douban_http_pattern = r'(http|https)://(www\.)+douban\.com'
+no_telegraph_regexp = r"(youtube\.com)|(bilibili\.com\/video)"
 formatted_data = {}
 latest_channel_message = []
 
@@ -225,6 +223,7 @@ def handle_message(message):
         bot.reply_to(message, 'Failure' + traceback.format_exc())
         return
 
+
 def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
     if (not chat_id) and message:
         chat_id = message.chat.id
@@ -235,49 +234,46 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
     if the_chat.type == 'channel':
         if the_chat.linked_chat_id:
             discussion_chat_id = the_chat.linked_chat_id
-    if data['type'] == 'short' or re.search(no_telegraph_regexp, data['aurl']):
-        long_text = False
-    else:
-        long_text = True
     try:
-        if not long_text and data['media_files'] and len(data['media_files']) > 0:
-            caption_text = data['text'] + '\n#' + data['category']
-            if data['media_files'] and len(data['media_files']) > 0:
-                media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
-                                                                        caption=caption_text)
-                if len(media_message_group) > 0:  # if there are some media groups to send, send it
-                    for media_group in media_message_group:
-                        sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
-                    time.sleep(3)
-                else:  # if there are no media groups to send, send the caption text and also note the message
-                    sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
-                reply_to_message_id = None
-                # if the chat is a channel, get the latest pinned message from the channel
-                if discussion_chat_id != chat_id and len(media_message_group) > 0:
-                    pinned_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
-                    if pinned_message.forward_from_message_id == sent_message[-1].message_id:
-                        reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id \
-                                              - len(sent_message) + 1
-                    else:
-                        reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id + 1
-                if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
-                    telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
-                                              reply_to_message_id=reply_to_message_id,
-                                              text='有部分图片超过尺寸或大小限制，以文件形式发送：')
-                    for file in file_group:
-                        if file.name.endswith('.gif'):
-                            print('sending gif')
-                            telegram_bot.send_video(chat_id=discussion_chat_id,
-                                                    reply_to_message_id=reply_to_message_id, video=file)
-                        else:
-                            telegram_bot.send_document(chat_id=discussion_chat_id,
-                                                       reply_to_message_id=reply_to_message_id, document=file)
-            else:
-                telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
-        else:
+        if re.search(no_telegraph_regexp, data['aurl']) or data['type'] == 'long':
+            # if the url is not in the no_telegraph_list or the type is long, send long format message
             text = message_formatting(data)
             print(text)
             telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=text)
+        elif data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
+            # if the type is short and there are some media files, send media group
+            caption_text = data['text'] + '\n#' + data['category']
+            media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
+                                                                    caption=caption_text)
+            if len(media_message_group) > 0:  # if there are some media groups to send, send it
+                for media_group in media_message_group:
+                    sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                time.sleep(3)
+            else:  # if there are no media groups to send, send the caption text and also note the message
+                sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+            reply_to_message_id = None
+            if discussion_chat_id != chat_id and len(media_message_group) > 0:
+                # if the chat is a channel, get the latest pinned message from the channel
+                pinned_message = bot.get_chat(chat_id=discussion_chat_id).pinned_message
+                if pinned_message.forward_from_message_id == sent_message[-1].message_id:
+                    reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id \
+                                          - len(sent_message) + 1
+                else:
+                    reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id + 1
+            if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
+                telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
+                                          reply_to_message_id=reply_to_message_id,
+                                          text='有部分图片超过尺寸或大小限制，以文件形式发送：')
+                for file in file_group:
+                    if file.name.endswith('.gif'):
+                        print('sending gif')
+                        telegram_bot.send_video(chat_id=discussion_chat_id,
+                                                reply_to_message_id=reply_to_message_id, video=file)
+                    else:
+                        telegram_bot.send_document(chat_id=discussion_chat_id,
+                                                   reply_to_message_id=reply_to_message_id, document=file)
+            else:  # if there are no media files, send the caption text
+                telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
     except Exception:
         print(traceback.format_exc())
         if message:
