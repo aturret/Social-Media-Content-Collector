@@ -235,6 +235,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
         if the_chat.linked_chat_id:
             discussion_chat_id = the_chat.linked_chat_id
     try:
+        caption_text = data['text'] + '\n#' + data['category']
         if re.search(no_telegraph_regexp, data['aurl']) or data['type'] == 'long':
             # if the url is not in the no_telegraph_list or the type is long, send long format message
             text = message_formatting(data)
@@ -242,7 +243,6 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
             telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=text)
         elif data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
             # if the type is short and there are some media files, send media group
-            caption_text = data['text'] + '\n#' + data['category']
             media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
                                                                     caption=caption_text)
             if len(media_message_group) > 0:  # if there are some media groups to send, send it
@@ -272,8 +272,8 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
                     else:
                         telegram_bot.send_document(chat_id=discussion_chat_id,
                                                    reply_to_message_id=reply_to_message_id, document=file)
-            else:  # if there are no media files, send the caption text
-                telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+        else:  # if there are no media files, send the caption text
+            telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
     except Exception:
         print(traceback.format_exc())
         if message:
