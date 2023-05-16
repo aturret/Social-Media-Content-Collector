@@ -187,7 +187,7 @@ class Zhihu(object):
             if p.text != '':
                 p.append(BeautifulSoup('<br>', 'html.parser'))
             p.unwrap()
-        self.text = str(soup).replace('<br/>', '\n').replace('<br>', '\n').replace('<br />', '')
+        self.text = str(soup).replace('<br/>', '\n').replace('<br>', '\n').replace('<br />', '').replace('<hr/>', '\n')
 
 
 def get_zhihu_json_data(url, headers):

@@ -74,7 +74,7 @@ class Twitter(object):
         response = requests.get(url=tapiurl, headers=self.headers, params=self.params).json()
         return response
 
-    def tweet_process_official(self,tweet_info):
+    def tweet_process_official(self, tweet_info):
         self.text = tweet_info['data']['text']
         self.origin = tweet_info['includes']['users'][0]['name']
         self.title = self.origin + '\'s tweet'
@@ -92,7 +92,6 @@ class Twitter(object):
         self.text = '<a href="' + self.url + '">@' + self.origin + '</a>: ' + self.text
         self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
-
     def get_tweet_Twitter135(self):
         response = requests.get(url=self.api_url, headers=self.headers, params={'id': self.tid}).json()
         return response
@@ -105,15 +104,26 @@ class Twitter(object):
                 if i['content']['itemContent']['itemType'] == 'TimelineTweet':
                     tweets.append(i['content']['itemContent']['tweet_results']['result'])
         for tweet in tweets:
-            if tweet['legacy']['id_str'] == self.tid:
-                self.origin = tweet['core']['user_results']['result']['legacy']['name']
-                self.title = self.origin + '\'s tweet'
-                self.originurl = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy'][
-                    'screen_name']
-                self.aurl = self.url
-                self.date = tweet['legacy']['created_at']
-                picformat = ''
-                self.content += 'created at: ' + self.date + '<br>'
+            if tweet['__typename'] == 'Tweet':
+                if tweet['rest_id'] == self.tid:
+                    tweet_result = tweet
+                else:
+                    continue
+            elif tweet['__typename'] == 'TweetWithVisibilityResults':
+                if tweet['tweet']['rest_id'] == self.tid:
+                    tweet_result = tweet['tweet']
+                else:
+                    continue
+            else:
+                continue
+            self.origin = tweet_result['core']['user_results']['result']['legacy']['name']
+            self.title = self.origin + '\'s tweet'
+            self.originurl = 'https://twitter.com/' + tweet_result['core']['user_results']['result']['legacy'][
+                'screen_name']
+            self.aurl = self.url
+            self.date = tweet_result['legacy']['created_at']
+            picformat = ''
+            self.content += 'created at: ' + self.date + '<br>'
         for tweet in tweets:
             tweet_info = self.single_tweet_process_Twitter135(tweet)
             self.content += tweet_info['content'] + '<hr>'
@@ -123,6 +133,8 @@ class Twitter(object):
         self.tweet_raw_text_to_html()
 
     def single_tweet_process_Twitter135(self, tweet):
+        if tweet['__typename'] == 'TweetWithVisibilityResults':
+            tweet = tweet['tweet']
         tweet_info = {}
         tweet_info['title'] = tweet['core']['user_results']['result']['legacy']['name'] + '\'s tweet'
         tweet_info['origin'] = tweet['core']['user_results']['result']['legacy']['name']
@@ -131,7 +143,7 @@ class Twitter(object):
         tweet_info['aurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy'][
             'screen_name'] + '/status/' + tweet['legacy']['id_str']
         tweet_info['text'] = tweet['note_tweet']['note_tweet_results']['result']['text'] if 'note_tweet' in tweet else \
-        tweet['legacy']['full_text']
+            tweet['legacy']['full_text']
         tweet_info['text'] = util.escape(tweet_info['text'])
         tweet_info['content'] = tweet_info['text'] + '<br>'
         if 'extended_entities' in tweet['legacy']:
@@ -141,7 +153,8 @@ class Twitter(object):
                     media_item = {'type': 'image', 'url': i['media_url_https'], 'caption': ''}
                 if i['type'] == 'video':
                     highest_bitrate_item = max(i['video_info']['variants'], key=lambda x: x.get('bitrate', 0))
-                    tweet_info['content'] += '<video controls="controls" src="' + highest_bitrate_item['url'] + '">' + '<br>'
+                    tweet_info['content'] += '<video controls="controls" src="' + highest_bitrate_item[
+                        'url'] + '">' + '<br>'
                     media_item = {'type': 'video', 'url': highest_bitrate_item['url'], 'caption': ''}
                 self.media_files.append(media_item)
         return tweet_info
@@ -154,6 +167,7 @@ class Twitter(object):
                 return match.group(0)
             else:
                 return f'<a href="{url}">{url}</a>'
+
         content = self.content
         parts = re.split(r'\n+', content)
         content = ''.join([f'<p>{part}</p>' for part in parts])
