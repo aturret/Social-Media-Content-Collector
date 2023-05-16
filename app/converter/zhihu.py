@@ -180,7 +180,7 @@ class Zhihu(object):
                         '</a>：' + str(soup)
         else:
             self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b> - ' + self.origin + '的' + \
-                        zhihu_type_translate[self.zhihu_type] + '</a>：' + str(soup)
+                        zhihu_type_translate[self.zhihu_type] + '</a>：\n' + str(soup)
         soup = BeautifulSoup(self.text, 'html.parser')
         soup = util.format_telegram_short_text(soup)
         for p in soup.find_all('p'):
