@@ -15,6 +15,7 @@ twitter135_headers = {
     "X-RapidAPI-Key": X_RapidAPI_Key,
     "X-RapidAPI-Host": "twitter135.p.rapidapi.com"
 }
+all_scraper = ['Twitter135', 'twitter-v24', 'Twitter154']
 
 
 # 编辑推送信息
@@ -22,7 +23,10 @@ twitter135_headers = {
 
 class Twitter(object):
     def __init__(self, url, **kwargs):
+        self.host = None
+        self.top_domain = None
         self.url = url
+        self.aurl = url
         self.headers = {
             'Authorization': 'Bearer ' + settings.env_var.get('TWITTER_APP_KEY'),
             'Cookie': '',
@@ -33,13 +37,12 @@ class Twitter(object):
             'tweet.fields': 'created_at',
             'media.fields': 'duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text'
         }
-        self.scraper = kwargs['scraper'] if 'scraper' in kwargs else 'Twitter135'
-        if self.scraper == 'Twitter154':
-            self.api_url = 'https://twitter154.p.rapidapi.com/tweet/details'
-            self.headers = twitter154_headers
-        if self.scraper == 'Twitter135':
-            self.api_url = 'https://twitter135.p.rapidapi.com/v2/TweetDetail/'
-            self.headers = twitter135_headers
+        # if kwargs['scraper_type'] == 'single':
+        #     self.scraper = 'Twitter154'
+        # elif kwargs['scraper_type'] == 'thread':
+        #     self.scraper = 'Twitter135'
+        self.scraper_type = kwargs['scraper_type'] if 'scraper_type' in kwargs else 'thread'
+        self.scraper = 'twitter-v24'
         # twitter contents
         self.tid = tpattern.search(self.url).group()
         self.content = ''
@@ -54,16 +57,8 @@ class Twitter(object):
             self_dict[k] = v
         return self_dict
 
-    def get_single_tweet(self):
-        if self.scraper == 'Official':
-            api_info = self.get_tweet_official()
-            self.tweet_process_official(api_info)
-        elif self.scraper == 'Twitter154':
-            api_info = self.get_tweet_Twitter154()
-            self.tweet_process_Twitter154(api_info)
-        elif self.scraper == 'Twitter135':
-            api_info = self.get_tweet_Twitter135()
-            self.tweet_process_Twitter135(api_info)
+    def get_tweet_item(self):
+        self.get_single_tweet()
         twitter_item = self.to_dict()
         print(twitter_item)
         return twitter_item
@@ -92,12 +87,46 @@ class Twitter(object):
         self.text = '<a href="' + self.url + '">@' + self.origin + '</a>: ' + self.text
         self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
-    def get_tweet_Twitter135(self):
-        response = requests.get(url=self.api_url, headers=self.headers, params={'id': self.tid}).json()
-        return response
+    def get_single_tweet(self):
+        tweet_info = {}
+        for scraper in all_scraper:
+            if self.scraper == '':
+                self.scraper = scraper
+            self.process_get_media_headers()
+            response = requests.get(url=self.host, headers=self.headers, params=self.params)
+            if response.status_code == 200:
+                tweet_data = response.json()
+                print(tweet_data, self.params)
+                if (type(tweet_data) == dict and ('errors' in tweet_data or 'detail' in tweet_data)) or \
+                        (type(tweet_data) == str and '400' in tweet_data):
+                    print('get tweet error: ', self.scraper, tweet_data)
+                    continue
+                else:
+                    break
+            else:
+                print('get tweet error: ', self.scraper, response.status_code)
+                continue
+        if self.scraper == 'Twitter154':
+            tweet_info = self.tweet_process_Twitter154(tweet_data)
+        elif self.scraper == 'Twitter135' or self.scraper == 'twitter-v24':
+            tweet_info = self.tweet_process_Twitter135(tweet_data)
+        if tweet_info is not None:
+            self.tweet_item_process(tweet_info)
 
-    def tweet_process_Twitter135(self, api_info):
-        entries = api_info['data']['threaded_conversation_with_injections_v2']['instructions'][0]['entries']
+    def tweet_item_process(self, tweet_info):
+        self.origin = tweet_info['origin']
+        self.title = tweet_info['origin'] + '\'s tweet'
+        self.originurl = tweet_info['originurl']
+        self.aurl = self.url
+        self.date = tweet_info['date']
+        self.content = tweet_info['content']
+        self.text = tweet_info['text']
+        self.type = 'long' if len(self.text) > 300 else 'short'
+        self.tweet_raw_text_to_html()
+
+    def tweet_process_Twitter135(self, tweet_data):
+        tweet_info = {}
+        entries = tweet_data['data']['threaded_conversation_with_injections_v2']['instructions'][0]['entries']
         tweets = []
         for i in entries:
             if i['content']['entryType'] == 'TimelineTimelineItem':
@@ -116,47 +145,73 @@ class Twitter(object):
                     continue
             else:
                 continue
-            self.origin = tweet_result['core']['user_results']['result']['legacy']['name']
-            self.title = self.origin + '\'s tweet'
-            self.originurl = 'https://twitter.com/' + tweet_result['core']['user_results']['result']['legacy'][
+            tweet_info['origin'] = tweet_result['core']['user_results']['result']['legacy']['name']
+            tweet_info['originurl'] = 'https://twitter.com/' + tweet_result['core']['user_results']['result']['legacy'][
                 'screen_name']
-            self.aurl = self.url
-            self.date = tweet_result['legacy']['created_at']
-            picformat = ''
-            self.content += 'created at: ' + self.date + '<br>'
+            tweet_info['date'] = tweet_result['legacy']['created_at']
+            tweet_info['content'] = 'created at: ' + tweet_info['date'] + '<br>'
+            tweet_info['text'] = ''
+        tweet_info['media_files'] = []
         for tweet in tweets:
-            tweet_info = self.single_tweet_process_Twitter135(tweet)
-            self.content += tweet_info['content'] + '<hr>'
-            self.text += '<a href=\"' + tweet_info['aurl'] + '">@' + tweet_info['origin'] + '</a>: ' + tweet_info[
-                'text']
-        self.type = 'long' if len(self.text) > 300 else 'short'
-        self.tweet_raw_text_to_html()
+            single_tweet_info = self.single_tweet_process_Twitter135(tweet)
+            if self.scraper_type == 'single' and single_tweet_info['tid'] != self.tid:
+                continue
+            tweet_info['media_files'] += single_tweet_info['media_files']
+            tweet_info['content'] += single_tweet_info['content'] + '<hr>'
+            tweet_info['text'] += '<a href=\"' + single_tweet_info['aurl'] + '">@' + single_tweet_info['origin'] + \
+                                  '</a>: ' + single_tweet_info['text']
+        return tweet_info
 
     def single_tweet_process_Twitter135(self, tweet):
+        single_tweet_info = {}
         if tweet['__typename'] == 'TweetWithVisibilityResults':
             tweet = tweet['tweet']
-        tweet_info = {}
-        tweet_info['title'] = tweet['core']['user_results']['result']['legacy']['name'] + '\'s tweet'
-        tweet_info['origin'] = tweet['core']['user_results']['result']['legacy']['name']
-        tweet_info['originurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy'][
-            'screen_name']
-        tweet_info['aurl'] = 'https://twitter.com/' + tweet['core']['user_results']['result']['legacy'][
-            'screen_name'] + '/status/' + tweet['legacy']['id_str']
-        tweet_info['text'] = tweet['note_tweet']['note_tweet_results']['result']['text'] if 'note_tweet' in tweet else \
-            tweet['legacy']['full_text']
-        tweet_info['text'] = util.escape(tweet_info['text'])
-        tweet_info['content'] = tweet_info['text'] + '<br>'
+        single_tweet_info['tid'] = tweet['rest_id']
+        single_tweet_info['title'] = tweet['core']['user_results']['result']['legacy']['name'] + '\'s tweet'
+        single_tweet_info['origin'] = tweet['core']['user_results']['result']['legacy']['name']
+        single_tweet_info['originurl'] = 'https://twitter.com/' + \
+                                         tweet['core']['user_results']['result']['legacy']['screen_name']
+        single_tweet_info['aurl'] = 'https://twitter.com/' + \
+                                    tweet['core']['user_results']['result']['legacy']['screen_name'] + \
+                                    '/status/' + tweet['legacy']['id_str']
+        single_tweet_info['text'] = tweet['note_tweet']['note_tweet_results']['result']['text'] \
+            if 'note_tweet' in tweet else tweet['legacy']['full_text']
+        single_tweet_info['text'] = util.escape(single_tweet_info['text'])
+        single_tweet_info['content'] = single_tweet_info['text'] + '<br>'
+        single_tweet_info['media_files'] = []
         if 'extended_entities' in tweet['legacy']:
             for i in tweet['legacy']['extended_entities']['media']:
+                if i['type'] == 'photo':
+                    single_tweet_info['content'] += '<img src="' + i['media_url_https'] + '">' + '<br>'
+                    media_item = {'type': 'image', 'url': i['media_url_https'], 'caption': ''}
+                if i['type'] == 'video':
+                    highest_bitrate_item = max(i['video_info']['variants'], key=lambda x: x.get('bitrate', 0))
+                    single_tweet_info['content'] += '<video controls="controls" src="' + \
+                                                    highest_bitrate_item['url'] + '">' + '<br>'
+                    media_item = {'type': 'video', 'url': highest_bitrate_item['url'], 'caption': ''}
+                single_tweet_info['media_files'].append(media_item)
+        return single_tweet_info
+
+    def tweet_process_Twitter154(self, tweet_data):
+        tweet_info = {}
+        tweet_info['origin'] = tweet_data['user']['name']
+        tweet_info['originurl'] = 'https://twitter.com/' + tweet_data['user']['username']
+        tweet_info['date'] = tweet_data['creation_date']
+        tweet_info['content'] = 'created at: ' + tweet_info['date'] + '<br>'
+        tweet_info['text'] = '<a href=\"' + self.aurl + '">@' + tweet_data['origin'] + \
+                             '</a>: ' + tweet_data['text']
+        tweet_info['media_files'] = []
+        if 'extended_entities' in tweet_data and tweet_data['extended_entities'] is not None:
+            for i in tweet_data['extended_entities']['media']:
                 if i['type'] == 'photo':
                     tweet_info['content'] += '<img src="' + i['media_url_https'] + '">' + '<br>'
                     media_item = {'type': 'image', 'url': i['media_url_https'], 'caption': ''}
                 if i['type'] == 'video':
                     highest_bitrate_item = max(i['video_info']['variants'], key=lambda x: x.get('bitrate', 0))
-                    tweet_info['content'] += '<video controls="controls" src="' + highest_bitrate_item[
-                        'url'] + '">' + '<br>'
+                    tweet_info['content'] += '<video controls="controls" src="' + highest_bitrate_item['url'] +\
+                                             '">' + '<br>'
                     media_item = {'type': 'video', 'url': highest_bitrate_item['url'], 'caption': ''}
-                self.media_files.append(media_item)
+                tweet_info['media_files'].append(media_item)
         return tweet_info
 
     def tweet_raw_text_to_html(self):
@@ -173,3 +228,22 @@ class Twitter(object):
         content = ''.join([f'<p>{part}</p>' for part in parts])
         content = re.sub(r'(<)?https:\/\/t\.co\/[\w-]+', replace_url, content)
         self.content = content
+
+    def process_get_media_headers(self):
+        if self.scraper == 'Twitter154':
+            self.host = 'https://twitter154.p.rapidapi.com/tweet/details'
+            self.top_domain = 'twitter154'
+            self.params = {'tweet_id': self.tid}
+        elif self.scraper == 'Twitter135':
+            self.host = 'https://twitter135.p.rapidapi.com/v2/TweetDetail/'
+            self.top_domain = 'twitter135'
+            self.params = {'id': self.tid}
+        elif self.scraper == 'twitter-v24':
+            self.host = 'https://twitter-v24.p.rapidapi.com/tweet/details'
+            self.top_domain = 'twitter-v24'
+            self.params = {'tweet_id': self.tid}
+        self.headers = {
+            'X-RapidAPI-Key': X_RapidAPI_Key,
+            'X-RapidAPI-Host': self.top_domain + '.p.rapidapi.com',
+            "content-type": "application/octet-stream",
+        }

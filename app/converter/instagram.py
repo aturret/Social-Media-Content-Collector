@@ -48,7 +48,7 @@ class Instagram(object):
         for scraper in all_scrapers:
             self.scraper = scraper
             self.process_get_media_headers()
-            response = requests.get(self.host, headers=self.headers, params=self.params)
+            response = requests.get(url=self.host, headers=self.headers, params=self.params)
             if response.status_code != 200:
                 print('get_ins_post_item error: ', self.scraper, response.status_code)
                 continue

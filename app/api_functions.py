@@ -84,11 +84,9 @@ class MetadataDict(object):
         }
 
 
-def new_weibo_converter(request_data, **kwargs):
+def new_weibo_converter(url, **kwargs):
     try:
-        wdict = request_data
-        print('get weibo url: '+wdict['url'])
-        wurl = wdict['url']
+        wurl = url
         if wurl.find('weibo.com'):
             wurl = wurl.replace('weibo.com', 'm.weibo.cn')
         wb = weibo.Weibo(wurl).new_get_weibo()
@@ -112,12 +110,11 @@ def new_weibo_converter(request_data, **kwargs):
         print(traceback.format_exc())
 
 
-def twitter_converter(request_data, **kwargs):
+def twitter_converter(url, **kwargs):
     try:
-        tdict = request_data
-        print('get twitter url: '+tdict['url'])
-        turl = tdict['url']
-        tw = twitter.Twitter(turl).get_single_tweet()
+        turl = url
+        scraper_type = kwargs['scraper_type'] if 'scraper_type' in kwargs else None
+        tw = twitter.Twitter(turl, **kwargs).get_tweet_item()
         print('get twitter item')
         if not tw:
             raise Exception('No twitter found')
@@ -133,11 +130,9 @@ def twitter_converter(request_data, **kwargs):
         print(traceback.format_exc())
 
 
-def douban_converter(request_data, **kwargs):
+def douban_converter(url, **kwargs):
     try:
-        ddict = request_data
-        print('get douban url: '+ddict['url'])
-        durl = ddict['url']
+        durl = url
         db = douban.Douban(url=durl).get_fav_item()
         print('get douban item')
         if not db:
@@ -154,11 +149,9 @@ def douban_converter(request_data, **kwargs):
         print(traceback.format_exc())
 
 
-def zhihu_converter(request_data, **kwargs):
+def zhihu_converter(url, **kwargs):
     try:
-        zdict = request_data
-        print('get Zhihu url: '+zdict['url'])
-        zurl = zdict['url']
+        zurl = url
         zh = zhihu.Zhihu(url=zurl).get_fav_item()
         print('get zhihu item')
         if not zh:
@@ -175,11 +168,9 @@ def zhihu_converter(request_data, **kwargs):
         print(traceback.format_exc())
 
 
-def instagram_converter(request_data, **kwargs):
+def instagram_converter(url, **kwargs):
     try:
-        idict = request_data
-        print('get instagram url: '+idict['url'])
-        iurl = idict['url']
+        iurl = url
         ins = instagram.Instagram(url=iurl).get_single_ins_item()
         print('get instagram item')
         if not ins:
@@ -194,6 +185,7 @@ def instagram_converter(request_data, **kwargs):
     except Exception as e:
         print('instagram_scraping_failed')
         print(traceback.format_exc())
+
 
 def inoreader_converter(request_data, **kwargs):
     try:

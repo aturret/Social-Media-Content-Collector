@@ -3,9 +3,10 @@ import telebot
 import re
 import time
 import requests
+import traceback
 from .utils import util
 from .utils import reply_messages
-from .api_functions import *
+from . import api_functions
 from .settings import env_var
 
 site_url = env_var.get('SITE_URL', '127.0.0.1')
@@ -19,8 +20,10 @@ allowed_admin_users = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 # initialize telebot
 bot = telebot.TeleBot(telebot_key, num_threads=4)
 bot.delete_webhook()
+print('webhook deleted')
 if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False') != 'True':
     bot.set_webhook(site_url + '/bot')
+    print('webhook set')
 default_channel_id = bot.get_chat(default_channel_name).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
 http_parttern = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
@@ -39,35 +42,42 @@ def get_social_media(message):
         return
     try:
         func_buttons = []
+        basic_buttons = []
         url = url_pattern.search(message.text).group()
         print('the url is: ' + url)
-        target_function, replying_message = check_url_type(url, message)
-        request_data = {'url': url}
-        response_data = target_function(request_data)
-        if response_data:
+        target_data = check_url_type(url, message)
+        if target_data:
             data_id = str(util.uuid.uuid4())[:16]
-            formatted_data[data_id] = response_data
+            formatted_data[data_id] = target_data
         else:
             print('Failure')
             bot.reply_to(message, 'Failure')
             return
-        if replying_message:
-            bot.delete_message(message.chat.id, replying_message.message_id)
+        if target_data['replying_message']:
+            bot.delete_message(message.chat.id, target_data['replying_message'].message_id)
         # add function buttons
         if default_channel_name and str(message.from_user.id) in allowed_admin_users:
             forward_button_data = 'chan+' + str(message.id) + '+' + data_id + '+' + str(default_channel_name)
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道', callback_data=forward_button_data)
             print(forward_button.callback_data)
             func_buttons.append(forward_button)
-        if 'media_files' in response_data:
-            extract_button_data = 'extr+' + str(message.id) + '+' + data_id
-            extract_button = telebot.types.InlineKeyboardButton(text='强制直接提取', callback_data=extract_button_data)
-            func_buttons.append(extract_button)
-        show_button_data = 'priv+' + str(message.id) + '+' + data_id
-        show_button = telebot.types.InlineKeyboardButton(text='发送到私聊', callback_data=show_button_data)
+        extract_button_data = 'extr+' + str(message.id) + '+' + data_id
+        extract_button = telebot.types.InlineKeyboardButton(text='强制直接提取', callback_data=extract_button_data)
+        func_buttons.append(extract_button)
+        if target_data['target_item_type'] == 'twitter':
+            single_tweet_button_data = 'priv+' + str(message.id) + '+' + data_id + '+single'
+            single_tweet_button = telebot.types.InlineKeyboardButton(text='单条推文', callback_data=single_tweet_button_data)
+            func_buttons.append(single_tweet_button)
+            thread_tweet_button_data = 'priv+' + str(message.id) + '+' + data_id + '+thread'
+            thread_tweet_button = telebot.types.InlineKeyboardButton(text='获取推文串', callback_data=thread_tweet_button_data)
+            func_buttons.append(thread_tweet_button)
+        else:
+            show_button_data = 'priv+' + str(message.id) + '+' + data_id
+            show_button = telebot.types.InlineKeyboardButton(text='发送到私聊', callback_data=show_button_data)
+            func_buttons.append(show_button)
         cancel_button_data = 'back+' + str(message.id)
         cancel_button = telebot.types.InlineKeyboardButton(text='取消', callback_data=cancel_button_data)
-        basic_buttons = [cancel_button, show_button]
+        basic_buttons.append(cancel_button)
         if len(func_buttons) > 0:
             markup = telebot.types.InlineKeyboardMarkup([func_buttons, basic_buttons])
         else:
@@ -82,7 +92,8 @@ def get_social_media(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
 def callback_query(call):
     try:
-        message_id = call.data.split('+')[1]
+        query_data = call.data.split('+')
+        message_id = query_data[1]
         bot.answer_callback_query(call.id, "Sending message to channel")
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
@@ -90,8 +101,9 @@ def callback_query(call):
                               text='正在把消息发送至绑定的频道……')
         if len(formatted_data) == 0:
             raise Exception('No data to send')
-        the_data = formatted_data.pop(call.data.split('+')[2])
-        send_formatted_message(data=the_data, message=call.message, chat_id=call.data.split('+')[3])
+        target_data = formatted_data.pop(query_data[2])
+        response_data = target_data['target_function'](target_data['url'])
+        send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
         bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -107,7 +119,8 @@ def callback_query(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
 def callback_query(call):
     try:
-        message_id = call.data.split('+')[1]
+        query_data = call.data.split('+')
+        message_id = query_data[1]
         bot.answer_callback_query(call.id, "Message sent to private chat")
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
@@ -116,8 +129,15 @@ def callback_query(call):
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
-        the_data = formatted_data.pop(call.data.split('+')[2])
-        send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+        target_function_kwargs = {}
+        target_data = formatted_data.pop(query_data[2])
+        if target_data['target_item_type'] == 'twitter':
+            if query_data[-1] == 'single':
+                target_function_kwargs['scraper_type'] = 'single'
+            elif query_data[-1] == 'thread':
+                target_function_kwargs['scraper_type'] = 'thread'
+        response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
+        send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
         bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -133,7 +153,8 @@ def callback_query(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
 def callback_query(call):
     try:
-        message_id = call.data.split('+')[1]
+        query_data = call.data.split('+')
+        message_id = query_data[1]
         bot.answer_callback_query(call.id, "extracting...")
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
@@ -142,13 +163,14 @@ def callback_query(call):
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
-        the_data = formatted_data.pop(call.data.split('+')[2])
-        the_data['type'] = 'short'
-        if util.get_html_text_length(the_data['text']) > telegram_text_limit:
-            short_text = the_data['text'][:(telegram_text_limit - len(the_data['turl']))]
+        target_data = formatted_data.pop(query_data[2])
+        response_data = target_data['target_function'](target_data['url'])
+        response_data['type'] = 'short'
+        if util.get_html_text_length(response_data['text']) > telegram_text_limit:
+            short_text = response_data['text'][:(telegram_text_limit - len(response_data['turl']))]
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
-            the_data['text'] = short_text + '...\n<a href="' + the_data['turl'] + '">阅读原文</a>'
-        send_formatted_message(data=the_data, message=call.message, chat_id=call.message.chat.id)
+            response_data['text'] = short_text + '...\n<a href="' + response_data['turl'] + '">阅读原文</a>'
+        send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
         bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -369,24 +391,29 @@ def check_url_type(url, message):
     if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
         replying_message = bot.reply_to(message, '检测到微博URL，转化中\nWeibo URL detected, converting...')
         print('检测到微博URL，转化中\nWeibo URL detected, converting...')
-        target_function = new_weibo_converter
+        target_function = api_functions.new_weibo_converter
+        target_item_type = 'weibo'
     elif url.find('twitter.com') != -1:
         replying_message = bot.reply_to(message, '检测到TwitterURL，转化中\nTwitter URL detected, converting...')
         print('检测到TwitterURL，转化中\nTwitter URL detected, converting...')
-        target_function = twitter_converter
+        target_function = api_functions.twitter_converter
+        target_item_type = 'twitter'
         # target_url = twitterApiUrl
     elif url.find('zhihu.com') != -1:
         replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
         print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
-        target_function = zhihu_converter
+        target_function = api_functions.zhihu_converter
+        target_item_type = 'zhihu'
     elif url.find('douban.com') != -1:
         replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
         print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
-        target_function = douban_converter
+        target_function = api_functions.douban_converter
+        target_item_type = 'douban'
     elif url.find('instagram.com') != -1:
         replying_message = bot.reply_to(message, '检测到InstagramURL，转化中\nInstagram URL detected, converting...')
         print('检测到InstagramURL，转化中\nInstagram URL detected, converting...')
-        target_function = instagram_converter
+        target_function = api_functions.instagram_converter
+        target_item_type = 'instagram'
     elif url.find('youtube.com') != -1:
         if not youtube_api:
             bot.reply_to(message,
@@ -402,4 +429,6 @@ def check_url_type(url, message):
             replying_message = bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
             print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
             return None, replying_message
-    return target_function, replying_message
+    target_data = {'url': url, 'replying_message': replying_message, 'target_function': target_function,
+                     'target_item_type': target_item_type}
+    return target_data
