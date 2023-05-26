@@ -35,7 +35,7 @@ class TelegraphDict(object):
 
 
 class MetadataDict(object):
-    def __init__(self,dict_data: dict,**kwargs):
+    def __init__(self, dict_data: dict, **kwargs):
         self.category = dict_data['category'] if 'category' in dict_data \
             else kwargs['category'] if 'category' in kwargs \
             else 'undefined_category'

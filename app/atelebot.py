@@ -66,10 +66,12 @@ def get_social_media(message):
         func_buttons.append(extract_button)
         if target_data['target_item_type'] == 'twitter':
             single_tweet_button_data = 'priv+' + str(message.id) + '+' + data_id + '+single'
-            single_tweet_button = telebot.types.InlineKeyboardButton(text='单条推文', callback_data=single_tweet_button_data)
+            single_tweet_button = telebot.types.InlineKeyboardButton(text='单条推文',
+                                                                     callback_data=single_tweet_button_data)
             func_buttons.append(single_tweet_button)
             thread_tweet_button_data = 'priv+' + str(message.id) + '+' + data_id + '+thread'
-            thread_tweet_button = telebot.types.InlineKeyboardButton(text='获取推文串', callback_data=thread_tweet_button_data)
+            thread_tweet_button = telebot.types.InlineKeyboardButton(text='获取推文串',
+                                                                     callback_data=thread_tweet_button_data)
             func_buttons.append(thread_tweet_button)
         else:
             show_button_data = 'priv+' + str(message.id) + '+' + data_id
@@ -98,11 +100,13 @@ def callback_query(call):
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='正在把消息发送至绑定的频道……')
+                              text='社交媒体内容处理中……\nsocial media item processing...')
         if len(formatted_data) == 0:
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
         response_data = target_data['target_function'](target_data['url'])
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
         send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
         bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
     except telebot.apihelper.ApiException as e:
@@ -125,7 +129,7 @@ def callback_query(call):
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='正在把摘取的内容发送至本对话……')
+                              text='社交媒体内容处理中……\nsocial media item processing...')
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
@@ -137,6 +141,8 @@ def callback_query(call):
             elif query_data[-1] == 'thread':
                 target_function_kwargs['scraper_type'] = 'thread'
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
         send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
         bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
@@ -195,16 +201,7 @@ def callback_query(call):
         bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
-# @bot.message_handler(chat_types=['group'])
-# def handle_message(message):
-#     try:
-#         bot.reply_to(message, '请在群组中使用')
-#     except Exception as e:
-#         print(traceback.format_exc())
-#         bot.reply_to(message, 'Failure' + traceback.format_exc())
-
-
-@bot.message_handler(chat_types=['private'],content_types=['sticker'])
+@bot.message_handler(chat_types=['private'], content_types=['sticker'])  # get sticker id
 def handle_message(message):
     try:
         bot.reply_to(message, 'The sticker id is: ' + message.sticker.file_id)
@@ -227,14 +224,12 @@ def handle_message(message):
         bot.delete_message(chat_id=message.chat.id, message_id=replying_message.message_id)
     except Exception as e:
         print(traceback.format_exc())
-        # bot.reply_to(message, 'Failure' + traceback.format_exc())
         return
 
 
-@bot.message_handler(commands=['hello'])
+@bot.message_handler(commands=['hello'])  # a little Easter egg of responding to /hello with stickers
 def handle_message(message):
-    try:
-        # get a random number from the length of the list
+    try:  # get a random number from the length of the list
         messages = reply_messages.reply_message_groups
         random_number = random.randint(0, len(messages) - 1)
         # reply to the message
@@ -389,29 +384,34 @@ def media_files_packaging(media_files, caption=None):
 
 def check_url_type(url, message):
     if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
-        replying_message = bot.reply_to(message, '检测到微博URL，转化中\nWeibo URL detected, converting...')
-        print('检测到微博URL，转化中\nWeibo URL detected, converting...')
+        replying_message = bot.reply_to(message,
+                                        '检测到微博URL，预处理中……\nWeibo URL detected, preparing for processing....')
+        print('检测到微博URL，预处理中……\nWeibo URL detected, preparing for processing....')
         target_function = api_functions.new_weibo_converter
         target_item_type = 'weibo'
     elif url.find('twitter.com') != -1:
-        replying_message = bot.reply_to(message, '检测到TwitterURL，转化中\nTwitter URL detected, converting...')
-        print('检测到TwitterURL，转化中\nTwitter URL detected, converting...')
+        replying_message = bot.reply_to(message,
+                                        '检测到TwitterURL，预处理中……\nTwitter URL detected, preparing for processing....')
+        print('检测到TwitterURL，预处理中……\nTwitter URL detected, preparing for processing....')
         target_function = api_functions.twitter_converter
         target_item_type = 'twitter'
         # target_url = twitterApiUrl
     elif url.find('zhihu.com') != -1:
-        replying_message = bot.reply_to(message, '检测到知乎URL，转化中\nZhihu URL detected, converting...')
-        print('检测到知乎URL，转化中\nZhihu URL detected, converting...')
+        replying_message = bot.reply_to(message,
+                                        '检测到知乎URL，预处理中……\nZhihu URL detected, preparing for processing....')
+        print('检测到知乎URL，预处理中……\nZhihu URL detected, preparing for processing....')
         target_function = api_functions.zhihu_converter
         target_item_type = 'zhihu'
     elif url.find('douban.com') != -1:
-        replying_message = bot.reply_to(message, '检测到豆瓣URL，转化中\nDouban URL detected, converting...')
-        print('检测到豆瓣URL，转化中\nDouban URL detected, converting...')
+        replying_message = bot.reply_to(message,
+                                        '检测到豆瓣URL，预处理中……\nDouban URL detected, preparing for processing....')
+        print('检测到豆瓣URL，预处理中……\nDouban URL detected, preparing for processing....')
         target_function = api_functions.douban_converter
         target_item_type = 'douban'
     elif url.find('instagram.com') != -1:
-        replying_message = bot.reply_to(message, '检测到InstagramURL，转化中\nInstagram URL detected, converting...')
-        print('检测到InstagramURL，转化中\nInstagram URL detected, converting...')
+        replying_message = bot.reply_to(message,
+                                        '检测到InstagramURL，预处理中……\nInstagram URL detected, preparing for processing....')
+        print('检测到InstagramURL，预处理中……\nInstagram URL detected, preparing for processing....')
         target_function = api_functions.instagram_converter
         target_item_type = 'instagram'
     elif url.find('youtube.com') != -1:
@@ -419,16 +419,18 @@ def check_url_type(url, message):
             bot.reply_to(message,
                          '未配置YouTube API，无法抓取\nYouTube API is not configured. Cannot extract metadata from YouTube.')
         else:
-            replying_message = bot.reply_to(message, '检测到YouTubeURL，转化中\nYouTube URL detected, converting...')
+            replying_message = bot.reply_to(message,
+                                            '检测到YouTubeURL，预处理中……\nYouTube URL detected, preparing for processing....')
     else:
         if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
-            replying_message = bot.reply_to(message, '检测到长毛象URL，转化中\nMustodon URL detected, converting...')
-            print('检测到长毛象URL，转化中\nMustodon URL detected, converting...')
+            replying_message = bot.reply_to(message,
+                                            '检测到长毛象URL，预处理中……\nMustodon URL detected, preparing for processing....')
+            print('检测到长毛象URL，预处理中……\nMustodon URL detected, preparing for processing....')
             # target_url = mustodonApiUrl
         else:
             replying_message = bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
             print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
             return None, replying_message
     target_data = {'url': url, 'replying_message': replying_message, 'target_function': target_function,
-                     'target_item_type': target_item_type}
+                   'target_item_type': target_item_type}
     return target_data
