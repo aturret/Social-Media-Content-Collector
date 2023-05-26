@@ -1,7 +1,7 @@
 import traceback
 from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
-from .converter import weibo, twitter, douban, zhihu, mustodon, instagram
+from .converter import weibo, twitter, douban, zhihu, mustodon, instagram, videos
 from bs4 import BeautifulSoup
 from .utils import util
 
@@ -261,3 +261,17 @@ def telegraph_convert(tdict):
     #     print(traceback.format_exc())
     # finally:
     return res if res else 'nothing'
+
+
+def video_converter(url, **kwargs):
+    try:
+        v = videos.VideoConverter(url=url).get_video_item()
+        print('get video item')
+        if not v:
+            raise Exception('No video found')
+        mdict = MetadataDict(v, category='video', message='', type='short').to_dict()
+        print(mdict)
+        return mdict
+    except Exception as e:
+        print('video_scraping_failed')
+        print(traceback.format_exc())

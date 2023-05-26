@@ -25,15 +25,16 @@ if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False
     bot.set_webhook(SITE_URL + '/bot')
     print('webhook set')
 DEFAULT_CHANNEL_ID = bot.get_chat(DEFAULT_CHANNEL_ID).id
-url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
-http_parttern = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
-douban_http_pattern = r'(http|https)://(www\.)+douban\.com'
-no_telegraph_regexp = r"(youtube\.com)|(bilibili\.com\/video)"
+URL_PATTERN = re.compile(r'(?:http|https)://[\w.!@#$%^&*()_+-=/?]*\??([^#\s]*)')  # 只摘取httpURL的pattern
+HTTP_PATTERN_REGEXP = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
+DOUBAN_HTTP_REGEXP = r'(http|https)://(www\.)+douban\.com'
+NO_TELEGRAPH_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)"
+VIDEO_URL_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)|(youtu\.be)"
 formatted_data = {}
 latest_channel_message = []
 
 
-@bot.message_handler(regexp=http_parttern, chat_types=['private'])
+@bot.message_handler(regexp=HTTP_PATTERN_REGEXP, chat_types=['private'])
 def get_social_media(message):
     user_id = message.from_user.id
     print('user_id: ' + str(user_id) + ' is trying to convert a social media URL')
@@ -43,9 +44,11 @@ def get_social_media(message):
     try:
         func_buttons = []
         basic_buttons = []
-        url = url_pattern.search(message.text).group()
+        url = URL_PATTERN.search(message.text).group()
         print('the url is: ' + url)
         target_data = check_url_type(url, message)
+        if target_data['target_item_type'] == 'invalid':
+            return
         if target_data:
             data_id = str(util.uuid.uuid4())[:16]
             formatted_data[data_id] = target_data
@@ -210,11 +213,11 @@ def handle_message(message):
         bot.reply_to(message, 'Failure' + traceback.format_exc())
 
 
-@bot.message_handler(regexp=douban_http_pattern, chat_types=['group', 'supergroup'])
+@bot.message_handler(regexp=DOUBAN_HTTP_REGEXP, chat_types=['group', 'supergroup'])
 def handle_message(message):
     print('douban')
     try:
-        url = url_pattern.search(message.text).group()
+        url = URL_PATTERN.search(message.text).group()
         print('the url is: ' + url)
         target_function, replying_message = check_url_type(url, message)
         request_data = {'url': url}
@@ -253,7 +256,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
             discussion_chat_id = the_chat.linked_chat_id
     try:
         caption_text = data['text'] + '\n#' + data['category']
-        if re.search(no_telegraph_regexp, data['aurl']) or data['type'] == 'long':
+        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']) or data['type'] == 'long':
             # if the url is not in the no_telegraph_list or the type is long, send long format message
             text = message_formatting(data)
             print(text)
@@ -299,13 +302,13 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
 
 def message_formatting(data):
     if data['type'] == 'short':
-        if re.search(no_telegraph_regexp, data['aurl']):
+        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']):
             text = '<a href=\"' + data['aurl'] + '\"><b>' + data['title'] + '</b></a>\n'  'via #' + data['category'] + \
                    ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
         else:
             text = data['text'] + '\n#' + data['category']
     else:
-        if re.search(no_telegraph_regexp, data['aurl']):
+        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']):
             text = '<a href=\"' + data['aurl'] + '\">' '<b>' + data['title'] + '</b></a>\nvia #' + data['category'] + \
                    ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
         else:
@@ -414,23 +417,25 @@ def check_url_type(url, message):
         print('检测到InstagramURL，预处理中……\nInstagram URL detected, preparing for processing....')
         target_function = api_functions.instagram_converter
         target_item_type = 'instagram'
-    elif url.find('youtube.com') != -1:
-        if not YOUTUBE_API:
-            bot.reply_to(message,
-                         '未配置YouTube API，无法抓取\nYouTube API is not configured. Cannot extract metadata from YouTube.')
-        else:
+    elif re.search(VIDEO_URL_REGEXP, url) is not None:
+        if url.find('youtube.com') != -1 or url.find('youtu.be') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到YouTubeURL，预处理中……\nYouTube URL detected, preparing for processing....')
+        elif url.find('bilibili.com') != -1:
+            replying_message = bot.reply_to(message,
+                                            '检测到BilibiliURL，预处理中……\nBilibili URL detected, preparing for processing....')
+        target_function = api_functions.video_converter
+        target_item_type = 'video'
     else:
         if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
             replying_message = bot.reply_to(message,
                                             '检测到长毛象URL，预处理中……\nMustodon URL detected, preparing for processing....')
             print('检测到长毛象URL，预处理中……\nMustodon URL detected, preparing for processing....')
-            # target_url = mustodonApiUrl
         else:
             replying_message = bot.reply_to(message, '不符合规范，无法转化\ninvalid URL detected, cannot convert')
             print('不符合规范，无法转化\ninvalid URL detected, cannot convert')
-            return None, replying_message
+            target_function = None
+            target_item_type = 'invalid'
     target_data = {'url': url, 'replying_message': replying_message, 'target_function': target_function,
                    'target_item_type': target_item_type}
     return target_data

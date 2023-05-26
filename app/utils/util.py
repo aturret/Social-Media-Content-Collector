@@ -1,12 +1,14 @@
 import hashlib
-# import logging
 import json
-from .customized_classes import *
+import re
 import uuid
 import sys
 import time
 import datetime
 import requests
+
+from .customized_classes import *
+
 from lxml import etree, html as lhtml
 from html import escape
 from PIL import Image
@@ -229,10 +231,17 @@ def format_telegram_short_text(soup):
             item.unwrap()
     return soup
 
+
 def unix_timestamp_to_utc(timestamp):
     utc_time = datetime.datetime.utcfromtimestamp(timestamp)
     beijing_time = utc_time + datetime.timedelta(hours=8)
     return beijing_time.strftime('%Y-%m-%d %H:%M')
+
+
+def second_to_time(second):
+    m, s = divmod(second, 60)
+    h, m = divmod(m, 60)
+    return "%02d:%02d:%02d" % (h, m, s)
 
 
 def get_image_dimension(image_file):
@@ -257,3 +266,12 @@ def download_a_iobytes_file(url, file_name=None):
         file_name = 'media-' + str(uuid.uuid1())[:8] + '.' + file_format
     io_object = NamedBytesIO(file_data, name=file_name)
     return io_object
+
+
+def get_content_between_strings(string, start, end):
+    pattern = r'(?<=' + re.escape(start) + ').+?(?=' + re.escape(end) + ')'
+    match = re.search(pattern, string, re.DOTALL)
+    if match:
+        return match.group()
+    else:
+        return None
