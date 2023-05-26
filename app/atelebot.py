@@ -70,7 +70,7 @@ def get_social_media(message):
                                                                      callback_data=single_tweet_button_data)
             func_buttons.append(single_tweet_button)
             thread_tweet_button_data = 'priv+' + str(message.id) + '+' + data_id + '+thread'
-            thread_tweet_button = telebot.types.InlineKeyboardButton(text='获取推文串',
+            thread_tweet_button = telebot.types.InlineKeyboardButton(text='推文串',
                                                                      callback_data=thread_tweet_button_data)
             func_buttons.append(thread_tweet_button)
         else:
