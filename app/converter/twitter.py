@@ -5,17 +5,8 @@ import re
 
 X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')
 tpattern = re.compile(r'(?<=status/)[0-9]*')  # 摘出推文id
-twitter154_headers = {
-    "content-type": "application/octet-stream",
-    "X-RapidAPI-Key": X_RapidAPI_Key,
-    "X-RapidAPI-Host": "twitter154.p.rapidapi.com"
-}
-twitter135_headers = {
-    "content-type": "application/octet-stream",
-    "X-RapidAPI-Key": X_RapidAPI_Key,
-    "X-RapidAPI-Host": "twitter135.p.rapidapi.com"
-}
-all_scraper = ['Twitter135', 'twitter-v24', 'Twitter154']
+ALL_SCRAPER = ['Twitter135', 'twitter-v24', 'Twitter154']
+ALL_SINGLE_SCRAPER = ['twitter-v24', 'Twitter154']
 
 
 # 编辑推送信息
@@ -37,10 +28,6 @@ class Twitter(object):
             'tweet.fields': 'created_at',
             'media.fields': 'duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text'
         }
-        # if kwargs['scraper_type'] == 'single':
-        #     self.scraper = 'Twitter154'
-        # elif kwargs['scraper_type'] == 'thread':
-        #     self.scraper = 'Twitter135'
         self.scraper_type = kwargs['scraper_type'] if 'scraper_type' in kwargs else 'thread'
         self.scraper = 'twitter-v24'
         # twitter contents
@@ -89,7 +76,8 @@ class Twitter(object):
 
     def get_single_tweet(self):
         tweet_info = {}
-        for scraper in all_scraper:
+        used_scraper = ALL_SINGLE_SCRAPER if self.scraper_type == 'single' else ALL_SCRAPER
+        for scraper in used_scraper:
             if self.scraper == '':
                 self.scraper = scraper
             self.process_get_media_headers()

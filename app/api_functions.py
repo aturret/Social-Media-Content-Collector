@@ -113,7 +113,6 @@ def new_weibo_converter(url, **kwargs):
 def twitter_converter(url, **kwargs):
     try:
         turl = url
-        scraper_type = kwargs['scraper_type'] if 'scraper_type' in kwargs else None
         tw = twitter.Twitter(turl, **kwargs).get_tweet_item()
         print('get twitter item')
         if not tw:

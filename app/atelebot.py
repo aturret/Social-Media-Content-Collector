@@ -9,22 +9,22 @@ from .utils import reply_messages
 from . import api_functions
 from .settings import env_var
 
-site_url = env_var.get('SITE_URL', '127.0.0.1')
-telebot_key = env_var.get('TELEGRAM_BOT_KEY')
-default_channel_name = env_var.get('CHANNEL_ID', None)
-youtube_api = env_var.get('YOUTUBE_API', None)
-image_size_limit = env_var.get('IMAGE_SIZE_LIMIT', 1600)
-telegram_text_limit = env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
-allowed_users = env_var.get('ALLOWED_USERS', '').split(',')
-allowed_admin_users = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
+SITE_URL = env_var.get('SITE_URL', '127.0.0.1')
+TELEBOT_KEY = env_var.get('TELEGRAM_BOT_KEY')
+DEFAULT_CHANNEL_ID = env_var.get('CHANNEL_ID', None)
+YOUTUBE_API = env_var.get('YOUTUBE_API', None)
+IMAGE_SIZE_LIMIT = env_var.get('IMAGE_SIZE_LIMIT', 1600)
+TELEGRAM_TEXT_LIMIT = env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
+ALLOWED_USERS = env_var.get('ALLOWED_USERS', '').split(',')
+ALLOWED_ADMIN_USERS = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 # initialize telebot
-bot = telebot.TeleBot(telebot_key, num_threads=4)
+bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
 bot.delete_webhook()
 print('webhook deleted')
 if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False') != 'True':
-    bot.set_webhook(site_url + '/bot')
+    bot.set_webhook(SITE_URL + '/bot')
     print('webhook set')
-default_channel_id = bot.get_chat(default_channel_name).id
+DEFAULT_CHANNEL_ID = bot.get_chat(DEFAULT_CHANNEL_ID).id
 url_pattern = re.compile(r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*')  # 只摘取httpURL的pattern
 http_parttern = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
 douban_http_pattern = r'(http|https)://(www\.)+douban\.com'
@@ -37,7 +37,7 @@ latest_channel_message = []
 def get_social_media(message):
     user_id = message.from_user.id
     print('user_id: ' + str(user_id) + ' is trying to convert a social media URL')
-    if str(user_id) not in allowed_users:
+    if str(user_id) not in ALLOWED_USERS:
         bot.reply_to(message, '你没有使用该bot的权限')
         return
     try:
@@ -56,8 +56,8 @@ def get_social_media(message):
         if target_data['replying_message']:
             bot.delete_message(message.chat.id, target_data['replying_message'].message_id)
         # add function buttons
-        if default_channel_name and str(message.from_user.id) in allowed_admin_users:
-            forward_button_data = 'chan+' + str(message.id) + '+' + data_id + '+' + str(default_channel_name)
+        if DEFAULT_CHANNEL_ID and str(message.from_user.id) in ALLOWED_ADMIN_USERS:
+            forward_button_data = 'chan+' + str(message.id) + '+' + data_id + '+' + str(DEFAULT_CHANNEL_ID)
             forward_button = telebot.types.InlineKeyboardButton(text='发送到频道', callback_data=forward_button_data)
             print(forward_button.callback_data)
             func_buttons.append(forward_button)
@@ -172,8 +172,8 @@ def callback_query(call):
         target_data = formatted_data.pop(query_data[2])
         response_data = target_data['target_function'](target_data['url'])
         response_data['type'] = 'short'
-        if util.get_html_text_length(response_data['text']) > telegram_text_limit:
-            short_text = response_data['text'][:(telegram_text_limit - len(response_data['turl']))]
+        if util.get_html_text_length(response_data['text']) > TELEGRAM_TEXT_LIMIT:
+            short_text = response_data['text'][:(TELEGRAM_TEXT_LIMIT - len(response_data['turl']))]
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
             response_data['text'] = short_text + '...\n<a href="' + response_data['turl'] + '">阅读原文</a>'
         send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
@@ -340,11 +340,11 @@ def media_files_packaging(media_files, caption=None):
             image = util.Image.open(io_object)
             img_width, img_height = image.size
             print(image_url, img_width, img_height)
-            image = util.image_compressing(image, 2 * image_size_limit)
+            image = util.image_compressing(image, 2 * IMAGE_SIZE_LIMIT)
             media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
                                                              parse_mode='html'))
             print('will send ' + image_url + ' as a photo')
-            if file_size > 5 * 1024 * 1024 or img_width > image_size_limit or img_height > image_size_limit:
+            if file_size > 5 * 1024 * 1024 or img_width > IMAGE_SIZE_LIMIT or img_height > IMAGE_SIZE_LIMIT:
                 # if the size is over 5MB or dimension is larger than 1280 px, compress the image
 
                 print('will also send ' + image_url + ' as a file')  # and also send it as a file
@@ -415,7 +415,7 @@ def check_url_type(url, message):
         target_function = api_functions.instagram_converter
         target_item_type = 'instagram'
     elif url.find('youtube.com') != -1:
-        if not youtube_api:
+        if not YOUTUBE_API:
             bot.reply_to(message,
                          '未配置YouTube API，无法抓取\nYouTube API is not configured. Cannot extract metadata from YouTube.')
         else:
