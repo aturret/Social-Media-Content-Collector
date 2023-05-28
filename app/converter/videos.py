@@ -120,7 +120,7 @@ class VideoConverter(object):
             meta_info['upload_date'] = str(video_info['upload_date'])
             meta_info['duration'] = util.second_to_time(round(video_info['duration']))
             for i in video_info['formats']:
-                if i['format_id'] == '22':
+                if i['format_id'] == '18':  # 18 is the format id for mp4 360p
                     video_content_info = i
                     break
             if video_content_info:

@@ -117,6 +117,7 @@ def callback_query(call):
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
         target_function_kwargs = target_data['extra_kwargs']
+        target_function_kwargs['channel'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
