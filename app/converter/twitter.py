@@ -5,8 +5,8 @@ import re
 
 X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')
 tpattern = re.compile(r'(?<=status/)[0-9]*')  # 摘出推文id
-ALL_SCRAPER = ['Twitter135', 'twitter-v24', 'Twitter154']
-ALL_SINGLE_SCRAPER = ['twitter-v24', 'Twitter154']
+ALL_SCRAPER = ['Twitter135', 'Twitter154']
+ALL_SINGLE_SCRAPER = ['Twitter154']
 
 
 # 编辑推送信息
@@ -29,7 +29,7 @@ class Twitter(object):
             'media.fields': 'duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text'
         }
         self.scraper_type = kwargs['scraper_type'] if 'scraper_type' in kwargs else 'thread'
-        self.scraper = 'twitter-v24'
+        self.scraper = ''
         # twitter contents
         self.tid = tpattern.search(self.url).group()
         self.content = ''
@@ -80,6 +80,7 @@ class Twitter(object):
         for scraper in used_scraper:
             if self.scraper == '':
                 self.scraper = scraper
+            print('using scraper: ', self.scraper)
             self.process_get_media_headers()
             response = requests.get(url=self.host, headers=self.headers, params=self.params)
             if response.status_code == 200:
@@ -110,6 +111,7 @@ class Twitter(object):
         self.content = tweet_info['content']
         self.text = tweet_info['text']
         self.type = 'long' if len(self.text) > 300 else 'short'
+        self.media_files = tweet_info['media_files'] if 'media_files' in tweet_info else []
         self.tweet_raw_text_to_html()
 
     def tweet_process_Twitter135(self, tweet_data):
@@ -168,12 +170,12 @@ class Twitter(object):
         single_tweet_info['content'] = single_tweet_info['text'] + '<br>'
         single_tweet_info['media_files'] = []
         if 'extended_entities' in tweet['legacy']:
-            for i in tweet['legacy']['extended_entities']['media']:
-                if i['type'] == 'photo':
-                    single_tweet_info['content'] += '<img src="' + i['media_url_https'] + '">' + '<br>'
-                    media_item = {'type': 'image', 'url': i['media_url_https'], 'caption': ''}
-                if i['type'] == 'video':
-                    highest_bitrate_item = max(i['video_info']['variants'], key=lambda x: x.get('bitrate', 0))
+            for media in tweet['legacy']['extended_entities']['media']:
+                if media['type'] == 'photo':
+                    single_tweet_info['content'] += '<img src="' + media['media_url_https'] + '">' + '<br>'
+                    media_item = {'type': 'image', 'url': media['media_url_https'], 'caption': ''}
+                if media['type'] == 'video':
+                    highest_bitrate_item = max(media['video_info']['variants'], key=lambda x: x.get('bitrate', 0))
                     single_tweet_info['content'] += '<video controls="controls" src="' + \
                                                     highest_bitrate_item['url'] + '">' + '<br>'
                     media_item = {'type': 'video', 'url': highest_bitrate_item['url'], 'caption': ''}
@@ -186,7 +188,7 @@ class Twitter(object):
         tweet_info['originurl'] = 'https://twitter.com/' + tweet_data['user']['username']
         tweet_info['date'] = tweet_data['creation_date']
         tweet_info['content'] = 'created at: ' + tweet_info['date'] + '<br>'
-        tweet_info['text'] = '<a href=\"' + self.aurl + '">@' + tweet_data['origin'] + \
+        tweet_info['text'] = '<a href=\"' + self.aurl + '">@' + tweet_info['origin'] + \
                              '</a>: ' + tweet_data['text']
         tweet_info['media_files'] = []
         if 'extended_entities' in tweet_data and tweet_data['extended_entities'] is not None:

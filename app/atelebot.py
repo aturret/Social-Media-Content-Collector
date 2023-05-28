@@ -6,6 +6,7 @@ import requests
 import traceback
 from .utils import util
 from .utils import reply_messages
+from .utils.customized_errors import *
 from . import api_functions
 from .settings import env_var
 
@@ -105,9 +106,9 @@ def get_social_media(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
 def callback_query(call):
+    query_data = call.data.split('+')
+    message_id = query_data[1]
     try:
-        query_data = call.data.split('+')
-        message_id = query_data[1]
         bot.answer_callback_query(call.id, "Sending message to channel")
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
@@ -126,9 +127,15 @@ def callback_query(call):
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
+    except NoItemFoundException as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure, no item found")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
@@ -136,9 +143,9 @@ def callback_query(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
 def callback_query(call):
+    query_data = call.data.split('+')
+    message_id = query_data[1]
     try:
-        query_data = call.data.split('+')
-        message_id = query_data[1]
         bot.answer_callback_query(call.id, "Message sent to private chat")
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
@@ -167,9 +174,15 @@ def callback_query(call):
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
+    except NoItemFoundException as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure, no item found")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
@@ -177,9 +190,9 @@ def callback_query(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
 def callback_query(call):
+    query_data = call.data.split('+')
+    message_id = query_data[1]
     try:
-        query_data = call.data.split('+')
-        message_id = query_data[1]
         bot.answer_callback_query(call.id, "extracting...")
         bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                       reply_markup=None)
@@ -201,9 +214,15 @@ def callback_query(call):
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure, timeout")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
+    except NoItemFoundException as e:
+        print(traceback.format_exc())
+        bot.answer_callback_query(call.id, "Failure, no item found")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
         bot.answer_callback_query(call.id, "Failure")
+        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
