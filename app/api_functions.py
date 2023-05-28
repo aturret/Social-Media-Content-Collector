@@ -4,6 +4,7 @@ from html_telegraph_poster.utils import DocumentPreprocessor
 from .converter import weibo, twitter, douban, zhihu, mustodon, instagram
 from bs4 import BeautifulSoup
 from .utils import util
+from .utils.customized_errors import *
 
 
 class TelegraphDict(object):
@@ -92,7 +93,7 @@ def new_weibo_converter(url, **kwargs):
         wb = weibo.Weibo(wurl).new_get_weibo()
         print('get weibo item')
         if not wb:
-            raise Exception('No weibo found')
+            raise NoItemFoundException('No weibo found')
         if wb['type'] == 'long':
             temp_html = DocumentPreprocessor(wb['content'])
             temp_html.upload_all_images()
@@ -108,6 +109,7 @@ def new_weibo_converter(url, **kwargs):
     except Exception as e:
         print('weibo_scraping_failed')
         print(traceback.format_exc())
+        raise
 
 
 def twitter_converter(url, **kwargs):
@@ -116,7 +118,7 @@ def twitter_converter(url, **kwargs):
         tw = twitter.Twitter(turl, **kwargs).get_tweet_item()
         print('get twitter item')
         if not tw:
-            raise Exception('No twitter found')
+            raise NoItemFoundException('No twitter found')
         if tw['type'] == 'long':
             t_url = get_telegraph_url(tw)
         else:
@@ -127,6 +129,7 @@ def twitter_converter(url, **kwargs):
     except Exception as e:
         print('twitter_scraping_failed')
         print(traceback.format_exc())
+        raise
 
 
 def douban_converter(url, **kwargs):
@@ -135,7 +138,7 @@ def douban_converter(url, **kwargs):
         db = douban.Douban(url=durl).get_fav_item()
         print('get douban item')
         if not db:
-            raise Exception('No douban found')
+            raise NoItemFoundException('No douban found')
         if db['type'] == 'long':
             t_url = get_telegraph_url(db)
         else:
@@ -146,6 +149,7 @@ def douban_converter(url, **kwargs):
     except Exception as e:
         print('douban_scraping_failed')
         print(traceback.format_exc())
+        raise
 
 
 def zhihu_converter(url, **kwargs):
@@ -154,7 +158,7 @@ def zhihu_converter(url, **kwargs):
         zh = zhihu.Zhihu(url=zurl).get_fav_item()
         print('get zhihu item')
         if not zh:
-            raise Exception('No zhihu found')
+            raise NoItemFoundException('No zhihu found')
         if zh['type'] == 'long':
             t_url = get_telegraph_url(zh)
         else:
@@ -165,6 +169,7 @@ def zhihu_converter(url, **kwargs):
     except Exception as e:
         print('zhihu_scraping_failed')
         print(traceback.format_exc())
+        raise
 
 
 def instagram_converter(url, **kwargs):
@@ -173,7 +178,7 @@ def instagram_converter(url, **kwargs):
         ins = instagram.Instagram(url=iurl).get_single_ins_item()
         print('get instagram item')
         if not ins:
-            raise Exception('No instagram found')
+            raise NoItemFoundException('No instagram found')
         if ins['type'] == 'long':
             t_url = get_telegraph_url(ins)
         else:
@@ -196,7 +201,7 @@ def inoreader_converter(request_data, **kwargs):
         print('get inoreader url: '+ino['aurl'])
         print('get inoreader item')
         if not ino:
-            raise Exception('No inoreader found')
+            raise NoItemFoundException('No inoreader found')
         soup = BeautifulSoup(ino['content'], 'html.parser')
         ino['media_files'] = []
         for img in soup.find_all('img'):
@@ -217,6 +222,7 @@ def inoreader_converter(request_data, **kwargs):
     except Exception as e:
         print('inoreader_scraping_failed')
         print(traceback.format_exc())
+        raise
 
 
 def get_telegraph_url(tdict, failure_limitation=5, upload_images=True):

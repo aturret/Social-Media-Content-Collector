@@ -111,10 +111,12 @@ class Weibo(object):
         html = html[:html.rfind(',')]
         html = html[:html.rfind('][0] || {};')]
         html = '{' + html
-        # print(html)
-        js = json.loads(html, strict=False)
-        print(js)
-        weibo_info = js.get('status')
+        try:
+            js = json.loads(html, strict=False)
+            print(js)
+            weibo_info = js.get('status')
+        except:
+            weibo_info = {}
         return weibo_info
 
     def get_article_url(self, selector):
@@ -378,10 +380,10 @@ class Weibo(object):
     def new_get_weibo(self, old_method=False):
         url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
         if not old_method:
-            ajax_json = get_response_json(url, headers=self.headers)
+            ajax_json = get_response_json(url, headers=self.headers, test=True)
             print('ajax_json file url: ' + url)
             print('ajax_json file: ' + str(ajax_json))
-            if ajax_json['ok'] == 0:
+            if not ajax_json or ajax_json['ok'] == 0:
                 print('new api failed, get weibo info from old api')
                 json_file = self.get_weibo_info_old()
                 if json_file:
