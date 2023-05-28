@@ -76,6 +76,15 @@ def get_social_media(message):
             thread_tweet_button = telebot.types.InlineKeyboardButton(text='推文串',
                                                                      callback_data=thread_tweet_button_data)
             func_buttons.append(thread_tweet_button)
+        elif target_data['target_item_type'] == 'video':
+            video_info_button_data = 'priv+' + str(message.id) + '+' + data_id + '+info'
+            video_info_button = telebot.types.InlineKeyboardButton(text='视频信息',
+                                                                   callback_data=video_info_button_data)
+            func_buttons.append(video_info_button)
+            video_download_button_data = 'priv+' + str(message.id) + '+' + data_id + '+down'
+            video_download_button = telebot.types.InlineKeyboardButton(text='下载视频',
+                                                                       callback_data=video_download_button_data)
+            func_buttons.append(video_download_button)
         else:
             show_button_data = 'priv+' + str(message.id) + '+' + data_id
             show_button = telebot.types.InlineKeyboardButton(text='发送到私聊', callback_data=show_button_data)
@@ -107,7 +116,8 @@ def callback_query(call):
         if len(formatted_data) == 0:
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
-        response_data = target_data['target_function'](target_data['url'])
+        target_function_kwargs = target_data['extra_kwargs']
+        response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
         send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
@@ -136,13 +146,18 @@ def callback_query(call):
         if len(formatted_data) == 0:
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
-        target_function_kwargs = {}
         target_data = formatted_data.pop(query_data[2])
+        target_function_kwargs = target_data['extra_kwargs']
         if target_data['target_item_type'] == 'twitter':
             if query_data[-1] == 'single':
                 target_function_kwargs['scraper_type'] = 'single'
             elif query_data[-1] == 'thread':
                 target_function_kwargs['scraper_type'] = 'thread'
+        if target_data['target_item_type'] == 'video':
+            if query_data[-1] == 'info':
+                target_function_kwargs['download'] = False
+            elif query_data[-1] == 'down':
+                target_function_kwargs['download'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
@@ -173,7 +188,8 @@ def callback_query(call):
             bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
-        response_data = target_data['target_function'](target_data['url'])
+        target_function_kwargs = target_data['extra_kwargs']
+        response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         response_data['type'] = 'short'
         if util.get_html_text_length(response_data['text']) > TELEGRAM_TEXT_LIMIT:
             short_text = response_data['text'][:(TELEGRAM_TEXT_LIMIT - len(response_data['turl']))]
@@ -256,7 +272,8 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
             discussion_chat_id = the_chat.linked_chat_id
     try:
         caption_text = data['text'] + '\n#' + data['category']
-        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']) or data['type'] == 'long':
+        if (re.search(NO_TELEGRAPH_REGEXP, data['aurl']) and data['category'] not in ['Bilibili', 'YouTube']) \
+                or data['type'] == 'long':
             # if the url is not in the no_telegraph_list or the type is long, send long format message
             text = message_formatting(data)
             print(text)
@@ -302,13 +319,13 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
 
 def message_formatting(data):
     if data['type'] == 'short':
-        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']):
+        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']) and data['category'] not in ['YouTube', 'Bilibili']:
             text = '<a href=\"' + data['aurl'] + '\"><b>' + data['title'] + '</b></a>\n'  'via #' + data['category'] + \
                    ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
         else:
             text = data['text'] + '\n#' + data['category']
     else:
-        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']):
+        if re.search(NO_TELEGRAPH_REGEXP, data['aurl']) and data['category'] not in ['YouTube', 'Bilibili']:
             text = '<a href=\"' + data['aurl'] + '\">' '<b>' + data['title'] + '</b></a>\nvia #' + data['category'] + \
                    ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
         else:
@@ -386,6 +403,7 @@ def media_files_packaging(media_files, caption=None):
 
 
 def check_url_type(url, message):
+    extra_kwargs = {}
     if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
         replying_message = bot.reply_to(message,
                                         '检测到微博URL，预处理中……\nWeibo URL detected, preparing for processing....')
@@ -421,6 +439,7 @@ def check_url_type(url, message):
         if url.find('youtube.com') != -1 or url.find('youtu.be') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到YouTubeURL，预处理中……\nYouTube URL detected, preparing for processing....')
+            extra_kwargs['scraper'] = 'yt_dlp'
         elif url.find('bilibili.com') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到BilibiliURL，预处理中……\nBilibili URL detected, preparing for processing....')
@@ -437,5 +456,5 @@ def check_url_type(url, message):
             target_function = None
             target_item_type = 'invalid'
     target_data = {'url': url, 'replying_message': replying_message, 'target_function': target_function,
-                   'target_item_type': target_item_type}
+                   'target_item_type': target_item_type, 'extra_kwargs': extra_kwargs}
     return target_data

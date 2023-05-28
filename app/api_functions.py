@@ -265,7 +265,7 @@ def telegraph_convert(tdict):
 
 def video_converter(url, **kwargs):
     try:
-        v = videos.VideoConverter(url=url).get_video_item()
+        v = videos.VideoConverter(url=url, **kwargs).get_video_item()
         print('get video item')
         if not v:
             raise Exception('No video found')
