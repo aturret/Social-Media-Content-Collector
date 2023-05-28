@@ -440,13 +440,15 @@ class Weibo(object):
         # process pics and video
         pics_format = ''
         video_format = ''
-        if self.pics_url:
-            if not weibo_info['isLongText'] and len(fw_pics) > 0:
-                pic_list = fw_pics.extend(self.pics_url) if fw_pics else self.pics_url
-            else:
-                pic_list = self.pics_url
+        if not weibo_info['isLongText'] and len(fw_pics) > 0:
+            pic_list = fw_pics + self.pics_url if self.pics_url else fw_pics
+        else:
+            pic_list = self.pics_url
+        self.pics_url = pic_list
+        if pic_list:
             for i in pic_list:
                 pics_format += '<img src="' + i + '"><br>'
+
         if self.videos_url:
             for i in self.videos_url:
                 video_format += '<video controls="controls" src="' + i + '">' + '<br>'
