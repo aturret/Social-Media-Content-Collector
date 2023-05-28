@@ -30,6 +30,7 @@ selenium = "*"
 sentry_sdk = {version = "*"}
 blinker = {version = "*"}
 Pillow = {version = "*"}
-
+yt-dlp = "*"
+youtube-dl = "*"
 
 [dev-packages]
