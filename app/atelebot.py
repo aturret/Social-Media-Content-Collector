@@ -1,9 +1,9 @@
 import random
-import telebot
 import re
 import time
 import requests
 import traceback
+import telebot
 from .utils import util
 from .utils import reply_messages
 from .utils.customized_errors import *
@@ -18,6 +18,9 @@ IMAGE_SIZE_LIMIT = env_var.get('IMAGE_SIZE_LIMIT', 1600)
 TELEGRAM_TEXT_LIMIT = env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
 ALLOWED_USERS = env_var.get('ALLOWED_USERS', '').split(',')
 ALLOWED_ADMIN_USERS = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
+TELEBOT_API_SERVER_PORT = env_var.get('TELEBOT_API_SERVER_PORT', None)
+if TELEBOT_API_SERVER_PORT:
+    telebot.apihelper.API_URL = 'http://localhost:' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
 # initialize telebot
 bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
 bot.delete_webhook()
@@ -30,7 +33,7 @@ URL_PATTERN = re.compile(r'(?:http|https)://[\w.!@#$%^&*()_+-=/?]*\??([^#\s]*)')
 HTTP_PATTERN_REGEXP = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
 DOUBAN_HTTP_REGEXP = r'(http|https)://(www\.)+douban\.com'
 NO_TELEGRAPH_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)"
-VIDEO_URL_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)|(youtu\.be)"
+VIDEO_URL_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)|(youtu\.be)|(b23\.tv)"
 formatted_data = {}
 latest_channel_message = []
 
@@ -67,7 +70,7 @@ def get_social_media(message):
             func_buttons.append(forward_button)
         extract_button_data = 'extr+' + str(message.id) + '+' + data_id
         extract_button = telebot.types.InlineKeyboardButton(text='强制直接提取', callback_data=extract_button_data)
-        func_buttons.append(extract_button)
+        basic_buttons.append(extract_button)
         if target_data['target_item_type'] == 'twitter':
             single_tweet_button_data = 'priv+' + str(message.id) + '+' + data_id + '+single'
             single_tweet_button = telebot.types.InlineKeyboardButton(text='单条推文',
@@ -86,6 +89,10 @@ def get_social_media(message):
             video_download_button = telebot.types.InlineKeyboardButton(text='下载视频',
                                                                        callback_data=video_download_button_data)
             func_buttons.append(video_download_button)
+            video_hd_download_button_data = 'priv+' + str(message.id) + '+' + data_id + '+dlhd'
+            video_hd_download_button = telebot.types.InlineKeyboardButton(text='下载高清视频',
+                                                                            callback_data=video_hd_download_button_data)
+            func_buttons.append(video_hd_download_button)
         else:
             show_button_data = 'priv+' + str(message.id) + '+' + data_id
             show_button = telebot.types.InlineKeyboardButton(text='发送到私聊', callback_data=show_button_data)
@@ -164,8 +171,10 @@ def callback_query(call):
         if target_data['target_item_type'] == 'video':
             if query_data[-1] == 'info':
                 target_function_kwargs['download'] = False
-            elif query_data[-1] == 'down':
+            else:
                 target_function_kwargs['download'] = True
+                if query_data[-1] == 'dlhd':
+                    target_function_kwargs['hd'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
@@ -369,40 +378,47 @@ def media_files_packaging(media_files, caption=None):
             media_group = []
             media_counter = 0
         print('the ' + str((media_counter + 1)) + '\'s media: ' + media['type'] + ': ' + media['url'])
-        io_object = util.download_a_iobytes_file(media['url'])
-        file_size = io_object.size
-        print('the size of this file is ' + str(file_size))
-        if file_size > 50 * 1024 * 1024:  # if the size is over 50MB, skip this file
-            continue
-        print(io_object.name)
-        if media['type'] == 'image':
-            image_url = media['url']
-            image = util.Image.open(io_object)
-            img_width, img_height = image.size
-            print(image_url, img_width, img_height)
-            image = util.image_compressing(image, 2 * IMAGE_SIZE_LIMIT)
-            media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
-                                                             parse_mode='html'))
-            print('will send ' + image_url + ' as a photo')
-            if file_size > 5 * 1024 * 1024 or img_width > IMAGE_SIZE_LIMIT or img_height > IMAGE_SIZE_LIMIT:
-                # if the size is over 5MB or dimension is larger than 1280 px, compress the image
+        # if the url if a network url, download it
+        if media['url'].startswith('http'):
+            io_object = util.download_a_iobytes_file(media['url'])
+            if not TELEBOT_API_SERVER_PORT:
+                file_size = io_object.size
+                print('the size of this file is ' + str(file_size))
+                if file_size > 50 * 1024 * 1024:  # if the size is over 50MB, skip this file
+                    continue
+            print(io_object.name)
+            if media['type'] == 'image':
+                image_url = media['url']
+                image = util.Image.open(io_object)
+                img_width, img_height = image.size
+                print(image_url, img_width, img_height)
+                image = util.image_compressing(image, 2 * IMAGE_SIZE_LIMIT)
+                media_group.append(telebot.types.InputMediaPhoto(image, caption=media['caption'],
+                                                                 parse_mode='html'))
+                print('will send ' + image_url + ' as a photo')
+                if file_size > 5 * 1024 * 1024 or img_width > IMAGE_SIZE_LIMIT or img_height > IMAGE_SIZE_LIMIT:
+                    # if the size is over 5MB or dimension is larger than 1280 px, compress the image
 
-                print('will also send ' + image_url + ' as a file')  # and also send it as a file
-                io_object = util.download_a_iobytes_file(media['url'])
-                if not io_object.name.endswith('.gif'):
-                    file_group.append(io_object)
-        elif media['type'] == 'gif':
-            io_object = util.download_a_iobytes_file(media['url'], 'gif_image-' + str(media_counter) + '.gif')
-            io_object.name = io_object.name + '.gif'
-            file_group.append(io_object)
-        elif media['type'] == 'video':
-            file_like_object = telebot.types.InputFile(io_object)
-            media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
-                                                             parse_mode='html'))
-        elif media['type'] == 'audio':
-            file_like_object = telebot.types.InputFile(io_object)
-            media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'],
-                                                             parse_mode='html'))
+                    print('will also send ' + image_url + ' as a file')  # and also send it as a file
+                    io_object = util.download_a_iobytes_file(media['url'])
+                    if not io_object.name.endswith('.gif'):
+                        file_group.append(io_object)
+            elif media['type'] == 'gif':
+                io_object = util.download_a_iobytes_file(media['url'], 'gif_image-' + str(media_counter) + '.gif')
+                io_object.name = io_object.name + '.gif'
+                file_group.append(io_object)
+            elif media['type'] == 'video':
+                file_like_object = telebot.types.InputFile(io_object)
+                media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
+                                                                 parse_mode='html'))
+            elif media['type'] == 'audio':
+                file_like_object = telebot.types.InputFile(io_object)
+                media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'],
+                                                                 parse_mode='html'))
+        else:  # the url is a local file string path
+            if media['type'] == 'video':
+                media_group.append(telebot.types.InputMediaVideo(media['url'], caption=media['caption'],
+                                                                 parse_mode='html'))
         media_counter += 1
     if len(media_message_group) == 0:
         if len(media_group) == 0:
