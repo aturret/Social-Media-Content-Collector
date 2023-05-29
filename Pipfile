@@ -32,5 +32,6 @@ blinker = {version = "*"}
 Pillow = {version = "*"}
 yt-dlp = "*"
 youtube-dl = "*"
+ffmpeg-python = "*"
 
 [dev-packages]
