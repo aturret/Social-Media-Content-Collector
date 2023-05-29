@@ -6,9 +6,10 @@ import sys
 import time
 import datetime
 import requests
+import os
+import tempfile
 
-from .customized_classes import *
-
+import ffmpeg
 from lxml import etree, html as lhtml
 from html import escape
 from PIL import Image
@@ -16,17 +17,19 @@ from html_sanitizer import Sanitizer
 from app import settings
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
-from app.api_functions import *
 from bs4 import BeautifulSoup
+
+from .customized_classes import *
+from app.api_functions import *
 
 # Set GENERATE_TEST_DATA to True when generating test data.
 GENERATE_TEST_DATA = False
 TEST_DATA_DIR = 'tests/testdata'
 URL_MAP_FILE = 'url_map.json'
 DOWNLOAD_DIR = settings.env_var.get('DOWNLOAD_DIR',
-settings.env_var.get('HOMEPATH' if settings.system == 'Windows' else 'HOME', '~'))
+                                    settings.env_var.get('HOMEPATH' if settings.system == 'Windows' else 'HOME', '~'))
 print(DOWNLOAD_DIR)
-
+TEMP_DIR = settings.env_var.get('TEMP_DIR', tempfile.gettempdir())
 # logger = logging.getLogger('spider.utils')
 
 wsanitizer = Sanitizer({
@@ -58,7 +61,7 @@ def get_response_json(url, headers=None, test=False):
     return json_result
 
 
-def get_page_by_selenium(url: str,user_agent: str, wait_time: int = 10 ):
+def get_page_by_selenium(url: str, user_agent: str, wait_time: int = 10):
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument(f'user-agent={user_agent}')
@@ -77,7 +80,6 @@ def get_page_by_selenium(url: str,user_agent: str, wait_time: int = 10 ):
     finally:
         driver.quit()
     return html
-
 
 
 def get_response(url):
@@ -208,10 +210,6 @@ def string_to_int(string):
     return int(string)
 
 
-def download_file(format: set = ('html')):
-    return '1'
-
-
 def get_html_text_length(html):
     if html is None:
         return 0
@@ -232,6 +230,11 @@ def format_telegram_short_text(soup):
     return soup
 
 
+"""
+Time utilities
+"""
+
+
 def unix_timestamp_to_utc(timestamp):
     utc_time = datetime.datetime.utcfromtimestamp(timestamp)
     beijing_time = utc_time + datetime.timedelta(hours=8)
@@ -242,6 +245,11 @@ def second_to_time(second):
     m, s = divmod(second, 60)
     h, m = divmod(m, 60)
     return "%02d:%02d:%02d" % (h, m, s)
+
+
+"""
+Image utilities
+"""
 
 
 def get_image_dimension(image_file):
@@ -259,6 +267,11 @@ def image_compressing(image, limitation):
     return new_image
 
 
+"""
+IO utilities
+"""
+
+
 def download_a_iobytes_file(url, file_name=None):
     file_data = requests.get(url).content
     if file_name is None:
@@ -266,6 +279,50 @@ def download_a_iobytes_file(url, file_name=None):
         file_name = 'media-' + str(uuid.uuid1())[:8] + '.' + file_format
     io_object = NamedBytesIO(file_data, name=file_name)
     return io_object
+
+
+def download_file(url, extension=None, file_name=None, headers=None, stream=True):
+    if headers is None:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/86.0.4240.198 Mobile Safari/537.36',
+        }
+    print('download file from ' + url)
+    file_name = str(uuid.uuid4()) if file_name is None else file_name + str(uuid.uuid4())
+    if extension:
+        file_name += '.' + extension
+    file_path = os.path.join(TEMP_DIR, file_name)
+    print('file path is ' + file_path)
+    if stream:
+        with requests.get(url, headers=headers, stream=True) as response:
+            response.raise_for_status()
+            print('downloading...')
+            with open(file_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+    else:
+        response = requests.get(url, headers=headers).content
+        with open(file_path, 'wb') as f:
+            f.write(response)
+    print('downloaded file to ' + file_path)
+    return file_path
+
+
+def merge_audio_and_video(audio_path, video_path, output_path=None):
+    input_video = ffmpeg.input(video_path)
+    input_audio = ffmpeg.input(audio_path)
+    if output_path is None:
+        output_path = os.path.join(TEMP_DIR, str(uuid.uuid4()) + '.mp4')
+    ffmpeg.output(input_video, input_audio, output_path, format='mp4').run()
+    # delete the original audio and video
+    os.remove(audio_path)
+    os.remove(video_path)
+    return output_path
+
+
+"""
+String utilities
+"""
 
 
 def get_content_between_strings(string, start, end):
