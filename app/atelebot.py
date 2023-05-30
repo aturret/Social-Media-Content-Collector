@@ -21,10 +21,15 @@ ALLOWED_USERS = env_var.get('ALLOWED_USERS', '').split(',')
 ALLOWED_ADMIN_USERS = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 TELEBOT_API_SERVER_PORT = env_var.get('TELEBOT_API_SERVER_PORT', None)
 TELEBOT_API_SERVER_HOST = env_var.get('TELEBOT_API_SERVER_HOST', 'localhost')
-if TELEBOT_API_SERVER_PORT:
-    telebot.apihelper.API_URL = 'http://' + TELEBOT_API_SERVER_HOST + ':' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
 # initialize telebot
 bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
+print(bot.get_webhook_info())
+bot.delete_webhook()
+print('webhook deleted')
+if TELEBOT_API_SERVER_PORT:
+    telebot.apihelper.API_URL = 'http://' + TELEBOT_API_SERVER_HOST + ':' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
+print('the current telebot api url is: ' + telebot.apihelper.API_URL)
+print(bot.get_webhook_info())
 bot.delete_webhook()
 print('webhook deleted')
 if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False') != 'True':
@@ -38,6 +43,7 @@ NO_TELEGRAPH_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)"
 VIDEO_URL_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)|(youtu\.be)|(b23\.tv)"
 formatted_data = {}
 latest_channel_message = []
+print(bot.get_webhook_info())
 
 
 @bot.message_handler(regexp=HTTP_PATTERN_REGEXP, chat_types=['private'])
