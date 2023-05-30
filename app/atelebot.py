@@ -28,7 +28,7 @@ bot.delete_webhook()
 print('webhook deleted')
 if TELEBOT_API_SERVER_PORT:
     telebot.apihelper.API_URL = 'http://' + TELEBOT_API_SERVER_HOST + ':' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
-print('the current telebot api url is: ' + telebot.apihelper.API_URL)
+print('the current telebot api url is: ' + str(telebot.apihelper.API_URL))
 print(bot.get_webhook_info())
 bot.delete_webhook()
 print('webhook deleted')
