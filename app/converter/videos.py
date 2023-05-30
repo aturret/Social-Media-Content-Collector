@@ -32,14 +32,12 @@ class VideoConverter(object):
             },
             # 'format': 'best/bestvideo+bestaudio',
         }
-        self.scraper = kwargs.get('scraper', 'youtube_dl')
+        self.scraper = kwargs.get('scraper', 'yt_dlp')
         self.download = kwargs.get('download', True)
-        self.file_download = False
+        self.file_download = kwargs.get('file_download', False)
         self.hd = kwargs.get('hd', False)
         self.type = 'short'
-        if self.hd:
-            self.scraper = 'yt_dlp'
-        self.file_download = kwargs.get('file_download', False)
+
 
     def to_dict(self):
         self_dict = {}
@@ -59,11 +57,18 @@ class VideoConverter(object):
             with youtube_dl.YoutubeDL(self.ydl_opts) as ydl:
                 video_info = ydl.extract_info(self.url, download=self.file_download)
         elif self.scraper == 'yt_dlp':
-            if self.hd:
-                self.ydl_opts[
-                    'format'] = 'bestvideo[ext=webm]+251/bestvideo[ext=mp4]+(258/256/140)/bestvideo[ext=webm]+(250/249)/best'
-                if self.extractor == 'BiliBili' and BILIBILI_COOKIE:
+            if self.extractor == 'BiliBili':
+                if self.hd and BILIBILI_COOKIE:
                     self.ydl_opts['cookiefile'] = BILIBILI_COOKIE
+                else:
+                    self.ydl_opts['format'] = 'bv*[height<=480]+ba/b[height<=480] / wv*+ba/w'
+            if self.extractor == 'youtube':
+                if self.hd:
+                    self.ydl_opts[
+                        'format'] = 'bestvideo[ext=webm]+251/bestvideo[ext=mp4]+(258/256/140)/bestvideo[ext=webm]+(250/249)/best'
+                else:
+                    self.ydl_opts['format'] = 'bv*[height<=480]+ba/b[height<=480] / wv*+ba/w'
+                self.file_download = True
             with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
                 video_info = ydl.extract_info(self.url, download=self.file_download, process=self.file_download)
         print(video_info)
@@ -85,7 +90,8 @@ class VideoConverter(object):
         self.title = meta_info['title']
         self.origin = meta_info['author']
         self.originurl = meta_info['author_url']
-        self.type = 'long' if len(meta_info['description']) > 500 else 'short'
+        if len(meta_info['description']) > 800:
+            meta_info['description'] = meta_info['description'][:800] + '...'
         self.created = meta_info['upload_date']
         self.duration = meta_info['duration']
         self.text = \
@@ -99,6 +105,7 @@ class VideoConverter(object):
             if self.file_download:
                 self.video_url = os.path.join(TEMP_DIR,
                                               meta_info['title'] + '-' + meta_info['id'] + '.' + meta_info['ext'])
+                self.video_url = self.video_url.replace('|', '｜')
                 video_download_text = ''
             else:
                 if self.hd:
@@ -144,6 +151,7 @@ class VideoConverter(object):
         meta_info['author'] = video_info['uploader']
         meta_info['author_url'] = 'https://space.bilibili.com/' + str(video_info['uploader_id'])
         meta_info['author_avatar'] = video_info['thumbnail']
+        meta_info['ext'] = video_info['ext']
         if self.scraper == 'youtube_dl':
             meta_info['description'] = video_info['description'].split(' 视频播放量')[0]
             meta_info['playback_data'] = '视频播放量 ' + util.get_content_between_strings(

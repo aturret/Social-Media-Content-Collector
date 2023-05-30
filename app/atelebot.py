@@ -20,8 +20,9 @@ TELEGRAM_TEXT_LIMIT = env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
 ALLOWED_USERS = env_var.get('ALLOWED_USERS', '').split(',')
 ALLOWED_ADMIN_USERS = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 TELEBOT_API_SERVER_PORT = env_var.get('TELEBOT_API_SERVER_PORT', None)
+TELEBOT_API_SERVER_HOST = env_var.get('TELEBOT_API_SERVER_HOST', 'localhost')
 if TELEBOT_API_SERVER_PORT:
-    telebot.apihelper.API_URL = 'http://localhost:' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
+    telebot.apihelper.API_URL = 'http://' + TELEBOT_API_SERVER_HOST + ':' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
 # initialize telebot
 bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
 bot.delete_webhook()
@@ -176,6 +177,7 @@ def callback_query(call):
                 target_function_kwargs['download'] = True
                 if query_data[-1] == 'dlhd':
                     target_function_kwargs['hd'] = True
+                    target_function_kwargs['file_download'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
@@ -484,7 +486,6 @@ def check_url_type(url, message):
         if url.find('youtube.com') != -1 or url.find('youtu.be') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到YouTubeURL，预处理中……\nYouTube URL detected, preparing for processing....')
-            extra_kwargs['file_download'] = True
         elif url.find('bilibili.com') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到BilibiliURL，预处理中……\nBilibili URL detected, preparing for processing....')

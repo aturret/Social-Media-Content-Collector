@@ -2,7 +2,7 @@ FROM python:3.8
 COPY ./ /app
 WORKDIR /app
 RUN apt-get update && \
-    apt-get install -y ffmpeg \
+    apt-get install -y ffmpeg && \
     pip install pipenv &&  \
     pipenv install --deploy --ignore-pipfile --system
 CMD pipenv run gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
