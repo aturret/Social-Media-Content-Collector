@@ -384,8 +384,8 @@ def media_files_packaging(media_files, caption=None):
         # if the url if a network url, download it
         if media['url'].startswith('http'):
             io_object = util.download_a_iobytes_file(media['url'])
+            file_size = io_object.size
             if not TELEBOT_API_SERVER_PORT:
-                file_size = io_object.size
                 print('the size of this file is ' + str(file_size))
                 if file_size > 50 * 1024 * 1024:  # if the size is over 50MB, skip this file
                     continue
