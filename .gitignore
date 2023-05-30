@@ -14,3 +14,4 @@ ngrok.ps1
 .env
 conf/*
 !conf/
+conf/www.bilibili.com_cookies.txt
