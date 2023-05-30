@@ -1,3 +1,4 @@
+import os
 import random
 import re
 import time
@@ -26,7 +27,7 @@ bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
 bot.delete_webhook()
 print('webhook deleted')
 if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False') != 'True':
-    bot.set_webhook(SITE_URL + '/bot')
+    bot.set_webhook(SITE_URL + '/bot', timeout=1200)
     print('webhook set')
 DEFAULT_CHANNEL_ID = bot.get_chat(DEFAULT_CHANNEL_ID).id
 URL_PATTERN = re.compile(r'(?:http|https)://[\w.!@#$%^&*()_+-=/?]*\??([^#\s]*)')  # 只摘取httpURL的pattern
@@ -417,7 +418,15 @@ def media_files_packaging(media_files, caption=None):
                                                                  parse_mode='html'))
         else:  # the url is a local file string path
             if media['type'] == 'video':
-                media_group.append(telebot.types.InputMediaVideo(media['url'], caption=media['caption'],
+                file_size = os.path.getsize(media['url'])
+                if file_size > 50 * 1024 * 1024 and not TELEBOT_API_SERVER_PORT:  # if the size is over 50MB, skip this file
+                    print('the size of this file is ' + str(file_size) + ', skip it')
+                    continue
+                if file_size > 2 * 1024 * 1024 * 1024 and TELEBOT_API_SERVER_PORT is not None:
+                    print('the size of this file is ' + str(file_size) + ', skip it')
+                    continue
+                file_like_object = telebot.types.InputFile(media['url'])
+                media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
                                                                  parse_mode='html'))
         media_counter += 1
     if len(media_message_group) == 0:
@@ -475,7 +484,7 @@ def check_url_type(url, message):
         if url.find('youtube.com') != -1 or url.find('youtu.be') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到YouTubeURL，预处理中……\nYouTube URL detected, preparing for processing....')
-            extra_kwargs['scraper'] = 'yt_dlp'
+            extra_kwargs['file_download'] = True
         elif url.find('bilibili.com') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到BilibiliURL，预处理中……\nBilibili URL detected, preparing for processing....')

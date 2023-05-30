@@ -293,19 +293,23 @@ def download_file(url, extension=None, file_name=None, headers=None, stream=True
         file_name += '.' + extension
     file_path = os.path.join(TEMP_DIR, file_name)
     print('file path is ' + file_path)
-    if stream:
-        with requests.get(url, headers=headers, stream=True) as response:
-            response.raise_for_status()
-            print('downloading...')
+    try:
+        if stream:
+            with requests.get(url, headers=headers, stream=True) as response:
+                response.raise_for_status()
+                print('downloading...')
+                with open(file_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+        else:
+            response = requests.get(url, headers=headers).content
             with open(file_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-    else:
-        response = requests.get(url, headers=headers).content
-        with open(file_path, 'wb') as f:
-            f.write(response)
-    print('downloaded file to ' + file_path)
-    return file_path
+                f.write(response)
+        print('downloaded file to ' + file_path)
+        return file_path
+    except requests.exceptions.HTTPError as e:
+        print(e)
+        return None
 
 
 def merge_audio_and_video(audio_path, video_path, output_path=None):

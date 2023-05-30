@@ -1,12 +1,20 @@
 import re
+import traceback
+
 import requests
 import tempfile
+import os
 import yt_dlp
 import youtube_dl
 from app.settings import env_var
 from app.utils import util
 
 TEMP_DIR = env_var.get('TEMP_DIR', tempfile.gettempdir())
+print(TEMP_DIR)
+BILIBILI_COOKIE = None
+bilibili_cookie_path = os.path.join(env_var.get('PWD', None), 'conf', 'www.bilibili.com_cookies.txt')
+if os.path.exists(bilibili_cookie_path):
+    BILIBILI_COOKIE = bilibili_cookie_path
 
 
 class VideoConverter(object):
@@ -15,18 +23,23 @@ class VideoConverter(object):
         self.parse_video_url()
         self.aurl = self.url
         self.ydl_opts = {
-            'format': 'best',
+            # 'format': 'best',
             'paths': {
                 'home': TEMP_DIR
+            },
+            'outtmpl': {
+                'default': '%(title)s-%(id)s.%(ext)s',
             },
             # 'format': 'best/bestvideo+bestaudio',
         }
         self.scraper = kwargs.get('scraper', 'youtube_dl')
         self.download = kwargs.get('download', True)
+        self.file_download = False
         self.hd = kwargs.get('hd', False)
         self.type = 'short'
         if self.hd:
             self.scraper = 'yt_dlp'
+        self.file_download = kwargs.get('file_download', False)
 
     def to_dict(self):
         self_dict = {}
@@ -42,16 +55,17 @@ class VideoConverter(object):
         return self.to_dict()
 
     def get_video_info(self):
-        download = False
         if self.scraper == 'youtube_dl':
             with youtube_dl.YoutubeDL(self.ydl_opts) as ydl:
-                video_info = ydl.extract_info(self.url, download=download)
+                video_info = ydl.extract_info(self.url, download=self.file_download)
         elif self.scraper == 'yt_dlp':
-            if self.hd and self.extractor == 'youtube':
-                self.ydl_opts['format'] = 'bestvideo[ext=webm]+251/bestvideo[ext=mp4]+(258/256/140)/bestvideo[ext=webm]+(250/249)/best'
-                download = True
+            if self.hd:
+                self.ydl_opts[
+                    'format'] = 'bestvideo[ext=webm]+251/bestvideo[ext=mp4]+(258/256/140)/bestvideo[ext=webm]+(250/249)/best'
+                if self.extractor == 'BiliBili' and BILIBILI_COOKIE:
+                    self.ydl_opts['cookiefile'] = BILIBILI_COOKIE
             with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
-                video_info = ydl.extract_info(self.url, download=download, process=False)
+                video_info = ydl.extract_info(self.url, download=self.file_download, process=self.file_download)
         print(video_info)
         return video_info
 
@@ -82,14 +96,33 @@ class VideoConverter(object):
             '播放数据：' + meta_info['playback_data'] + '\n' + \
             '视频简介：' + meta_info['description'] + '\n'
         if self.download:
-            if self.hd:
-                print('download hd video, this may take a while')
-                video_path = util.download_file(meta_info['raw_video_url'], extension=meta_info['raw_video_ext'])
-                audio_path = util.download_file(meta_info['audio_url'], extension=meta_info['audio_ext'])
-                print('merging audio and video')
-                self.video_url = util.merge_audio_and_video(audio_path, video_path)
+            if self.file_download:
+                self.video_url = os.path.join(TEMP_DIR,
+                                              meta_info['title'] + '-' + meta_info['id'] + '.' + meta_info['ext'])
+                video_download_text = ''
             else:
-                self.video_url = meta_info['video_url']
+                if self.hd:
+                    print('download hd video, this may take a while')
+                    video_path, audio_path = None, None
+                    print(meta_info['raw_video_content_infos'], meta_info['audio_content_infos'])
+                    for item in meta_info['raw_video_content_infos']:
+                        video_path = util.download_file(item['url'], extension=item['ext'])
+                        if video_path is None:
+                            continue
+                        break
+                    for item in meta_info['audio_content_infos']:
+                        audio_path = util.download_file(item['url'], extension=item['ext'])
+                        if audio_path is None:
+                            continue
+                        break
+                    if video_path is None or audio_path is None:
+                        print('download failed')
+                        return
+                    print('merging audio and video')
+                    self.video_url = util.merge_audio_and_video(audio_path, video_path)
+                else:
+                    self.video_url = meta_info['video_url']
+                video_download_text = '视频下载：<a href=\"' + self.video_url + '\">点此下载</a>'
             self.media_files = [
                 {
                     'type': 'video',
@@ -97,7 +130,6 @@ class VideoConverter(object):
                     'caption': ''
                 }
             ]
-            video_download_text = '视频下载：<a href=\"' + self.video_url + '\">点此下载</a>'
             self.text += video_download_text
         self.content = meta_info['description'].replace('\n', '<br>')
 
@@ -107,33 +139,48 @@ class VideoConverter(object):
         :return: a formatted dict meta_info
         """
         meta_info = {}
+        meta_info['id'] = video_info['id']
+        meta_info['title'] = video_info['title']
+        meta_info['author'] = video_info['uploader']
+        meta_info['author_url'] = 'https://space.bilibili.com/' + str(video_info['uploader_id'])
+        meta_info['author_avatar'] = video_info['thumbnail']
         if self.scraper == 'youtube_dl':
-            meta_info['title'] = video_info['title']
-            meta_info['author'] = video_info['uploader']
-            meta_info['author_url'] = 'https://space.bilibili.com/' + video_info['uploader_id']
             meta_info['description'] = video_info['description'].split(' 视频播放量')[0]
             meta_info['playback_data'] = '视频播放量 ' + util.get_content_between_strings(
                 video_info['description'], ' 视频播放量', ', 视频作者')
-            meta_info['author_avatar'] = video_info['thumbnail']
             meta_info['upload_date'] = video_info['upload_date']
             meta_info['ext'] = video_info['ext']
             meta_info['duration'] = util.second_to_time(round(video_info['duration']))
             meta_info['video_url'] = video_info['formats'][0]['url']
             meta_info['filesize'] = video_info['formats'][0]['filesize']
-        # elif self.scraper == 'yt_dlp':
-
+        elif self.scraper == 'yt_dlp':
+            meta_info['description'] = video_info['description']
+            meta_info['playback_data'] = '视频播放量：' + str(video_info['view_count']) + \
+                                         ' 弹幕数：' + str(video_info['comment_count']) + \
+                                         ' 点赞数：' + str(video_info['like_count'])
+            meta_info['upload_date'] = util.unix_timestamp_to_utc(video_info['timestamp'])
+            meta_info['duration'] = util.second_to_time(round(video_info['duration']))
+            if self.hd:
+                meta_info['raw_video_content_infos'] = []
+                meta_info['audio_content_infos'] = []
+                for file_item in video_info['formats']:
+                    if file_item['vcodec'] == 'none':
+                        meta_info['raw_video_content_infos'].append(file_item)
+                    if file_item['acodec'] == 'none':
+                        meta_info['audio_content_infos'].append(file_item)
         return meta_info
 
     def get_youtube_video_info(self, video_info):
         meta_info = {}
         if self.scraper == 'yt_dlp':
+            meta_info['id'] = video_info['id']
             meta_info['title'] = video_info['title']
             meta_info['author'] = video_info['uploader']
             meta_info['author_url'] = video_info['uploader_url']
             meta_info['description'] = video_info['description']
             meta_info['playback_data'] = '视频播放量：' + str(video_info['view_count']) + \
-                                            ' 点赞数：' + str(video_info['like_count']) + \
-                                            ' 评论数：' + str(video_info['comment_count'])
+                                         ' 点赞数：' + str(video_info['like_count']) + \
+                                         ' 评论数：' + str(video_info['comment_count'])
             meta_info['author_avatar'] = video_info['thumbnail']
             meta_info['upload_date'] = str(video_info['upload_date'])
             meta_info['duration'] = util.second_to_time(round(video_info['duration']))
@@ -146,17 +193,14 @@ class VideoConverter(object):
                 meta_info['filesize'] = video_content_info['filesize'] if video_content_info['filesize'] else 0
                 meta_info['ext'] = video_content_info['ext']
             if self.hd:
-                for i in video_info['formats']:
-                    if i['format_id'] == '137':  # 137 is the format id for mp4 1080p
-                        raw_video_content_info = i
-                    if i['format_id'] == '140':  # 140 is the format id for mp4 audio
-                        audio_content_info = i
-                meta_info['raw_video_url'] = raw_video_content_info['url']
-                meta_info['raw_video_filesize'] = raw_video_content_info['filesize'] if raw_video_content_info['filesize'] else 0
-                meta_info['raw_video_ext'] = raw_video_content_info['ext']
-                meta_info['audio_url'] = audio_content_info['url']
-                meta_info['audio_filesize'] = audio_content_info['filesize'] if audio_content_info['filesize'] else 0
-                meta_info['audio_ext'] = audio_content_info['ext']
+                meta_info['ext'] = video_info['ext']
+                meta_info['raw_video_content_infos'] = []
+                meta_info['audio_content_infos'] = []
+                for file_item in video_info['formats']:
+                    if file_item['vcodec'] == 'none':
+                        meta_info['raw_video_content_infos'].append(file_item)
+                    if file_item['acodec'] == 'none':
+                        meta_info['audio_content_infos'].append(file_item)
         return meta_info
 
     def parse_video_url(self):
@@ -165,12 +209,16 @@ class VideoConverter(object):
         """
         # if it's a bilibili url
         if 'bilibili.com' in self.url or 'b23.tv' in self.url:
-        # if the url contains b23.tv, it is a short url, need to expand it
+            self.extractor = 'BiliBili'
+            # if the url contains b23.tv, it is a short url, need to expand it
             if 'b23.tv' in self.url:
                 response = requests.get(self.url)
                 print(response.url)
                 self.url = response.url
-            self.extractor = 'BiliBili'
+            if 'm.bilibili.com' in self.url:
+                self.url = self.url.replace('m.bilibili.com', 'www.bilibili.com')
+            if '/bilibili.com' in self.url:
+                self.url = self.url.replace('/bilibili.com', '/www.bilibili.com')
         elif 'youtube.com' in self.url or 'youtu.be' in self.url:
             self.extractor = 'youtube'
             # get the real url
