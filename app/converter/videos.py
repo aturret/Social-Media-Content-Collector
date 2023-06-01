@@ -32,7 +32,7 @@ class VideoConverter(object):
         }
         self.scraper = kwargs.get('scraper', 'yt_dlp')
         self.download = kwargs.get('download', True)
-        self.file_download = kwargs.get('file_download', False)
+        self.yt_downloader = kwargs.get('yt_downloader', False)
         self.hd = kwargs.get('hd', False)
         self.type = 'short'
 
@@ -53,7 +53,7 @@ class VideoConverter(object):
     def get_video_info(self):
         if self.scraper == 'youtube_dl':
             with youtube_dl.YoutubeDL(self.ydl_opts) as ydl:
-                video_info = ydl.extract_info(self.url, download=self.file_download)
+                video_info = ydl.extract_info(self.url, download=self.yt_downloader)
         elif self.scraper == 'yt_dlp':
             if self.extractor == 'BiliBili':
                 if self.hd and BILIBILI_COOKIE:
@@ -65,10 +65,10 @@ class VideoConverter(object):
                     self.ydl_opts[
                         'format'] = 'bestvideo[ext=mp4]+(258/256/140)/best'
                 else:
-                    self.ydl_opts['format'] = 'bv*[height<=480]+ba/b[height<=480] / wv*+ba/w'
-                self.file_download = True
+                    self.ydl_opts['format'] = 'bv*[height<=480][ext=mp4]+ba/b[height<=480][ext=mp4] / wv*+ba/w'
+                self.yt_downloader = True
             with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
-                video_info = ydl.extract_info(self.url, download=self.file_download, process=self.file_download)
+                video_info = ydl.extract_info(self.url, download=self.yt_downloader, process=self.yt_downloader)
         print(video_info)
         return video_info
 
@@ -100,12 +100,12 @@ class VideoConverter(object):
             '播放数据：' + meta_info['playback_data'] + '\n' + \
             '视频简介：' + meta_info['description'] + '\n'
         if self.download:
-            if self.file_download:
+            if self.yt_downloader:
                 self.video_url = os.path.join(TEMP_DIR,
                                               meta_info['title'] + '-' + meta_info['id'] + '.' + meta_info['ext'])
                 self.video_url = self.video_url.replace('|', '｜')
                 video_download_text = ''
-            else:
+            else:  # download by ourselves
                 if self.hd:
                     print('download hd video, this may take a while')
                     video_path, audio_path = None, None
@@ -150,7 +150,7 @@ class VideoConverter(object):
         meta_info['author_url'] = 'https://space.bilibili.com/' + str(video_info['uploader_id'])
         meta_info['author_avatar'] = video_info['thumbnail']
         meta_info['ext'] = video_info['ext']
-        if self.scraper == 'youtube_dl':
+        if self.scraper == 'youtube_dl':  # decrypted approach, keep for reference
             meta_info['description'] = video_info['description'].split(' 视频播放量')[0]
             meta_info['playback_data'] = '视频播放量 ' + util.get_content_between_strings(
                 video_info['description'], ' 视频播放量', ', 视频作者')
@@ -190,7 +190,7 @@ class VideoConverter(object):
             meta_info['author_avatar'] = video_info['thumbnail']
             meta_info['upload_date'] = str(video_info['upload_date'])
             meta_info['duration'] = util.second_to_time(round(video_info['duration']))
-            if not self.hd:
+            if not self.yt_downloader:
                 for i in video_info['formats']:
                     if i['format_id'] == '18':  # 18 is the format id for mp4 360p
                         video_content_info = i
@@ -198,7 +198,7 @@ class VideoConverter(object):
                 meta_info['video_url'] = video_content_info['url']
                 meta_info['filesize'] = video_content_info['filesize'] if video_content_info['filesize'] else 0
                 meta_info['ext'] = video_content_info['ext']
-            if self.hd:
+            if self.yt_downloader:
                 meta_info['ext'] = video_info['ext']
                 meta_info['raw_video_content_infos'] = []
                 meta_info['audio_content_infos'] = []

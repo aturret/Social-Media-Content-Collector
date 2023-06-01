@@ -23,9 +23,6 @@ TELEBOT_API_SERVER_PORT = env_var.get('TELEBOT_API_SERVER_PORT', None)
 TELEBOT_API_SERVER_HOST = env_var.get('TELEBOT_API_SERVER_HOST', 'localhost')
 # initialize telebot
 bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
-print(bot.get_webhook_info())
-bot.delete_webhook()
-print('webhook deleted')
 if TELEBOT_API_SERVER_PORT:
     telebot.apihelper.API_URL = 'http://' + TELEBOT_API_SERVER_HOST + ':' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
 print('the current telebot api url is: ' + str(telebot.apihelper.API_URL))
@@ -181,9 +178,9 @@ def callback_query(call):
                 target_function_kwargs['download'] = False
             else:
                 target_function_kwargs['download'] = True
+                target_function_kwargs['yt_downloader'] = True
                 if query_data[-1] == 'dlhd':
                     target_function_kwargs['hd'] = True
-                    target_function_kwargs['file_download'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
@@ -492,7 +489,7 @@ def check_url_type(url, message):
         if url.find('youtube.com') != -1 or url.find('youtu.be') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到YouTubeURL，预处理中……\nYouTube URL detected, preparing for processing....')
-        elif url.find('bilibili.com') != -1:
+        elif url.find('bilibili.com') != -1 or url.find('b23.tv') != -1:
             replying_message = bot.reply_to(message,
                                             '检测到BilibiliURL，预处理中……\nBilibili URL detected, preparing for processing....')
         target_function = api_functions.video_converter
