@@ -23,14 +23,12 @@ class VideoConverter(object):
         self.parse_video_url()
         self.aurl = self.url
         self.ydl_opts = {
-            # 'format': 'best',
             'paths': {
                 'home': TEMP_DIR
             },
             'outtmpl': {
                 'default': '%(title)s-%(id)s.%(ext)s',
             },
-            # 'format': 'best/bestvideo+bestaudio',
         }
         self.scraper = kwargs.get('scraper', 'yt_dlp')
         self.download = kwargs.get('download', True)
@@ -65,7 +63,7 @@ class VideoConverter(object):
             if self.extractor == 'youtube':
                 if self.hd:
                     self.ydl_opts[
-                        'format'] = 'bestvideo[ext=webm]+251/bestvideo[ext=mp4]+(258/256/140)/bestvideo[ext=webm]+(250/249)/best'
+                        'format'] = 'bestvideo[ext=mp4]+(258/256/140)/best'
                 else:
                     self.ydl_opts['format'] = 'bv*[height<=480]+ba/b[height<=480] / wv*+ba/w'
                 self.file_download = True
