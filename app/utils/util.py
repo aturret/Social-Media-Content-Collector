@@ -8,6 +8,7 @@ import datetime
 import requests
 import os
 import tempfile
+import httpx
 
 import ffmpeg
 from lxml import etree, html as lhtml
@@ -49,12 +50,13 @@ wsanitizer = Sanitizer({
 })
 
 
-def get_response_json(url, headers=None, test=False):
+async def get_response_json(url, headers=None, test=False):
     try:
-        response = requests.get(url, headers=headers)
-        if test:
-            print(response.text)
-        json_result = response.json()
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+            if test:
+                print(response.text)
+            json_result = response.json()
     except Exception as e:
         print(e, traceback.format_exc())
         json_result = None

@@ -85,12 +85,13 @@ class MetadataDict(object):
         }
 
 
-def new_weibo_converter(url, **kwargs):
+async def new_weibo_converter(url, **kwargs):
     try:
         wurl = url
         if wurl.find('weibo.com'):
             wurl = wurl.replace('weibo.com', 'm.weibo.cn')
-        wb = weibo.Weibo(wurl).new_get_weibo()
+        wb_object = weibo.Weibo(wurl)
+        wb = await wb_object.new_get_weibo()
         print('get weibo item')
         if not wb:
             raise NoItemFoundException('No weibo found')

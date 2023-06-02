@@ -33,5 +33,7 @@ Pillow = {version = "*"}
 yt-dlp = "*"
 youtube-dl = "*"
 ffmpeg-python = "*"
+quart = "*"
+httpx = "*"
 
 [dev-packages]

@@ -1,5 +1,6 @@
 import json
 import requests
+import httpx
 from collections import OrderedDict
 from lxml import etree
 from lxml import html
@@ -73,8 +74,10 @@ class Weibo(object):
                 weibo_dict[key] = self.__dict__[key]
         return weibo_dict
 
-    def get_weibo(self, raw=False):
-        html = requests.get(self.url, headers=self.headers, verify=False).text
+    async def get_weibo(self, raw=False):
+        with httpx.Client() as client:
+            html = await client.get(self.url, headers=self.headers).text
+
         html = html[html.find('"status":'):]
         # print(html)
         # print("end")
@@ -102,10 +105,11 @@ class Weibo(object):
             else:
                 return weibo_info
 
-    def get_weibo_info_old(self):
+    async def get_weibo_info_old(self):
         old_weibo_url = 'http://m.weibo.cn/status/' + str(self.id)
-        # print(old_weibo_url)
-        html = requests.get(old_weibo_url, headers=self.headers, verify=False).text
+        async with httpx.AsyncClient() as client:
+            response = await client.get(old_weibo_url, headers=self.headers)
+            html = response.text
         html = html[html.find('"status":'):]
         html = html[:html.rfind('"hotScheme"')]
         html = html[:html.rfind(',')]
@@ -377,15 +381,15 @@ class Weibo(object):
             self.rt_url = ''
         return self.standardize_info(weibo)
 
-    def new_get_weibo(self, old_method=False):
+    async def new_get_weibo(self, old_method=False):
         url = self.ajax_url.replace('m.weibo.cn', 'weibo.com')
         if not old_method:
-            ajax_json = get_response_json(url, headers=self.headers, test=True)
+            ajax_json = await get_response_json(url, headers=self.headers, test=True)
             print('ajax_json file url: ' + url)
             print('ajax_json file: ' + str(ajax_json))
             if not ajax_json or ajax_json['ok'] == 0:
                 print('new api failed, get weibo info from old api')
-                json_file = self.get_weibo_info_old()
+                json_file = await self.get_weibo_info_old()
                 if json_file:
                     print('get weibo info from old api successfully')
                     weibo = self.new_parse_weibo(json_file)
@@ -395,7 +399,7 @@ class Weibo(object):
             else:
                 weibo = self.new_parse_weibo(ajax_json)
         else:
-            json_file = self.get_weibo_info_old()
+            json_file = await self.get_weibo_info_old()
             if json_file:
                 weibo = self.new_parse_weibo(json_file)
             else:
@@ -418,12 +422,12 @@ class Weibo(object):
         else:  # long-text weibo
             self.type = 'long'
             if self.headers['Cookie'] and cookie_mode == 'True':  # if we have cookie to get long text from ajax request
-                longtext_json = get_response_json(self.longtext_url, headers=self.headers)
+                longtext_json = await get_response_json(self.longtext_url, headers=self.headers)
                 cleaned_text, fw_pics = self.weibo_html_text_clean(longtext_json['data']['longTextContent'])
                 self.text = self.text_raw = longtext_json['data']['longTextContent']
                 self.text = self.text.replace('\n', '<br>')
             else:  # scrape long text from old method (http://m.weibo.cn)
-                temp_info = self.get_weibo_info_old()
+                temp_info = await self.get_weibo_info_old()
                 cleaned_text, fw_pics = self.weibo_html_text_clean(temp_info['text'])
                 self.text = cleaned_text.replace('<br />', '<br>').replace('br/', 'br')
         print('weibo text:\n' + self.text)

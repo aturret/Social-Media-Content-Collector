@@ -1,12 +1,15 @@
 # -*- coding:utf-8 -*-
-from flask import Flask
+# from flask import Flask
+import traceback
+from quart import Quart, request
 import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+# from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.quart import QuartIntegration
 from flask import request
 import threading
-import app.api_functions
+from . import api_functions
 from . import atelebot, combination, settings, bot_start
-from .api_functions import *
+# from .api_functions import *
 from .utils import telegraph
 from .utils import util
 from telebot import types
@@ -23,32 +26,32 @@ if sentry_on == 'True':
     sentry_sdk.init(
         dsn=sentry_dsn,
         integrations=[
-            FlaskIntegration(),
+            QuartIntegration(),
         ],
         traces_sample_rate=1.0
     )
 
 
-def create_app():
-    server = Flask(__name__)
+async def create_app():
+    server = Quart(__name__)
     default_channel = settings.env_var.get('CHANNEL_ID', '')
 
     print(settings.env_var.get('PORT', 'no port'))
 
     @server.route('/newWeiboConvert', methods=['get', 'post'])
-    def newWeiboConvert():
+    async def newWeiboConvert():
         try:
-            weibo_data = request.get_data()
-            response_data = new_weibo_converter(weibo_data)
+            weibo_data = await request.get_data()
+            response_data = await api_functions.new_weibo_converter(weibo_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
             return False
 
     @server.route('/weiboConvert', methods=['get', 'post'])
-    def weibo_convert():
+    async def weibo_convert():
         try:
-            weiboData = request.get_data()
+            weiboData =await request.get_data()
             wdict = util.json.loads(weiboData)
         except Exception:
             print(traceback.format_exc())
@@ -56,22 +59,22 @@ def create_app():
         return 'ok'
 
     @server.route('/doubanConvert', methods=['get', 'post'])
-    def douban_convert():
+    async def douban_convert():
         try:
-            douban_data = request.get_data()
-            response_data = douban_converter(douban_data)
+            douban_data = await request.get_data()
+            response_data =await api_functions.douban_converter(douban_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
             return False
 
     @server.route('/twitterConvert', methods=['get', 'post'])
-    def twitter_convert():
+    async def twitter_convert():
         try:
-            twitter_data = request.get_data()
+            twitter_data =await request.get_data()
             if twitter_data == b'':
                 return 'ok'
-            response_data = twitter_converter(twitter_data)
+            response_data =await api_functions.twitter_converter(twitter_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
@@ -81,7 +84,7 @@ def create_app():
     def zhihu_convert():
         try:
             zhihu_data = request.get_data()
-            response_data = zhihu_converter(zhihu_data)
+            response_data =await api_functions.zhihu_converter(zhihu_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
@@ -92,7 +95,7 @@ def create_app():
         try:
             inoreader_data = request.get_data()
             data_dict = util.json.loads(inoreader_data)
-            mdict = inoreader_converter(data_dict)
+            mdict =await api_functions.inoreader_converter(data_dict)
             atelebot.send_formatted_message(data=mdict, chat_id=default_channel)
         except Exception:
             print(traceback.format_exc())
@@ -120,7 +123,7 @@ def create_app():
     @server.route('/bot', methods=['post'])
     def webhook():
         if request.headers.get('content-type') == 'application/json':
-            json_string = request.get_data().decode('utf-8')
+            json_string =await request.get_data().decode('utf-8')
             update = types.Update.de_json(json_string)
             print(update)
             atelebot.bot.process_new_updates([update])
