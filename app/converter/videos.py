@@ -103,7 +103,8 @@ class VideoConverter(object):
             if self.yt_downloader:
                 self.video_url = os.path.join(TEMP_DIR,
                                               meta_info['title'] + '-' + meta_info['id'] + '.' + meta_info['ext'])
-                self.video_url = self.video_url.replace('|', '｜')
+                self.video_url = self.video_url.replace('|', '｜').replace(':', '：').replace('?', '？')\
+                .replace('<', '＜').replace('>', '＞').replace('*', '＊').replace('/', '／').replace('\\', '＼')
                 video_download_text = ''
             else:  # download by ourselves
                 if self.hd:
