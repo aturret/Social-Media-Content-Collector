@@ -1,11 +1,9 @@
 # -*- coding:utf-8 -*-
-# from flask import Flask
+import asyncio
 import traceback
 from quart import Quart, request
 import sentry_sdk
-# from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.quart import QuartIntegration
-from flask import request
 import threading
 from . import api_functions
 from . import atelebot, combination, settings, bot_start
@@ -31,7 +29,7 @@ if sentry_on == 'True':
         traces_sample_rate=1.0
     )
 
-server = None
+
 
 
 async def create_app():
@@ -112,11 +110,6 @@ async def create_app():
     def rachel_convert():
         return 'ok', 200
 
-    # @server.route('/ping', methods=['get', 'post', 'head'])
-    # def ping():
-    #     print('hello, world!')
-    #     return 'pong', 200
-
     @server.route('/', methods=['get', 'post', 'head'])
     def ping():
         print('hello, world!')
@@ -133,15 +126,12 @@ async def create_app():
             updates = [update]
         else:
             return '', 403
-        atelebot.bot.process_new_updates(updates)
+        await atelebot.bot.process_new_updates(updates)
         return '', 200
-
 
     @server.route('/debug-sentry')
     def trigger_error():
         division_by_zero = 1 / 0
-
-    # start the bot in a thread instead
 
     return server
 

@@ -495,7 +495,8 @@ class Weibo(object):
             rtweibo_url = 'https://weibo.com/status/' + str(weibo_info['retweeted_status']['id'])
             self.rt_url = rtweibo_url
             rtweibo = Weibo(rtweibo_url)
-            self.rt_info = rtweibo.new_get_weibo()
+            self.rt_info = await rtweibo.new_get_weibo()
+            self.rt_info = await self.rt_info
             self.content += '<br><hr>' + self.rt_info['content']
             self.media_files.extend(self.rt_info['media_files']) if self.rt_info['media_files'] else ''
         else:

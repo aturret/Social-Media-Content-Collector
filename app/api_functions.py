@@ -92,6 +92,7 @@ async def new_weibo_converter(url, **kwargs):
             wurl = wurl.replace('weibo.com', 'm.weibo.cn')
         wb_object = weibo.Weibo(wurl)
         wb = await wb_object.new_get_weibo()
+        wb = await wb
         print('get weibo item')
         if not wb:
             raise NoItemFoundException('No weibo found')

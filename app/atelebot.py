@@ -58,7 +58,8 @@ async def get_social_media(message):
         basic_buttons = []
         url = URL_PATTERN.search(message.text).group()
         print('the url is: ' + url)
-        target_data = check_url_type(url, message)
+        target_data = await check_url_type(url, message)
+        replying_message = await target_data['replying_message']
         if target_data['target_item_type'] == 'invalid':
             return
         if target_data:
@@ -68,8 +69,8 @@ async def get_social_media(message):
             print('Failure')
             await bot.reply_to(message, 'Failure')
             return
-        if target_data['replying_message']:
-            await bot.delete_message(message.chat.id, target_data['replying_message'].message_id)
+        if replying_message:
+            await bot.delete_message(message.chat.id, replying_message.message_id)
         # add function buttons
         if DEFAULT_CHANNEL_ID and str(message.from_user.id) in ALLOWED_ADMIN_USERS:
             forward_button_data = 'chan+' + str(message.id) + '+' + data_id + '+' + str(DEFAULT_CHANNEL_ID)
@@ -137,7 +138,7 @@ async def callback_query(call):
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                     text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
-        send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
+        await send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -187,7 +188,7 @@ async def callback_query(call):
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                     text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
-        send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
+        await send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -227,7 +228,7 @@ async def callback_query(call):
             short_text = response_data['text'][:(TELEGRAM_TEXT_LIMIT - len(response_data['turl']))]
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
             response_data['text'] = short_text + '...\n<a href="' + response_data['turl'] + '">阅读原文</a>'
-        send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
+        await send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
@@ -305,6 +306,7 @@ async def send_formatted_message(data, message=None, chat_id=None, telegram_bot=
     else:
         chat_id = await bot.get_chat(chat_id=chat_id)
         chat_id = chat_id.id
+    data = await data
     discussion_chat_id = chat_id
     the_chat = await telegram_bot.get_chat(chat_id=chat_id)
     if the_chat.type == 'channel':
