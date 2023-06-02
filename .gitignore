@@ -1,5 +1,5 @@
 # my config file
-abondoned/
+abondoned/*
 app/test.py
 app/unittests
 
