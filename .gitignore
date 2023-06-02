@@ -1,5 +1,5 @@
 # my config file
-abondoned
+abondoned/
 app/test.py
 app/unittests
 
@@ -7,7 +7,6 @@ __pycache__
 app/__pycache__
 Dockerfile
 docker-compose.yml
-abondoned/.env
 .gitignore
 pytest.ini
 ngrok.ps1

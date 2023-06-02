@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-#    tags:
-#      - v*
 
 env:
   APP_NAME: socialmediacollector
@@ -13,18 +11,6 @@ env:
   APP_VERSION: latest
 
 jobs:
-#  test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: run tests
-#        run: |
-#          if [ -f docker-compose.test.yml ]; then
-#            docker-compose --file docker-compose.test.yml build
-#            docker-compose --file docker-compose.test.yml run sut
-#          else
-#            docker build . --file Dockerfile
-#          fi
   docker:
     runs-on: ubuntu-latest
     steps:
