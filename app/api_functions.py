@@ -274,7 +274,7 @@ def telegraph_convert(tdict):
     return res if res else 'nothing'
 
 
-def video_converter(url, **kwargs):
+async def video_converter(url, **kwargs):
     try:
         v = videos.VideoConverter(url=url, **kwargs).get_video_item()
         print('get video item')

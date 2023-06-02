@@ -19,6 +19,7 @@ DEFAULT_CHANNEL_ID = env_var.get('CHANNEL_ID', None)
 YOUTUBE_API = env_var.get('YOUTUBE_API', None)
 IMAGE_SIZE_LIMIT = env_var.get('IMAGE_SIZE_LIMIT', 1600)
 TELEGRAM_TEXT_LIMIT = env_var.get('TELEGRAM_TEXT_LIMIT', 1000)
+CACHE_TIME = env_var.get('CACHE_TIME', 600)
 ALLOWED_USERS = env_var.get('ALLOWED_USERS', '').split(',')
 ALLOWED_ADMIN_USERS = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 TELEBOT_API_SERVER_PORT = env_var.get('TELEBOT_API_SERVER_PORT', None)
@@ -125,7 +126,7 @@ async def callback_query(call):
     query_data = call.data.split('+')
     message_id = query_data[1]
     try:
-        await bot.answer_callback_query(call.id, "Sending message to channel")
+        await bot.answer_callback_query(call.id, "Sending message to channel",cache_time=CACHE_TIME)
         await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                             reply_markup=None)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
@@ -142,15 +143,15 @@ async def callback_query(call):
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure, timeout")
+        await bot.answer_callback_query(call.id, "Failure, timeout",cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
     except NoItemFoundException as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure, no item found")
+        await bot.answer_callback_query(call.id, "Failure, no item found",cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure")
+        await bot.answer_callback_query(call.id, "Failure",cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
@@ -162,7 +163,7 @@ async def callback_query(call):
     query_data = call.data.split('+')
     message_id = query_data[1]
     try:
-        await bot.answer_callback_query(call.id, "Message sent to private chat")
+        await bot.answer_callback_query(call.id, "Message sent to private chat", cache_time=CACHE_TIME)
         await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                             reply_markup=None)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
@@ -192,15 +193,15 @@ async def callback_query(call):
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure, timeout")
+        await bot.answer_callback_query(call.id, "Failure, timeout", cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
     except NoItemFoundException as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure, no item found")
+        await bot.answer_callback_query(call.id, "Failure, no item found", cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure")
+        await bot.answer_callback_query(call.id, "Failure", cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
@@ -212,7 +213,7 @@ async def callback_query(call):
     query_data = call.data.split('+')
     message_id = query_data[1]
     try:
-        await bot.answer_callback_query(call.id, "extracting...")
+        await bot.answer_callback_query(call.id, "extracting...",cache_time=CACHE_TIME)
         await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                             reply_markup=None)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
@@ -232,15 +233,15 @@ async def callback_query(call):
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure, timeout")
+        await bot.answer_callback_query(call.id, "Failure, timeout",cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
     except NoItemFoundException as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure, no item found")
+        await bot.answer_callback_query(call.id, "Failure, no item found",cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
-        await bot.answer_callback_query(call.id, "Failure")
+        await bot.answer_callback_query(call.id, "Failure",cache_time=CACHE_TIME)
         await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
@@ -250,7 +251,7 @@ async def callback_query(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('back'))
 async def callback_query(call):
     try:
-        await bot.answer_callback_query(call.id, "cancel...")
+        await bot.answer_callback_query(call.id, "cancel...",cache_time=CACHE_TIME)
     except:
         pass
     finally:
