@@ -62,28 +62,28 @@ class Zhihu(object):
             zhihu_dict[key] = self.__dict__[key]
         return zhihu_dict
 
-    def get_fav_item(self):
+    async def get_fav_item(self):
         url = self.url
         self.aurl = url
         if url.find('zhuanlan.zhihu.com') != -1:
             print('检测到知乎专栏，摘取中')
-            self.get_zhihu_article()
+            await self.get_zhihu_article()
         elif url.find('answer') != -1:
             print('检测到知乎回答，摘取中')
-            self.get_zhihu_answer()
+            await self.get_zhihu_answer()
         elif url.find('zhihu.com/pin/') != -1:
             print('检测到知乎想法，摘取中')
-            self.get_zhihu_status()
+            await self.get_zhihu_status()
         if util.get_html_text_length(self.content) < 200:
             self.type = 'short'
         result = self.to_dict()
         return result
 
-    def get_zhihu_article(self):
+    async def get_zhihu_article(self):
         self.zhihu_type = 'article'
         if self.method == 'api':
             self.api_url = zhihu_columns_api_host + '/articles/' + re.findall(r'/p/(\d+)\D*', self.url)[0]
-            json_data = util.get_response_json(self.api_url, headers=self.headers)
+            json_data = await util.get_response_json(self.api_url, headers=self.headers)
             self.title = json_data['title']
             self.content = json_data['content']
             self.origin = json_data['author']['name']
@@ -92,7 +92,7 @@ class Zhihu(object):
             self.get_zhihu_short_text()
         elif self.method == 'html':
             self.zhihu_type = 'article'
-            selector = util.get_selector(url=self.url, headers=self.headers)
+            selector = await util.get_selector(url=self.url, headers=self.headers)
             self.title = selector.xpath('string(//h1)')
             upvote = selector.xpath('string(//button[@class="Button VoteButton VoteButton--up"])')
             self.content = str(
@@ -103,9 +103,9 @@ class Zhihu(object):
             self.origin = selector.xpath('string(//div[contains(@class,"AuthorInfo-head")]//a)')
             self.originurl = 'https:' + selector.xpath('string(//a[@class="UserLink-link"]/@href)')
 
-    def get_zhihu_answer(self):
+    async def get_zhihu_answer(self):
         self.zhihu_type = 'answer'
-        selector = util.get_selector(url=self.url, headers=self.headers)
+        selector = await util.get_selector(url=self.url, headers=self.headers)
         upvote = selector.xpath('string(//button[contains(@class,"VoteButton")])')
         self.content = str(util.etree.tostring(selector.xpath(
             '//div[contains(@class,"RichContent-inner")]//span[contains(@class,"RichText") and @itemprop="text"]')[0],
@@ -118,13 +118,13 @@ class Zhihu(object):
             self.originurl = ''
         self.content = '<p>' + upvote + '</p><br>' + self.content
 
-    def get_zhihu_status(self):
+    async def get_zhihu_status(self):
         self.zhihu_type = 'status'
         if self.method == 'api':
             self.api_url = 'https://www.zhihu.com/api/v4/pins/' + re.findall(r'pin/(\d+)\D*', self.url)[0]
             print(self.api_url)
             # json_data = get_response_json(self.url, headers=self.headers, test=True)
-            json_data = get_zhihu_json_data(self.api_url, headers=self.headers)
+            json_data = await get_zhihu_json_data(self.api_url, headers=self.headers)
             self.origin = json_data['author']['name']
             self.originurl = zhihu_host + '/people/' + json_data['author']['url_token']
             self.title = self.origin + '的想法'
@@ -137,7 +137,7 @@ class Zhihu(object):
             upvote = json_data['like_count']
             self.content = '点赞数：' + str(upvote) + '<br>' + self.content + '<br>' + self.retweet_html + '<br>' + timestamp
         elif self.method == 'html':
-            selector = util.get_selector(url=self.url, headers=self.headers)
+            selector = await util.get_selector(url=self.url, headers=self.headers)
             content = str(util.etree.tostring(selector.xpath('//span[contains(@class,"RichText") and @itemprop="text"]')[0],
                                          encoding="utf-8"), encoding='utf-8')
             upvote = selector.xpath('string(//button[contains(@class,"VoteButton")]//span)')
@@ -190,8 +190,9 @@ class Zhihu(object):
         self.text = str(soup).replace('<br/>', '\n').replace('<br>', '\n').replace('<br />', '').replace('<hr/>', '\n')
 
 
-def get_zhihu_json_data(url, headers):
-    soup = BeautifulSoup(util.get_response(url).text, 'html.parser')
+async def get_zhihu_json_data(url, headers):
+    soup_text = await util.get_response(url).text
+    soup = BeautifulSoup(soup_text, 'html.parser')
     print(soup.text)
     # json_data = json.loads(soup.find('script', attrs={'id': 'js-initialData'}).text)
     json_data = util.json.loads(soup.text)

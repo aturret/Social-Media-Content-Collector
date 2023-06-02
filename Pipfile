@@ -35,5 +35,6 @@ youtube-dl = "*"
 ffmpeg-python = "*"
 quart = "*"
 httpx = "*"
+uvicorn = "*"
 
 [dev-packages]

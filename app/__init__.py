@@ -31,6 +31,8 @@ if sentry_on == 'True':
         traces_sample_rate=1.0
     )
 
+server = None
+
 
 async def create_app():
     server = Quart(__name__)
@@ -51,7 +53,7 @@ async def create_app():
     @server.route('/weiboConvert', methods=['get', 'post'])
     async def weibo_convert():
         try:
-            weiboData =await request.get_data()
+            weiboData = await request.get_data()
             wdict = util.json.loads(weiboData)
         except Exception:
             print(traceback.format_exc())
@@ -62,7 +64,7 @@ async def create_app():
     async def douban_convert():
         try:
             douban_data = await request.get_data()
-            response_data =await api_functions.douban_converter(douban_data)
+            response_data = await api_functions.douban_converter(douban_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
@@ -71,31 +73,31 @@ async def create_app():
     @server.route('/twitterConvert', methods=['get', 'post'])
     async def twitter_convert():
         try:
-            twitter_data =await request.get_data()
+            twitter_data = await request.get_data()
             if twitter_data == b'':
                 return 'ok'
-            response_data =await api_functions.twitter_converter(twitter_data)
+            response_data = await api_functions.twitter_converter(twitter_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
             return False
 
     @server.route('/zhihuConvert', methods=['get', 'post'])
-    def zhihu_convert():
+    async def zhihu_convert():
         try:
             zhihu_data = request.get_data()
-            response_data =await api_functions.zhihu_converter(zhihu_data)
+            response_data = await api_functions.zhihu_converter(zhihu_data)
             return response_data
         except Exception:
             print(traceback.format_exc())
             return False
 
     @server.route('/inoreaderConvert', methods=['post'])
-    def inoreader_convert():
+    async def inoreader_convert():
         try:
-            inoreader_data = request.get_data()
+            inoreader_data = await request.get_data()
             data_dict = util.json.loads(inoreader_data)
-            mdict =await api_functions.inoreader_converter(data_dict)
+            mdict = await api_functions.inoreader_converter(data_dict)
             atelebot.send_formatted_message(data=mdict, chat_id=default_channel)
         except Exception:
             print(traceback.format_exc())
@@ -121,15 +123,19 @@ async def create_app():
         return 'pong', 200
 
     @server.route('/bot', methods=['post'])
-    def webhook():
-        if request.headers.get('content-type') == 'application/json':
-            json_string =await request.get_data().decode('utf-8')
+    async def webhook():
+        request_type = request.headers.get('content-type')
+        if request_type == 'application/json':
+            json_string = await request.get_data()
+            json_string = json_string.decode('utf-8')
             update = types.Update.de_json(json_string)
             print(update)
-            atelebot.bot.process_new_updates([update])
-            return '', 200
+            updates = [update]
         else:
             return '', 403
+        atelebot.bot.process_new_updates(updates)
+        return '', 200
+
 
     @server.route('/debug-sentry')
     def trigger_error():

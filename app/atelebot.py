@@ -5,6 +5,8 @@ import time
 import requests
 import traceback
 import telebot
+import asyncio
+from telebot.async_telebot import AsyncTeleBot
 from .utils import util
 from .utils import reply_messages
 from .utils.customized_errors import *
@@ -22,17 +24,19 @@ ALLOWED_ADMIN_USERS = env_var.get('ALLOWED_ADMIN_USERS', '').split(',')
 TELEBOT_API_SERVER_PORT = env_var.get('TELEBOT_API_SERVER_PORT', None)
 TELEBOT_API_SERVER_HOST = env_var.get('TELEBOT_API_SERVER_HOST', 'localhost')
 # initialize telebot
-bot = telebot.TeleBot(TELEBOT_KEY, num_threads=4)
+bot = AsyncTeleBot(TELEBOT_KEY)
 if TELEBOT_API_SERVER_PORT:
     telebot.apihelper.API_URL = 'http://' + TELEBOT_API_SERVER_HOST + ':' + TELEBOT_API_SERVER_PORT + '/bot{0}/{1}'
 print('the current telebot api url is: ' + str(telebot.apihelper.API_URL))
-print(bot.get_webhook_info())
-bot.delete_webhook()
+print(asyncio.run(bot.get_webhook_info()))
+asyncio.run(bot.delete_webhook())
+
 print('webhook deleted')
 if env_var.get('RUN_MODE', 'webhook') == 'webhook' and env_var.get('BOT', 'False') != 'True':
-    bot.set_webhook(SITE_URL + '/bot', timeout=1200)
+    asyncio.run(bot.set_webhook(SITE_URL + '/bot', timeout=1200))
     print('webhook set')
-DEFAULT_CHANNEL_ID = bot.get_chat(DEFAULT_CHANNEL_ID).id
+DEFAULT_CHANNEL_ID = asyncio.run(bot.get_chat(DEFAULT_CHANNEL_ID))
+DEFAULT_CHANNEL_ID = DEFAULT_CHANNEL_ID.id
 URL_PATTERN = re.compile(r'(?:http|https)://[\w.!@#$%^&*()_+-=/?]*\??([^#\s]*)')  # 只摘取httpURL的pattern
 HTTP_PATTERN_REGEXP = r'(http|https)://([\w.!@#$%^&*()_+-=])*\s*'
 DOUBAN_HTTP_REGEXP = r'(http|https)://(www\.)+douban\.com'
@@ -40,15 +44,14 @@ NO_TELEGRAPH_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)"
 VIDEO_URL_REGEXP = r"(youtube\.com)|(bilibili\.com\/video)|(youtu\.be)|(b23\.tv)"
 formatted_data = {}
 latest_channel_message = []
-print(bot.get_webhook_info())
 
 
 @bot.message_handler(regexp=HTTP_PATTERN_REGEXP, chat_types=['private'])
-def get_social_media(message):
+async def get_social_media(message):
     user_id = message.from_user.id
     print('user_id: ' + str(user_id) + ' is trying to convert a social media URL')
     if str(user_id) not in ALLOWED_USERS:
-        bot.reply_to(message, '你没有使用该bot的权限')
+        await bot.reply_to(message, '你没有使用该bot的权限')
         return
     try:
         func_buttons = []
@@ -63,10 +66,10 @@ def get_social_media(message):
             formatted_data[data_id] = target_data
         else:
             print('Failure')
-            bot.reply_to(message, 'Failure')
+            await bot.reply_to(message, 'Failure')
             return
         if target_data['replying_message']:
-            bot.delete_message(message.chat.id, target_data['replying_message'].message_id)
+            await bot.delete_message(message.chat.id, target_data['replying_message'].message_id)
         # add function buttons
         if DEFAULT_CHANNEL_ID and str(message.from_user.id) in ALLOWED_ADMIN_USERS:
             forward_button_data = 'chan+' + str(message.id) + '+' + data_id + '+' + str(DEFAULT_CHANNEL_ID)
@@ -96,7 +99,7 @@ def get_social_media(message):
             func_buttons.append(video_download_button)
             video_hd_download_button_data = 'priv+' + str(message.id) + '+' + data_id + '+dlhd'
             video_hd_download_button = telebot.types.InlineKeyboardButton(text='下载高清视频',
-                                                                            callback_data=video_hd_download_button_data)
+                                                                          callback_data=video_hd_download_button_data)
             func_buttons.append(video_hd_download_button)
         else:
             show_button_data = 'priv+' + str(message.id) + '+' + data_id
@@ -109,62 +112,62 @@ def get_social_media(message):
             markup = telebot.types.InlineKeyboardMarkup([func_buttons, basic_buttons])
         else:
             markup = telebot.types.InlineKeyboardMarkup([basic_buttons])
-        bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
+        await bot.send_message(message.chat.id, "选择您想要的操作：", reply_markup=markup)
     except Exception as e:
         print(traceback.format_exc())
-        bot.reply_to(message, 'Failure' + traceback.format_exc())
+        await bot.reply_to(message, 'Failure' + traceback.format_exc())
         return
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('chan'))
-def callback_query(call):
+async def callback_query(call):
     query_data = call.data.split('+')
     message_id = query_data[1]
     try:
-        bot.answer_callback_query(call.id, "Sending message to channel")
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='社交媒体内容处理中……\nsocial media item processing...')
+        await bot.answer_callback_query(call.id, "Sending message to channel")
+        await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                            reply_markup=None)
+        await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text='社交媒体内容处理中……\nsocial media item processing...')
         if len(formatted_data) == 0:
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
         target_function_kwargs = target_data['extra_kwargs']
         target_function_kwargs['channel'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
+        await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
         send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='发送成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure, timeout")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
+        await bot.answer_callback_query(call.id, "Failure, timeout")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
     except NoItemFoundException as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure, no item found")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
+        await bot.answer_callback_query(call.id, "Failure, no item found")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
+        await bot.answer_callback_query(call.id, "Failure")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
-            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+            await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('priv'))
-def callback_query(call):
+async def callback_query(call):
     query_data = call.data.split('+')
     message_id = query_data[1]
     try:
-        bot.answer_callback_query(call.id, "Message sent to private chat")
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='社交媒体内容处理中……\nsocial media item processing...')
+        await bot.answer_callback_query(call.id, "Message sent to private chat")
+        await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                            reply_markup=None)
+        await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text='社交媒体内容处理中……\nsocial media item processing...')
         if len(formatted_data) == 0:
-            bot.reply_to(call.message, "No data to send")
+            await bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
         target_function_kwargs = target_data['extra_kwargs']
@@ -182,39 +185,39 @@ def callback_query(call):
                 if query_data[-1] == 'dlhd':
                     target_function_kwargs['hd'] = True
         response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
+        await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
         send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure, timeout")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
+        await bot.answer_callback_query(call.id, "Failure, timeout")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
     except NoItemFoundException as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure, no item found")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
+        await bot.answer_callback_query(call.id, "Failure, no item found")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
+        await bot.answer_callback_query(call.id, "Failure")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
-            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+            await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('extr'))
-def callback_query(call):
+async def callback_query(call):
     query_data = call.data.split('+')
     message_id = query_data[1]
     try:
-        bot.answer_callback_query(call.id, "extracting...")
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='正在提取内容至 Telegram 消息……')
+        await bot.answer_callback_query(call.id, "extracting...")
+        await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                            reply_markup=None)
+        await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text='正在提取内容至 Telegram 消息……')
         if len(formatted_data) == 0:
-            bot.reply_to(call.message, "No data to send")
+            await bot.reply_to(call.message, "No data to send")
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
         target_function_kwargs = target_data['extra_kwargs']
@@ -225,83 +228,85 @@ def callback_query(call):
             short_text = re.compile(r'<[^>]*?(?<!>)$').sub('', short_text)
             response_data['text'] = short_text + '...\n<a href="' + response_data['turl'] + '">阅读原文</a>'
         send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='摘取成功')
     except telebot.apihelper.ApiException as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure, timeout")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
+        await bot.answer_callback_query(call.id, "Failure, timeout")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, timeout')
     except NoItemFoundException as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure, no item found")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
+        await bot.answer_callback_query(call.id, "Failure, no item found")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure, no item found')
     except Exception as e:
         print(traceback.format_exc())
-        bot.answer_callback_query(call.id, "Failure")
-        bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
+        await bot.answer_callback_query(call.id, "Failure")
+        await bot.send_message(call.message.chat.id, reply_to_message_id=message_id, text='Failure')
     finally:
         if call.message:
-            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+            await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('back'))
-def callback_query(call):
+async def callback_query(call):
     try:
-        bot.answer_callback_query(call.id, "cancel...")
+        await bot.answer_callback_query(call.id, "cancel...")
     except:
         pass
     finally:
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                      reply_markup=None)
-        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+        await bot.edit_message_reply_markup(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                            reply_markup=None)
+        await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
 
 @bot.message_handler(chat_types=['private'], content_types=['sticker'])  # get sticker id
-def handle_message(message):
+async def handle_message(message):
     try:
-        bot.reply_to(message, 'The sticker id is: ' + message.sticker.file_id)
+        await bot.reply_to(message, 'The sticker id is: ' + message.sticker.file_id)
     except Exception as e:
         print(traceback.format_exc())
-        bot.reply_to(message, 'Failure' + traceback.format_exc())
+        await bot.reply_to(message, 'Failure' + traceback.format_exc())
 
 
 @bot.message_handler(regexp=DOUBAN_HTTP_REGEXP, chat_types=['group', 'supergroup'])
-def handle_message(message):
+async def handle_message(message):
     print('douban')
     try:
         url = URL_PATTERN.search(message.text).group()
         print('the url is: ' + url)
-        target_function, replying_message = check_url_type(url, message)
+        target_data = check_url_type(url, message)
         request_data = {'url': url}
-        response_data = target_function(request_data)
+        response_data = target_data['target_function'](request_data)
+        replying_message = target_data['replying_message']
         if response_data:
-            send_formatted_message(data=response_data, message=replying_message, chat_id=message.chat.id)
-        bot.delete_message(chat_id=message.chat.id, message_id=replying_message.message_id)
+            await send_formatted_message(data=response_data, message=replying_message, chat_id=message.chat.id)
+        await bot.delete_message(chat_id=message.chat.id, message_id=replying_message.message_id)
     except Exception as e:
         print(traceback.format_exc())
         return
 
 
 @bot.message_handler(commands=['hello'])  # a little Easter egg of responding to /hello with stickers
-def handle_message(message):
+async def handle_message(message):
     try:  # get a random number from the length of the list
         messages = reply_messages.reply_message_groups
         random_number = random.randint(0, len(messages) - 1)
         # reply to the message
-        bot.send_sticker(message.chat.id, messages[random_number]['sticker'])
-        bot.send_message(message.chat.id, messages[random_number]['text'])
+        await bot.send_sticker(message.chat.id, messages[random_number]['sticker'])
+        await bot.send_message(message.chat.id, messages[random_number]['text'])
     except Exception as e:
         print(traceback.format_exc())
-        bot.reply_to(message, 'Failure' + traceback.format_exc())
+        await bot.reply_to(message, 'Failure' + traceback.format_exc())
         return
 
 
-def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
+async def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
     if (not chat_id) and message:
         chat_id = message.chat.id
     else:
-        chat_id = bot.get_chat(chat_id=chat_id).id
+        chat_id = await bot.get_chat(chat_id=chat_id)
+        chat_id = chat_id.id
     discussion_chat_id = chat_id
-    the_chat = telegram_bot.get_chat(chat_id=chat_id)
+    the_chat = await telegram_bot.get_chat(chat_id=chat_id)
     if the_chat.type == 'channel':
         if the_chat.linked_chat_id:
             discussion_chat_id = the_chat.linked_chat_id
@@ -312,17 +317,17 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
             # if the url is not in the no_telegraph_list or the type is long, send long format message
             text = message_formatting(data)
             print(text)
-            telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=text)
+            await telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=text)
         elif data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
             # if the type is short and there are some media files, send media group
             media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
                                                                     caption=caption_text)
             if len(media_message_group) > 0:  # if there are some media groups to send, send it
                 for media_group in media_message_group:
-                    sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+                    sent_message = await telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
                 time.sleep(3)
             else:  # if there are no media groups to send, send the caption text and also note the message
-                sent_message = telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+                sent_message = await telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
             reply_to_message_id = None
             if discussion_chat_id != chat_id and len(media_message_group) > 0:
                 # if the chat is a channel, get the latest pinned message from the channel
@@ -333,23 +338,23 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
                 else:
                     reply_to_message_id = bot.get_chat(chat_id=discussion_chat_id).pinned_message.id + 1
             if len(file_group) > 0:  # send files, the files messages should be replied to the message sent before
-                telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
-                                          reply_to_message_id=reply_to_message_id,
-                                          text='有部分图片超过尺寸或大小限制，以文件形式发送：')
+                await telegram_bot.send_message(chat_id=discussion_chat_id, parse_mode='html',
+                                                reply_to_message_id=reply_to_message_id,
+                                                text='有部分图片超过尺寸或大小限制，以文件形式发送：')
                 for file in file_group:
                     if file.name.endswith('.gif'):
                         print('sending gif')
-                        telegram_bot.send_video(chat_id=discussion_chat_id,
-                                                reply_to_message_id=reply_to_message_id, video=file)
+                        await telegram_bot.send_video(chat_id=discussion_chat_id,
+                                                      reply_to_message_id=reply_to_message_id, video=file)
                     else:
-                        telegram_bot.send_document(chat_id=discussion_chat_id,
-                                                   reply_to_message_id=reply_to_message_id, document=file)
+                        await telegram_bot.send_document(chat_id=discussion_chat_id,
+                                                         reply_to_message_id=reply_to_message_id, document=file)
         else:  # if there are no media files, send the caption text
-            telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
+            await telegram_bot.send_message(chat_id=chat_id, parse_mode='html', text=caption_text)
     except Exception:
         print(traceback.format_exc())
         if message:
-            bot.reply_to(message, 'Failure\n' + traceback.format_exc())
+            await bot.reply_to(message, 'Failure\n' + traceback.format_exc())
 
 
 def message_formatting(data):
@@ -452,7 +457,7 @@ def media_files_packaging(media_files, caption=None):
     return media_message_group, file_group
 
 
-def check_url_type(url, message):
+async def check_url_type(url, message):
     extra_kwargs = {}
     if url.find('weibo.com') != -1 or url.find('m.weibo.cn') != -1:
         replying_message = bot.reply_to(message,
@@ -495,7 +500,8 @@ def check_url_type(url, message):
         target_function = api_functions.video_converter
         target_item_type = 'video'
     else:
-        if '_mastodon_session' in requests.utils.dict_from_cookiejar(util.get_response(url).cookies):
+        response = await util.get_response(url)
+        if '_mastodon_session' in requests.utils.dict_from_cookiejar(response.cookies):
             replying_message = bot.reply_to(message,
                                             '检测到长毛象URL，预处理中……\nMustodon URL detected, preparing for processing....')
             print('检测到长毛象URL，预处理中……\nMustodon URL detected, preparing for processing....')

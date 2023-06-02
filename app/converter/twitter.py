@@ -2,6 +2,7 @@ from app.utils import util
 from app import settings
 import requests
 import re
+import httpx
 
 X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')
 tpattern = re.compile(r'(?<=status/)[0-9]*')  # 摘出推文id
@@ -44,8 +45,8 @@ class Twitter(object):
             self_dict[k] = v
         return self_dict
 
-    def get_tweet_item(self):
-        self.get_single_tweet()
+    async def get_tweet_item(self):
+        await self.get_single_tweet()
         twitter_item = self.to_dict()
         print(twitter_item)
         return twitter_item
@@ -74,7 +75,7 @@ class Twitter(object):
         self.text = '<a href="' + self.url + '">@' + self.origin + '</a>: ' + self.text
         self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
-    def get_single_tweet(self):
+    async def get_single_tweet(self):
         tweet_info = {}
         used_scraper = ALL_SINGLE_SCRAPER if self.scraper_type == 'single' else ALL_SCRAPER
         for scraper in used_scraper:
@@ -82,7 +83,8 @@ class Twitter(object):
                 self.scraper = scraper
             print('using scraper: ', self.scraper)
             self.process_get_media_headers()
-            response = requests.get(url=self.host, headers=self.headers, params=self.params)
+            with httpx.AsyncClient() as client:
+                response = await client.get(url=self.host, headers=self.headers, params=self.params)
             if response.status_code == 200:
                 tweet_data = response.json()
                 print(tweet_data, self.params)

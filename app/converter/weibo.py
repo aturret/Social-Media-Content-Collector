@@ -406,7 +406,7 @@ class Weibo(object):
                 return None
         return weibo
 
-    def new_parse_weibo(self, weibo_info):
+    async def new_parse_weibo(self, weibo_info):
         if weibo_info['user']:  # get the user info successfully
             self.user_id = weibo_info['user']['id']
             self.screen_name = weibo_info['user']['screen_name']

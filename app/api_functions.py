@@ -113,10 +113,11 @@ async def new_weibo_converter(url, **kwargs):
         raise
 
 
-def twitter_converter(url, **kwargs):
+async def twitter_converter(url, **kwargs):
     try:
         turl = url
-        tw = twitter.Twitter(turl, **kwargs).get_tweet_item()
+        tw_object = twitter.Twitter(turl, **kwargs)
+        tw = await tw_object.get_tweet_item()
         print('get twitter item')
         if not tw:
             raise NoItemFoundException('No twitter found')
@@ -133,10 +134,11 @@ def twitter_converter(url, **kwargs):
         raise
 
 
-def douban_converter(url, **kwargs):
+async def douban_converter(url, **kwargs):
     try:
         durl = url
-        db = douban.Douban(url=durl).get_fav_item()
+        db_object = douban.Douban(url=durl)
+        db = await db_object.get_fav_item()
         print('get douban item')
         if not db:
             raise NoItemFoundException('No douban found')
@@ -153,10 +155,11 @@ def douban_converter(url, **kwargs):
         raise
 
 
-def zhihu_converter(url, **kwargs):
+async def zhihu_converter(url, **kwargs):
     try:
         zurl = url
-        zh = zhihu.Zhihu(url=zurl).get_fav_item()
+        zh_object = zhihu.Zhihu(url=zurl)
+        zh = await zh_object.get_fav_item()
         print('get zhihu item')
         if not zh:
             raise NoItemFoundException('No zhihu found')

@@ -84,19 +84,21 @@ def get_page_by_selenium(url: str, user_agent: str, wait_time: int = 10):
     return html
 
 
-def get_response(url):
-    request_headers = {
-        'User-Agent': 'smcc',
-    }
-    resp = requests.get(url=url,
-                        headers=request_headers)
-    return resp
+async def get_response(url,headers=None):
+    if headers is None:
+        headers = {
+            'User-Agent': 'smcc',
+        }
+    with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers)
+        return resp
 
 
-def get_selector(url, headers):
-    html = requests.get(url=url, headers=headers).text
-    selector = etree.HTML(html)
-    return selector
+async def get_selector(url, headers):
+    with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers)
+        selector = etree.HTML(resp.content)
+        return selector
 
 
 def local_time():
@@ -212,7 +214,7 @@ def string_to_int(string):
     return int(string)
 
 
-def get_html_text_length(html):
+def get_html_text_length(html: str) -> int:
     if html is None:
         return 0
     soup = BeautifulSoup(html, 'html.parser')
