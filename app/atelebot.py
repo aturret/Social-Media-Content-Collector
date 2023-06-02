@@ -135,7 +135,7 @@ async def callback_query(call):
         target_data = formatted_data.pop(query_data[2])
         target_function_kwargs = target_data['extra_kwargs']
         target_function_kwargs['channel'] = True
-        response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
+        response_data = await target_data['target_function'](target_data['url'], **target_function_kwargs)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                     text='处理完毕，正在把消息发送到频道……\nProcessing complete, sending message to channel...')
         await send_formatted_message(data=response_data, message=call.message, chat_id=call.data.split('+')[3])
@@ -185,7 +185,7 @@ async def callback_query(call):
                 target_function_kwargs['yt_downloader'] = True
                 if query_data[-1] == 'dlhd':
                     target_function_kwargs['hd'] = True
-        response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
+        response_data = await target_data['target_function'](target_data['url'], **target_function_kwargs)
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                                     text='处理完毕，正在把消息发送至私聊……\nProcessing complete, sending message to private chat...')
         await send_formatted_message(data=response_data, message=call.message, chat_id=call.message.chat.id)
@@ -222,7 +222,7 @@ async def callback_query(call):
             raise Exception('No data to send')
         target_data = formatted_data.pop(query_data[2])
         target_function_kwargs = target_data['extra_kwargs']
-        response_data = target_data['target_function'](target_data['url'], **target_function_kwargs)
+        response_data = await target_data['target_function'](target_data['url'], **target_function_kwargs)
         response_data['type'] = 'short'
         if util.get_html_text_length(response_data['text']) > TELEGRAM_TEXT_LIMIT:
             short_text = response_data['text'][:(TELEGRAM_TEXT_LIMIT - len(response_data['turl']))]
@@ -274,10 +274,10 @@ async def handle_message(message):
     try:
         url = URL_PATTERN.search(message.text).group()
         print('the url is: ' + url)
-        target_data = check_url_type(url, message)
+        target_data = await check_url_type(url, message)
         request_data = {'url': url}
-        response_data = target_data['target_function'](request_data)
-        replying_message = target_data['replying_message']
+        response_data = await target_data['target_function'](request_data)
+        replying_message = await target_data['replying_message']
         if response_data:
             await send_formatted_message(data=response_data, message=replying_message, chat_id=message.chat.id)
         await bot.delete_message(chat_id=message.chat.id, message_id=replying_message.message_id)
@@ -306,7 +306,6 @@ async def send_formatted_message(data, message=None, chat_id=None, telegram_bot=
     else:
         chat_id = await bot.get_chat(chat_id=chat_id)
         chat_id = chat_id.id
-    data = await data
     discussion_chat_id = chat_id
     the_chat = await telegram_bot.get_chat(chat_id=chat_id)
     if the_chat.type == 'channel':

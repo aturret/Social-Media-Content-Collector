@@ -191,7 +191,8 @@ class Zhihu(object):
 
 
 async def get_zhihu_json_data(url, headers):
-    soup_text = await util.get_response(url).text
+    soup_text = await util.get_response(url)
+    soup_text = soup_text.text
     soup = BeautifulSoup(soup_text, 'html.parser')
     print(soup.text)
     # json_data = json.loads(soup.find('script', attrs={'id': 'js-initialData'}).text)

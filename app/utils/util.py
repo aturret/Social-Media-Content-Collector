@@ -89,14 +89,20 @@ async def get_response(url,headers=None):
         headers = {
             'User-Agent': 'smcc',
         }
-    with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient() as client:
         resp = await client.get(url, headers=headers)
         return resp
 
 
 async def get_selector(url, headers):
-    with httpx.AsyncClient() as client:
-        resp = await client.get(url, headers=headers)
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers, timeout=30)
+        if resp.history:
+            print('Request was redirected')
+            for resp in resp.history:
+                print(resp.status_code, resp.url)
+            print('Final destination:')
+            print(resp.status_code, resp.url)
         selector = etree.HTML(resp.content)
         return selector
 

@@ -83,7 +83,7 @@ class Twitter(object):
                 self.scraper = scraper
             print('using scraper: ', self.scraper)
             self.process_get_media_headers()
-            with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient() as client:
                 response = await client.get(url=self.host, headers=self.headers, params=self.params)
             if response.status_code == 200:
                 tweet_data = response.json()

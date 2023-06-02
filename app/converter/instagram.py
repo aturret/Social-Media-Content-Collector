@@ -1,3 +1,5 @@
+import httpx
+
 from app.utils import util
 from app import settings
 import re
@@ -34,21 +36,24 @@ class Instagram(object):
             self_dict[k] = v
         return self_dict
 
-    def get_single_ins_item(self):
+    async def get_single_ins_item(self):
         if self.url.find('instagram.com/p/') != -1 or self.url.find('instagram.com/reel/') != -1:
             self.ins_type = 'post'
-            return self.get_ins_post_item()
+            post_item = await self.get_ins_post_item()
+            return post_item
         if self.url.find('instagram.com/stories/') != -1:
             self.ins_type = 'story'
-            return self.get_ins_story_item()
+            story_item = await self.get_ins_story_item()
+            return story_item
         return self.to_dict()
 
-    def get_ins_post_item(self):
+    async def get_ins_post_item(self):
         ins_info = {}
         for scraper in all_scrapers:
             self.scraper = scraper
             self.process_get_media_headers()
-            response = requests.get(url=self.host, headers=self.headers, params=self.params)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url=self.host, headers=self.headers, params=self.params)
             if response.status_code != 200:
                 print('get_ins_post_item error: ', self.scraper, response.status_code)
                 continue
@@ -153,7 +158,7 @@ class Instagram(object):
         ins_info['status'] = True
         return ins_info
 
-    def get_ins_story_item(self):
+    async def get_ins_story_item(self):
         ins_info = {}
         for scraper in all_story_scrapers:
             self.story_scraper = scraper

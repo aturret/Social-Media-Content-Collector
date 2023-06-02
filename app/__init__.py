@@ -95,8 +95,8 @@ async def create_app():
         try:
             inoreader_data = await request.get_data()
             data_dict = util.json.loads(inoreader_data)
-            mdict = await api_functions.inoreader_converter(data_dict)
-            atelebot.send_formatted_message(data=mdict, chat_id=default_channel)
+            mdict = api_functions.inoreader_converter(data_dict)
+            await atelebot.send_formatted_message(data=mdict, chat_id=default_channel)
         except Exception:
             print(traceback.format_exc())
             return 'Failed'

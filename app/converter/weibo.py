@@ -1,3 +1,4 @@
+import asyncio
 import json
 import requests
 import httpx
@@ -109,19 +110,23 @@ class Weibo(object):
         old_weibo_url = 'http://m.weibo.cn/status/' + str(self.id)
         async with httpx.AsyncClient() as client:
             response = await client.get(old_weibo_url, headers=self.headers)
+            if response.status_code == 302:
+                new_url = response.headers["Location"]
+                print(f"Redirected to {new_url}... following")
+                response = await client.get(new_url, headers=self.headers)
             html = response.text
-        html = html[html.find('"status":'):]
-        html = html[:html.rfind('"hotScheme"')]
-        html = html[:html.rfind(',')]
-        html = html[:html.rfind('][0] || {};')]
-        html = '{' + html
-        try:
-            js = json.loads(html, strict=False)
-            print(js)
-            weibo_info = js.get('status')
-        except:
-            weibo_info = {}
-        return weibo_info
+            html = html[html.find('"status":'):]
+            html = html[:html.rfind('"hotScheme"')]
+            html = html[:html.rfind(',')]
+            html = html[:html.rfind('][0] || {};')]
+            html = '{' + html
+            try:
+                js = json.loads(html, strict=False)
+                print(js)
+                weibo_info = js.get('status')
+            except:
+                weibo_info = {}
+            return weibo_info
 
     def get_article_url(self, selector):
         article_url = ''
@@ -392,16 +397,16 @@ class Weibo(object):
                 json_file = await self.get_weibo_info_old()
                 if json_file:
                     print('get weibo info from old api successfully')
-                    weibo = self.new_parse_weibo(json_file)
+                    weibo = await self.new_parse_weibo(json_file)
                 else:
                     print('get weibo info from old api failed, totally failed')
                     return None
             else:
-                weibo = self.new_parse_weibo(ajax_json)
+                weibo = await self.new_parse_weibo(ajax_json)
         else:
             json_file = await self.get_weibo_info_old()
             if json_file:
-                weibo = self.new_parse_weibo(json_file)
+                weibo = await self.new_parse_weibo(json_file)
             else:
                 return None
         return weibo

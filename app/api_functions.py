@@ -92,7 +92,6 @@ async def new_weibo_converter(url, **kwargs):
             wurl = wurl.replace('weibo.com', 'm.weibo.cn')
         wb_object = weibo.Weibo(wurl)
         wb = await wb_object.new_get_weibo()
-        wb = await wb
         print('get weibo item')
         if not wb:
             raise NoItemFoundException('No weibo found')
@@ -177,10 +176,11 @@ async def zhihu_converter(url, **kwargs):
         raise
 
 
-def instagram_converter(url, **kwargs):
+async def instagram_converter(url, **kwargs):
     try:
         iurl = url
-        ins = instagram.Instagram(url=iurl).get_single_ins_item()
+        ins_object = instagram.Instagram(url=iurl)
+        ins = await ins_object.get_single_ins_item()
         print('get instagram item')
         if not ins:
             raise NoItemFoundException('No instagram found')
