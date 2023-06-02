@@ -1,5 +1,4 @@
 # my config file
-abondoned/*
 app/test.py
 app/unittests
 
@@ -14,3 +13,4 @@ ngrok.ps1
 conf/*
 !conf/
 conf/www.bilibili.com_cookies.txt
+/abondoned/
