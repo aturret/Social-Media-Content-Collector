@@ -498,13 +498,12 @@ class Weibo(object):
             self.rt_url = ''
         print('length of raw text:' + str(len(self.text_raw)))
         # check the type of combined weibo
-        self.type = 'long' if get_html_text_length(self.text) > short_limit else 'short'
         self.text = '<a href="' + self.aurl + '">@' + self.origin + \
                         '</a>：' + self.text.replace('<br>', '\n')
         self.text = self.text + ('\n' + self.rt_info['text']) if 'retweeted_status' in weibo_info \
             else self.text
         self.text = self.text.replace('href="//', 'href="https://')
-        self.type = self.type
+        self.type = 'long' if get_html_text_length(self.text) > short_limit else 'short'
         weibo = self.to_dict()
         return self.standardize_info(weibo)
 
