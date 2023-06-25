@@ -271,8 +271,8 @@ def handle_message(message):
         url = URL_PATTERN.search(message.text).group()
         print('the url is: ' + url)
         target_data = check_url_type(url, message)
-        request_data = {'url': url}
-        response_data = target_data['target_function'](request_data)
+        # request_data = {'url': target_data['url']}
+        response_data = target_data['target_function'](url)
         if response_data:
             send_formatted_message(data=response_data, message=target_data['replying_message'], chat_id=message.chat.id)
         bot.delete_message(chat_id=message.chat.id, message_id=target_data['replying_message'].message_id)
