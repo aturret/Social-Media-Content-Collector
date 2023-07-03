@@ -8,6 +8,7 @@ X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')
 all_scrapers = ['ins28', 'scraper2', 'looter2']
 all_story_scrapers = ['stories1', 'scraper2022']
 
+
 class Instagram(object):
     def __init__(self, url, **kwargs):
         self.url = url

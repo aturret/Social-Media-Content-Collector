@@ -75,7 +75,7 @@ class Twitter(object):
         self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
     def get_single_tweet(self):
-        tweet_data = None
+        tweet_data, response = None, None
         tweet_info = {}
         used_scraper = ALL_SINGLE_SCRAPER if self.scraper_type == 'single' else ALL_SCRAPER
         for scraper in used_scraper:
@@ -96,11 +96,13 @@ class Twitter(object):
             else:
                 print('get tweet error: ', self.scraper, response.status_code)
                 continue
-        if tweet_data is None:
+        if tweet_data is not None:
             if self.scraper == 'Twitter154':
                 tweet_info = self.tweet_process_Twitter154(tweet_data)
             elif self.scraper == 'Twitter135' or self.scraper == 'twitter-v24':
                 tweet_info = self.tweet_process_Twitter135(tweet_data)
+        else:
+            print('No data scraped: ', self.scraper, response.content)
         if tweet_info is not None:
             self.tweet_item_process(tweet_info)
 
@@ -227,7 +229,8 @@ class Twitter(object):
             self.top_domain = 'twitter154'
             self.params = {'tweet_id': self.tid}
         elif self.scraper == 'Twitter135':
-            self.host = 'https://twitter135.p.rapidapi.com/v2/TweetDetail/'
+            self.host = 'https://twitter135.p.rapidapi.com/v2/Tweet/'
+            # self.host = 'https://twitter135.p.rapidapi.com/v2/TweetDetail/'
             self.top_domain = 'twitter135'
             self.params = {'id': self.tid}
         elif self.scraper == 'twitter-v24':
