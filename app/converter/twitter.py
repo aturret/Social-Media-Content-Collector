@@ -75,6 +75,7 @@ class Twitter(object):
         self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
     def get_single_tweet(self):
+        tweet_data = None
         tweet_info = {}
         used_scraper = ALL_SINGLE_SCRAPER if self.scraper_type == 'single' else ALL_SCRAPER
         for scraper in used_scraper:
@@ -95,10 +96,11 @@ class Twitter(object):
             else:
                 print('get tweet error: ', self.scraper, response.status_code)
                 continue
-        if self.scraper == 'Twitter154':
-            tweet_info = self.tweet_process_Twitter154(tweet_data)
-        elif self.scraper == 'Twitter135' or self.scraper == 'twitter-v24':
-            tweet_info = self.tweet_process_Twitter135(tweet_data)
+        if tweet_data is None:
+            if self.scraper == 'Twitter154':
+                tweet_info = self.tweet_process_Twitter154(tweet_data)
+            elif self.scraper == 'Twitter135' or self.scraper == 'twitter-v24':
+                tweet_info = self.tweet_process_Twitter135(tweet_data)
         if tweet_info is not None:
             self.tweet_item_process(tweet_info)
 
