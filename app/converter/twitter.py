@@ -229,8 +229,8 @@ class Twitter(object):
             self.top_domain = 'twitter154'
             self.params = {'tweet_id': self.tid}
         elif self.scraper == 'Twitter135':
-            self.host = 'https://twitter135.p.rapidapi.com/v2/Tweet/'
-            # self.host = 'https://twitter135.p.rapidapi.com/v2/TweetDetail/'
+            # self.host = 'https://twitter135.p.rapidapi.com/v2/Tweet/'
+            self.host = 'https://twitter135.p.rapidapi.com/v2/TweetDetail/'
             self.top_domain = 'twitter135'
             self.params = {'id': self.tid}
         elif self.scraper == 'twitter-v24':
