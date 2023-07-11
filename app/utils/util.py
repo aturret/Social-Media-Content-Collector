@@ -9,7 +9,6 @@ import requests
 import os
 import tempfile
 
-import ffmpeg
 from lxml import etree, html as lhtml
 from html import escape
 from PIL import Image
@@ -312,16 +311,16 @@ def download_file(url, extension=None, file_name=None, headers=None, stream=True
         return None
 
 
-def merge_audio_and_video(audio_path, video_path, output_path=None):
-    input_video = ffmpeg.input(video_path)
-    input_audio = ffmpeg.input(audio_path)
-    if output_path is None:
-        output_path = os.path.join(TEMP_DIR, str(uuid.uuid4()) + '.mp4')
-    ffmpeg.output(input_video, input_audio, output_path, format='mp4').run()
-    # delete the original audio and video
-    os.remove(audio_path)
-    os.remove(video_path)
-    return output_path
+# def merge_audio_and_video(audio_path, video_path, output_path=None):
+#     input_video = ffmpeg.input(video_path)
+#     input_audio = ffmpeg.input(audio_path)
+#     if output_path is None:
+#         output_path = os.path.join(TEMP_DIR, str(uuid.uuid4()) + '.mp4')
+#     ffmpeg.output(input_video, input_audio, output_path, format='mp4').run()
+#     # delete the original audio and video
+#     os.remove(audio_path)
+#     os.remove(video_path)
+#     return output_path
 
 
 """
