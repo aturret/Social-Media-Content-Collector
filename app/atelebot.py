@@ -485,6 +485,12 @@ def check_url_type(url, message):
         print('检测到InstagramURL，预处理中……\nInstagram URL detected, preparing for processing....')
         target_function = api_functions.instagram_converter
         target_item_type = 'instagram'
+    elif url.find('threads.net') != -1:
+        replying_message = bot.reply_to(message,
+                                        '检测到ThreadsURL，预处理中……\nThreads URL detected, preparing for processing....')
+        print('检测到ThreadsURL，预处理中……\nThreads URL detected, preparing for processing....')
+        target_function = api_functions.threads_converter
+        target_item_type = 'threads'
     elif re.search(VIDEO_URL_REGEXP, url) is not None:
         if url.find('youtube.com') != -1 or url.find('youtu.be') != -1:
             replying_message = bot.reply_to(message,

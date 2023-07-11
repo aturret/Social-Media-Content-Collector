@@ -1,7 +1,7 @@
 import traceback
 from html_telegraph_poster import TelegraphPoster
 from html_telegraph_poster.utils import DocumentPreprocessor
-from .converter import weibo, twitter, douban, zhihu, mustodon, instagram, videos
+from .converter import weibo, twitter, douban, zhihu, mustodon, instagram, videos, threads
 from bs4 import BeautifulSoup
 from .utils import util
 from .utils.customized_errors import *
@@ -188,6 +188,25 @@ def instagram_converter(url, **kwargs):
         return mdict
     except Exception as e:
         print('instagram_scraping_failed')
+        print(traceback.format_exc())
+
+
+def threads_converter(url, **kwargs):
+    try:
+        threads_url = url
+        th = threads.Threads(url=threads_url).get_threads()
+        print('get threads item')
+        if not th:
+            raise NoItemFoundException('No threads found')
+        if th['type'] == 'long':
+            t_url = get_telegraph_url(th)
+        else:
+            t_url = ''
+        mdict = MetadataDict(th, category='Threads', turl=t_url, message='').to_dict()
+        print(mdict)
+        return mdict
+    except Exception as e:
+        print('threads_scraping_failed')
         print(traceback.format_exc())
 
 
