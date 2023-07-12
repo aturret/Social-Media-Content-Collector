@@ -14,6 +14,7 @@ class Threads(object):
     def __init__(self, url):
         # metadata fields
         self.url = url
+        self.aurl = url
         self.title = ''
         self.origin = ''
         self.originurl = ''
@@ -139,7 +140,7 @@ class Threads(object):
             'content_group': "",
         }
         # make html components, and solve the pictures and videos
-        user_component = f"<a href='https://threads.net/@{thread['username']}'>@{thread['username']}</a>:"
+        user_component = f"<a href='https://threads.net/t/{thread['code']}'>@{thread['username']}</a>: "
         pics_component = ""
         videos_component = ""
         if not thread["media_count"]:  # if the thread doesn't have multiple media files
