@@ -1,6 +1,6 @@
 import json
 from typing import Dict
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 import jmespath
 from playwright.sync_api import sync_playwright
@@ -67,8 +67,9 @@ class Threads(object):
             images: carousel_media[].image_versions2.candidates[1].url,
             image: image_versions2.candidates[1].url,
             video: video_versions[1].url,
-            media_count: carousel_media_count
-            quoted_post: text_post_app_info.share_info.quoted_post
+            media_count: carousel_media_count,
+            quoted_post: text_post_app_info.share_info.quoted_post,
+            link: text_post_app_info.link_preview_attachment
         }""",
             data,
         )
@@ -167,6 +168,12 @@ class Threads(object):
         thread_info['text_group'] += user_component + thread["text"] + "\n"
         thread_info['content_group'] += user_component + thread["text"].replace("\n",
                                                                                 "<br>") + pics_component + videos_component + "<hr>"
+        # process the link item in the threads
+        if thread["link"]:
+            link_title = thread["link"]["title"]
+            link_url = unquote(urlparse(thread["link"]["url"]).query).split("=")[1].split("&")[0]
+            thread_info['text_group'] += f"<a href='{link_url}'>{link_title}</a>\n"
+            thread_info['content_group'] += f"<p><a href='{link_url}'>{link_title}</a></p><br>"
         if thread['quoted_post'] is not None:  # solve possible retweeted threads
             retweeted_thread = Threads.parse_single_threads_data(thread['quoted_post'])
             retweeted_thread_info = Threads.parse_single_threads(retweeted_thread)
