@@ -156,7 +156,8 @@ class Twitter(object):
                                   '</a>: ' + single_tweet_info['text']
         return tweet_info
 
-    def single_tweet_process_Twitter135(self, tweet):
+    @staticmethod
+    def single_tweet_process_Twitter135(tweet):
         single_tweet_info = {}
         if tweet['__typename'] == 'TweetWithVisibilityResults':
             tweet = tweet['tweet']
@@ -216,7 +217,6 @@ class Twitter(object):
                 return match.group(0)
             else:
                 return f'<a href="{url}">{url}</a>'
-
         content = self.content
         parts = re.split(r'\n+', content)
         content = ''.join([f'<p>{part}</p>' for part in parts])
