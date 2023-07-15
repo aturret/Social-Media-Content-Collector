@@ -204,11 +204,11 @@ class VideoConverter(object):
                 meta_info['ext'] = video_info['ext']
                 meta_info['raw_video_content_infos'] = []
                 meta_info['audio_content_infos'] = []
-                for file_item in video_info['formats']:
-                    if file_item['vcodec'] == 'none':
-                        meta_info['raw_video_content_infos'].append(file_item)
-                    if file_item['acodec'] == 'none':
-                        meta_info['audio_content_infos'].append(file_item)
+                # for file_item in video_info['formats']:
+                #     if file_item['vcodec'] == 'none':
+                #         meta_info['raw_video_content_infos'].append(file_item)
+                #     if file_item['acodec'] == 'none':
+                #         meta_info['audio_content_infos'].append(file_item)
         return meta_info
 
     def parse_video_url(self):
