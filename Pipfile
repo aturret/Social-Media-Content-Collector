@@ -29,7 +29,7 @@ pytest = {version = "*"}
 selenium = "*"
 sentry_sdk = {version = "*"}
 blinker = {version = "*"}
-Pillow = {version = "*"}
+Pillow = {version = "9.5.0"}
 yt-dlp = "*"
 youtube-dl = "*"
 playwright = "*"
