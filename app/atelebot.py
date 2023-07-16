@@ -96,7 +96,7 @@ def get_social_media(message):
             func_buttons.append(video_download_button)
             video_hd_download_button_data = 'priv+' + str(message.id) + '+' + data_id + '+dlhd'
             video_hd_download_button = telebot.types.InlineKeyboardButton(text='下载高清视频',
-                                                                            callback_data=video_hd_download_button_data)
+                                                                          callback_data=video_hd_download_button_data)
             func_buttons.append(video_hd_download_button)
         else:
             show_button_data = 'priv+' + str(message.id) + '+' + data_id
@@ -319,7 +319,13 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
         elif data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
             # if the type is short and there are some media files, send media group
             media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
-                                                                    caption=caption_text)
+                                                                    caption_text=caption_text)
+            if len(media_message_group) == 0 and len(file_group) == 1:
+                # if the media group only contains one video, send it as a video
+                sent_message = telegram_bot.send_video(chat_id=chat_id, video=file_group[0],
+                                                       caption=caption_text, parse_mode='html',
+                                                       supports_streaming=True)
+                return
             if len(media_message_group) > 0:  # if there are some media groups to send, send it
                 for media_group in media_message_group:
                     sent_message = telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
@@ -378,6 +384,11 @@ def media_files_packaging(media_files, caption_text=''):
     media_message_group = []
     media_group = []
     file_group = []
+    # if there is only one video and it is not a network url, send it as a video
+    if len(media_files) == 1 and media_files[0]["type"]=="video" and not media_files[0]["url"].startswith('http'):
+        file_like_object = telebot.types.InputFile(media_files[0]['url'])
+        file_group.append(file_like_object)
+        return media_message_group, file_group
     for media in media_files:
         print('a new media file incoming...')
         if media_counter == 9:
@@ -418,7 +429,7 @@ def media_files_packaging(media_files, caption_text=''):
             elif media['type'] == 'video':
                 file_like_object = telebot.types.InputFile(io_object)
                 media_group.append(telebot.types.InputMediaVideo(file_like_object, caption=media['caption'],
-                                                                 parse_mode='html'))
+                                                                 parse_mode='html', supports_streaming=True))
             elif media['type'] == 'audio':
                 file_like_object = telebot.types.InputFile(io_object)
                 media_group.append(telebot.types.InputMediaAudio(file_like_object, caption=media['caption'],
