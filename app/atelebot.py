@@ -302,7 +302,7 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
     if (not chat_id) and message:
         chat_id = message.chat.id
     else:
-        chat_id = bot.get_chat(chat_id=chat_id).id
+        chat_id = telegram_bot.get_chat(chat_id=chat_id).id
     discussion_chat_id = chat_id
     the_chat = telegram_bot.get_chat(chat_id=chat_id)
     if the_chat.type == 'channel':
@@ -373,9 +373,8 @@ def message_formatting(data):
     return text
 
 
-def media_files_packaging(media_files, caption=None):
-    caption_text = caption if caption else ''
-    media_counter = file_counter = 0
+def media_files_packaging(media_files, caption_text=''):
+    media_counter = 0
     media_message_group = []
     media_group = []
     file_group = []
