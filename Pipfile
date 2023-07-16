@@ -29,10 +29,10 @@ pytest = {version = "*"}
 selenium = "*"
 sentry_sdk = {version = "*"}
 blinker = {version = "*"}
-Pillow = {version = "9.5.0"}
 yt-dlp = "*"
 youtube-dl = "*"
 playwright = "*"
 jmespath = "*"
+pillow = "==9.5.0"
 
 [dev-packages]
