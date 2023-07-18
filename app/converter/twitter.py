@@ -4,12 +4,9 @@ import requests
 import re
 
 X_RapidAPI_Key = settings.env_var.get('X_RAPIDAPI_KEY', '')
-tpattern = re.compile(r'(?<=status/)[0-9]*')  # 摘出推文id
+tpattern = re.compile(r'(?<=status/)[0-9]*')  # get the tweet id
 ALL_SCRAPER = ['Twitter135', 'Twitter154']
 ALL_SINGLE_SCRAPER = ['Twitter154']
-
-
-# 编辑推送信息
 
 
 class Twitter(object):
