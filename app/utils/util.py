@@ -17,6 +17,7 @@ from app import settings
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
+from fake_useragent import UserAgent
 
 from .customized_classes import *
 from app.api_functions import *
@@ -30,6 +31,7 @@ DOWNLOAD_DIR = settings.env_var.get('DOWNLOAD_DIR',
 print(DOWNLOAD_DIR)
 TEMP_DIR = settings.env_var.get('TEMP_DIR', tempfile.gettempdir())
 # logger = logging.getLogger('spider.utils')
+ua = UserAgent()
 
 wsanitizer = Sanitizer({
     "tags": {
@@ -271,8 +273,13 @@ IO utilities
 """
 
 
-def download_a_iobytes_file(url, file_name=None):
-    file_data = requests.get(url).content
+def download_a_iobytes_file(url, file_name=None, headers=None, referer=None):
+    if headers is None:
+        headers = {
+            'User-Agent': ua.chrome,
+            'referer': referer
+        }
+    file_data = requests.get(url, headers=headers).content
     if file_name is None:
         file_format = url.split('.')[-1]
         file_name = 'media-' + str(uuid.uuid1())[:8] + '.' + file_format

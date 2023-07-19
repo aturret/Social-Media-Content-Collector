@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import re
 from app.utils import util
 from app import settings
+
 # import utils
 
 myfavlist = 'https://www.douban.com/doulist/145693559/'
@@ -13,7 +14,7 @@ default_scraper = settings.env_var.get('SCRAPER', 'requests')
 
 
 class Douban(object):
-    def __init__(self, favurl='',url='',headers=None,cookies='',scraper=default_scraper):
+    def __init__(self, favurl='', url='', headers=None, cookies='', scraper=default_scraper):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
             'Cookie': cookies,
@@ -22,6 +23,7 @@ class Douban(object):
         } if headers is None else headers
         self.url = url
         self.aurl = ''
+        self.text = ''
         self.content = ''
         self.origin = ''
         self.origin_url = ''
@@ -40,6 +42,7 @@ class Douban(object):
         return {
             'url': self.url,
             'aurl': self.aurl,
+            'text': self.text,
             'content': self.content,
             'origin': self.origin,
             'origin_url': self.origin_url,
@@ -58,23 +61,24 @@ class Douban(object):
     def get_fav_list(self):
         selector = util.get_selector(url=self.fav_url, headers=self.headers)
         print(util.local_time())
-        print('豆瓣收藏夹抓取：抓取前aurl属性为：'+self.url)
+        print('豆瓣收藏夹抓取：抓取前aurl属性为：' + self.url)
         aurl = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
         self.url = selector.xpath('string(//*[@class="doulist-item"][1]/div[1]/div[2]//a[1]/@href)')
-        print('豆瓣收藏夹抓取：抓取出的aurl是：'+aurl)
+        print('豆瓣收藏夹抓取：抓取出的aurl是：' + aurl)
         if aurl == self.url:  # 如果重复就不干了
             print('豆瓣收藏夹抓取：与上一次抓取的url相同，弹出')
             return '1'
         else:
             if selector.xpath('//*[@class="doulist-item"][1]//div[@class="ft"]/text()')[0].find('评语') != -1:
                 print('检测到评语，抓取评语')
-                comment = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath('string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
-                print('评语为：'+comment)
+                comment = re.search(pattern='(?<=(评语：)).[^(\n)]*', string=selector.xpath(
+                    'string(//*[@class="doulist-item"][1]//blockquote[@class="comment"])')).group()
+                print('评语为：' + comment)
             else:
                 comment = ''
                 print('没有评语')
             # aurl = 'https://www.douban.com/people/54793495/status/3702215426/?_i=0615039ZD7VEW1'  # 测试语句
-            self.get_fav_item(url=aurl,comment=comment)
+            self.get_fav_item(url=aurl, comment=comment)
             return '1'
 
     def get_fav_item(self, comment=''):
@@ -105,7 +109,7 @@ class Douban(object):
         douban['originurl'] = self.origin_url
         douban['type'] = self.type
         douban['media_files'] = self.media_files
-
+        douban['text'] = self.text
         print(self.content)
         print(self.__dict__)
         return douban
@@ -121,9 +125,6 @@ class Douban(object):
             self.origin = selector.xpath('string(//div[@class="content"]/a)')
             self.origin_url = selector.xpath('string(//div[@class="content"]/a/@href)')
 
-
-
-
     def get_douban_book_review(self, url):
         selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
@@ -137,8 +138,9 @@ class Douban(object):
     def get_douban_movie_review(self, url):
         selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
-        self.content = str(util.etree.tostring(selector.xpath('//div[contains(@class,\'review-content\')]')[0], encoding="utf-8"),
-                           encoding='utf-8')
+        self.content = str(
+            util.etree.tostring(selector.xpath('//div[contains(@class,\'review-content\')]')[0], encoding="utf-8"),
+            encoding='utf-8')
         self.origin = selector.xpath('string(//header[@class="main-hd"]//span)')
         self.origin_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
         self.work_title = selector.xpath('string(//header[@class="main-hd"]/a[2])')
@@ -176,7 +178,16 @@ class Douban(object):
             p.unwrap()
         for span in soup.find_all('span'):
             span.unwrap()
-        self.text = str(soup).replace('<br/>', '\n')
+        for div in soup.find_all('div'):
+            div.unwrap()
+        for link in soup.find_all('link'):
+            link.decompose()
+        for script in soup.find_all('script'):
+            script.decompose()
+        self.text = str(soup)
+        while '\n\n' in self.text:
+            self.text = self.text.replace('\n\n', '\n')
+        self.text = self.text.replace('<br/>', '\n').replace('<br>', '\n').replace('<br />', '\n')
         self.text = '<a href="' + self.aurl + '">' + self.origin + '</a>: ' + self.text
 
 # douban = Douban(favurl=myfavlist)

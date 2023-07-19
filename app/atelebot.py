@@ -319,7 +319,8 @@ def send_formatted_message(data, message=None, chat_id=None, telegram_bot=bot):
         elif data['type'] == 'short' and data['media_files'] and len(data['media_files']) > 0:
             # if the type is short and there are some media files, send media group
             media_message_group, file_group = media_files_packaging(media_files=data['media_files'],
-                                                                    caption_text=caption_text)
+                                                                    caption_text=caption_text,
+                                                                    data=data)
             if len(media_message_group) == 0 and len(file_group) == 1:
                 # if the media group only contains one video, send it as a video
                 sent_message = telegram_bot.send_video(chat_id=chat_id, video=file_group[0],
@@ -379,7 +380,7 @@ def message_formatting(data):
     return text
 
 
-def media_files_packaging(media_files, caption_text=''):
+def media_files_packaging(media_files, caption_text='', data=None):
     media_counter = 0
     media_message_group = []
     media_group = []
@@ -399,7 +400,11 @@ def media_files_packaging(media_files, caption_text=''):
         print('the ' + str((media_counter + 1)) + '\'s media: ' + media['type'] + ': ' + media['url'])
         # if the url if a network url, download it
         if media['url'].startswith('http'):
-            io_object = util.download_a_iobytes_file(media['url'])
+            if data and media['url'].find('doubanio.com') != -1:
+                referer = data['aurl']
+            else:
+                referer = None
+            io_object = util.download_a_iobytes_file(url=media['url'], referer=referer)
             file_size = io_object.size
             if not TELEBOT_API_SERVER_PORT:
                 print('the size of this file is ' + str(file_size))
@@ -419,7 +424,7 @@ def media_files_packaging(media_files, caption_text=''):
                     # if the size is over 5MB or dimension is larger than 1280 px, compress the image
 
                     print('will also send ' + image_url + ' as a file')  # and also send it as a file
-                    io_object = util.download_a_iobytes_file(media['url'])
+                    io_object = util.download_a_iobytes_file(url=media['url'], referer=referer)
                     if not io_object.name.endswith('.gif'):
                         file_group.append(io_object)
             elif media['type'] == 'gif':
