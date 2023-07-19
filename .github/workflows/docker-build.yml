@@ -65,35 +65,35 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_REPO }}:latest
             ${{ env.DOCKERHUB_REPO }}:${{ env.APP_VERSION }}
-  deploy:
-    runs-on: ubuntu-latest
-    needs: docker
-    steps:
-#      - name: Check commit message
-#        id: check_message
-#        run : |
-#          MESSAGE=$(git log --format=%B -n 1 ${{ github.sha }})
-#          if [[ "$MESSAGE" == *"[test]"* ]]; then
-#            echo "::set-output name=skip::true"
-#          else
-#            echo "::set-output name=skip::false"
-#          fi
-      - name: Checkout
-#        if: steps.check_message.outputs.skip == 'false'
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          port: ${{ secrets.VPS_PORT }}
-          username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          key: ${{ secrets.VPS_KEY }}
-          passphrase: ${{ secrets.VPS_PASSPHRASE }}
-          timeout: 300s
-          script: |
-            cd ~/vpsdockerconf/socialmediacollector
-            docker-compose down            
-            docker rmi ${{ env.DOCKERHUB_REPO }} || true            
-            docker-compose up -d
+#  deploy:
+#    runs-on: ubuntu-latest
+#    needs: docker
+#    steps:
+##      - name: Check commit message
+##        id: check_message
+##        run : |
+##          MESSAGE=$(git log --format=%B -n 1 ${{ github.sha }})
+##          if [[ "$MESSAGE" == *"[test]"* ]]; then
+##            echo "::set-output name=skip::true"
+##          else
+##            echo "::set-output name=skip::false"
+##          fi
+#      - name: Checkout
+##        if: steps.check_message.outputs.skip == 'false'
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ secrets.VPS_HOST }}
+#          port: ${{ secrets.VPS_PORT }}
+#          username: ${{ secrets.VPS_USERNAME }}
+#          password: ${{ secrets.VPS_PASSWORD }}
+#          key: ${{ secrets.VPS_KEY }}
+#          passphrase: ${{ secrets.VPS_PASSPHRASE }}
+#          timeout: 300s
+#          script: |
+#            cd ~/vpsdockerconf/socialmediacollector
+#            docker-compose down
+#            docker rmi ${{ env.DOCKERHUB_REPO }} || true
+#            docker-compose up -d
 #            docker rm ${{ env.APP_NAME }} || true
 #            docker pull ${{ env.DOCKERHUB_REPO }}:latest
 #            docker stop ${{ env.APP_NAME }} || true
