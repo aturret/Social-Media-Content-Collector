@@ -57,9 +57,9 @@ docker pull aturret/socialmediacollector
 mdict = {
     		   'category':'',		#分类
                 'title': '',		#标题
-                'origin': '',		#出处
+                'author': '',		#出处
     		   'aurl': '',		#作者链接
-                'originurl': '',	#原文链接
+                'author_url': '',	#原文链接
     		   'message':'',        #转发时附带的评论
                 't_url': ''			#
             }

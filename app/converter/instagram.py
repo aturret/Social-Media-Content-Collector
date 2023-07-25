@@ -99,7 +99,7 @@ class Instagram(object):
 
     def ins_post_item_process(self, ins_info):
         self.__dict__.update(ins_info)
-        self.title = self.origin + '\'s Instagram post'
+        self.title = self.author + '\'s Instagram post'
         self.text = util.escape(self.text)
         self.text = "<a href='" + self.aurl + "'>" + self.title + "</a>\n" + self.text
         self.type = 'short' if util.get_html_text_length(self.text) < 300 else 'long'
@@ -109,8 +109,8 @@ class Instagram(object):
         ins_info['content'] = ins_data['edge_media_to_caption']['edges'][0]['node']['text'] if ins_data[
             'edge_media_to_caption']['edges'] else ''
         ins_info['text'] = ins_info['content']
-        ins_info['origin'] = ins_data['owner']['username'] + '(' + ins_data['owner']['full_name'] + ')'
-        ins_info['originurl'] = 'https://www.instagram.com/' + ins_data['owner']['username'] + '/'
+        ins_info['author'] = ins_data['owner']['username'] + '(' + ins_data['owner']['full_name'] + ')'
+        ins_info['author_url'] = 'https://www.instagram.com/' + ins_data['owner']['username'] + '/'
         ins_info['media_files'] = []
         if ins_data['__typename'] == 'GraphVideo':
             ins_info['media_files'].append({'type': 'video', 'url': ins_data['video_url'], 'caption': ''}) if ins_data[
@@ -134,8 +134,8 @@ class Instagram(object):
         ins_info = {}
         ins_info['content'] = ins_data['items'][0]['caption']['text'] if ins_data['items'][0]['caption'] else ''
         ins_info['text'] = ins_info['content']
-        ins_info['origin'] = ins_data['items'][0]['user']['username'] + '(' + ins_data['items'][0]['user']['full_name'] + ')'
-        ins_info['originurl'] = 'https://www.instagram.com/' + ins_data['items'][0]['user']['username'] + '/'
+        ins_info['author'] = ins_data['items'][0]['user']['username'] + '(' + ins_data['items'][0]['user']['full_name'] + ')'
+        ins_info['author_url'] = 'https://www.instagram.com/' + ins_data['items'][0]['user']['username'] + '/'
         ins_info['media_files'] = []
         if ins_data['items'][0]['media_type'] == 2:
             ins_info['media_files'].append({'type': 'video', 'url': ins_data['items'][0]['video_versions'][0]['url'], 'caption': ''})

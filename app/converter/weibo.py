@@ -53,10 +53,10 @@ class Weibo(object):
         self.pics_url = []
         self.videos_url = []
         self.gifs_url = []
-        self.origin = ''
+        self.author = ''
         self.user_id = ''
         self.screen_name = ''
-        self.originurl = ''
+        self.author_url = ''
         self.date = ''
         self.region_name = ''
         self.comment = ''
@@ -358,20 +358,20 @@ class Weibo(object):
             for i in self.videos_url:
                 videoformat += '<figure src="' + i + '" type="video/mp4">youcannotwatchthevideo</figure>'
         self.title = self.screen_name + '的微博'
-        self.origin = self.screen_name
+        self.author = self.screen_name
         self.aurl = self.url
-        self.originurl = 'https://weibo.com/u/' + str(self.user_id)
+        self.author_url = 'https://weibo.com/u/' + str(self.user_id)
         self.date = self.parse_date(weibo_info)
         self.count = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
             weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
         self.content = '<br><p>' + self.date + '</p><br><p>' + self.count + '</p><br><a href="' + weibo[
-            'originurl'] + '">@' + self.origin + '</a>：<p>' + self.text + '</p><br>' + picsformat + videoformat
+            'author_url'] + '">@' + self.author + '</a>：<p>' + self.text + '</p><br>' + picsformat + videoformat
         if 'retweeted_status' in weibo_info:
             rtweibo_url = 'https://m.weibo.cn/status/' + weibo_info['retweeted_status']['id']
             self.rt_url = rtweibo_url
             rtweibo = Weibo(rtweibo_url)
             self.rt_info = rtweibo.get_weibo()
-            # self.rt_info['content'] = '<a href="'+ self.rt_info['originurl'] + '">@' + self.rt_info['screen_name'] + '：</a>' + self.rt_info['content']
+            # self.rt_info['content'] = '<a href="'+ self.rt_info['author_url'] + '">@' + self.rt_info['screen_name'] + '：</a>' + self.rt_info['content']
             self.content += '<br><hr>' + self.rt_info['content']
         else:
             self.rt_url = ''
@@ -458,9 +458,9 @@ class Weibo(object):
             for i in self.gifs_url:
                 pics_format += '<img src="' + i + '"><br>'
         self.title = self.screen_name + '的微博'
-        self.origin = self.screen_name
+        self.author = self.screen_name
         self.aurl = self.url
-        self.originurl = 'https://weibo.com/u/' + str(self.user_id)
+        self.author_url = 'https://weibo.com/u/' + str(self.user_id)
         self.date = self.parse_date(weibo_info)
         self.count = '转发:' + str(weibo_info['reposts_count']) + ' 评论:' + str(
             weibo_info['comments_count']) + ' 点赞:' + str(weibo_info['attitudes_count'])
@@ -470,7 +470,7 @@ class Weibo(object):
         content = ''.join([f'<p>{part}</p>' for part in parts])
         self.content = '<br><p>' + self.date + '</p><br><p>' + \
                            self.count + ' ' + self.region_name + \
-                           '</p><br><a href="' + self.originurl + '">@' + self.origin + \
+                           '</p><br><a href="' + self.author_url + '">@' + self.author + \
                            '</a>：<p>' + content + '</p><br>' + pics_format + video_format
         # format the media files for download
         self.media_files = []
@@ -498,7 +498,7 @@ class Weibo(object):
             self.rt_url = ''
         print('length of raw text:' + str(len(self.text_raw)))
         # check the type of combined weibo
-        self.text = '<a href="' + self.aurl + '">@' + self.origin + \
+        self.text = '<a href="' + self.aurl + '">@' + self.author + \
                         '</a>：' + self.text.replace('<br>', '\n')
         self.text = self.text + ('\n' + self.rt_info['text']) if 'retweeted_status' in weibo_info \
             else self.text

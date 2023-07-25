@@ -366,16 +366,16 @@ def message_formatting(data):
     if data['type'] == 'short':
         if re.search(NO_TELEGRAPH_REGEXP, data['aurl']) and data['category'] not in ['YouTube', 'Bilibili']:
             text = '<a href=\"' + data['aurl'] + '\"><b>' + data['title'] + '</b></a>\n'  'via #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
+                   ' - <a href=\"' + data['author_url'] + ' \"> ' + data['author'] + '</a>\n' + data['message']
         else:
             text = data['text'] + '\n#' + data['category']
     else:
         if re.search(NO_TELEGRAPH_REGEXP, data['aurl']) and data['category'] not in ['YouTube', 'Bilibili']:
             text = '<a href=\"' + data['aurl'] + '\">' '<b>' + data['title'] + '</b></a>\nvia #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message']
+                   ' - <a href=\"' + data['author_url'] + ' \"> ' + data['author'] + '</a>\n' + data['message']
         else:
             text = '<a href=\"' + data['turl'] + '\"><b>' + data['title'] + '</b></a>\nvia #' + data['category'] + \
-                   ' - <a href=\"' + data['originurl'] + ' \"> ' + data['origin'] + '</a>\n' + data['message'] + \
+                   ' - <a href=\"' + data['author_url'] + ' \"> ' + data['author'] + '</a>\n' + data['message'] + \
                    '<a href=\"' + data['aurl'] + '\">阅读原文</a>'
     return text
 
@@ -386,7 +386,7 @@ def media_files_packaging(media_files, caption_text='', data=None):
     media_group = []
     file_group = []
     # if there is only one video and it is not a network url, send it as a video
-    if len(media_files) == 1 and media_files[0]["type"]=="video" and not media_files[0]["url"].startswith('http'):
+    if len(media_files) == 1 and media_files[0]["type"] == "video" and not media_files[0]["url"].startswith('http'):
         file_like_object = telebot.types.InputFile(media_files[0]['url'])
         file_group.append(file_like_object)
         return media_message_group, file_group

@@ -16,8 +16,8 @@ class Threads(object):
         self.url = url
         self.aurl = url
         self.title = ''
-        self.origin = ''
-        self.originurl = ''
+        self.author = ''
+        self.author_url = ''
         self.text = ''
         self.content = ''
         self.media_files = []
@@ -116,8 +116,8 @@ class Threads(object):
     def process_single_threads(self, thread: Dict) -> None:
         if thread["code"] == self.code:  # if the thread is the original post
             self.title = thread["username"] + "'s Threads"
-            self.origin = thread["username"]
-            self.originurl = f"https://threads.net/@{thread['username']}"
+            self.author = thread["username"]
+            self.author_url = f"https://threads.net/@{thread['username']}"
             created_at = unix_timestamp_to_utc(thread["published_on"])
             reply_count = thread["reply_count"]
             like_count = thread["like_count"]

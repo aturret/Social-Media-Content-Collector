@@ -15,12 +15,12 @@ class TelegraphDict(object):
         self.content = dict_data['content'] if 'content' in dict_data \
             else kwargs['content'] if 'content' in kwargs \
             else 'undefined_content'
-        self.origin = dict_data['origin'] if 'origin' in dict_data \
-            else kwargs['origin'] if 'origin' in kwargs \
+        self.author = dict_data['author'] if 'author' in dict_data \
+            else kwargs['author'] if 'author' in kwargs \
             else 'undefined_origin'
-        self.originurl = dict_data['originurl'] if 'originurl' in dict_data \
-            else kwargs['originurl'] if 'originurl' in kwargs \
-            else 'undefined_originurl'
+        self.author_url = dict_data['author_url'] if 'author_url' in dict_data \
+            else kwargs['author_url'] if 'author_url' in kwargs \
+            else 'undefined_author_url'
         self.url = dict_data['aurl'] if 'aurl' in dict_data \
             else kwargs['aurl'] if 'aurl' in kwargs \
             else 'undefined_url'
@@ -29,8 +29,8 @@ class TelegraphDict(object):
         return {
             'title': self.title,
             'content': self.content,
-            'origin': self.origin,
-            'originurl': self.originurl,
+            'author': self.author,
+            'author_url': self.author_url,
             'url': self.url
         }
 
@@ -46,11 +46,11 @@ class MetadataDict(object):
         self.text = dict_data['text'] if 'text' in dict_data \
             else kwargs['text'] if 'text' in kwargs \
             else ''
-        self.origin = dict_data['origin'] if 'origin' in dict_data \
-            else kwargs['origin'] if 'origin' in kwargs \
+        self.author = dict_data['author'] if 'author' in dict_data \
+            else kwargs['author'] if 'author' in kwargs \
             else 'undefined_origin'
-        self.originurl = dict_data['originurl'] if 'originurl' in dict_data \
-            else 'undefined_originurl'
+        self.author_url = dict_data['author_url'] if 'author_url' in dict_data \
+            else 'undefined_author_url'
         self.aurl = dict_data['aurl'] if 'aurl' in dict_data \
             else kwargs['aurl'] if 'aurl' in kwargs \
             else 'undefined_aurl'
@@ -75,8 +75,8 @@ class MetadataDict(object):
             'category': self.category,
             'title': self.title,
             'text': self.text,
-            'origin': self.origin,
-            'originurl': self.originurl,
+            'author': self.author,
+            'author_url': self.author_url,
             'aurl': self.aurl,
             'message': self.message,
             'turl': self.turl,
@@ -232,7 +232,7 @@ def inoreader_converter(request_data, **kwargs):
         for span in soup.find_all('span'):
             span.unwrap()
         ino['text'] = str(soup).replace('<br/>', '\n')
-        ino['text'] = '<a href="' + ino['aurl'] + '">' + ino['origin'] + '</a>: ' + ino['text']
+        ino['text'] = '<a href="' + ino['aurl'] + '">' + ino['author'] + '</a>: ' + ino['text']
         t_url = get_telegraph_url(ino)
         ino['message'] = ino['message'] + '\n' if ino['message'] else ''
         mdict = MetadataDict(ino, category=ino['tag'], turl=t_url, message=ino['message']).to_dict()
@@ -272,8 +272,8 @@ def telegraph_convert(tdict):
     res = ''
     # try:
     metadata_dict = tdict
-    author = 'origin'
-    author_url = 'originurl'
+    author = 'author'
+    author_url = 'author_url'
     print('content of argument:' + str(metadata_dict))
     t = TelegraphPoster(use_api=True)
     short_name = metadata_dict[author]

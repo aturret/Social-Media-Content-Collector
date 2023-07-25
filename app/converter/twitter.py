@@ -55,9 +55,9 @@ class Twitter(object):
 
     def tweet_process_official(self, tweet_info):
         self.text = tweet_info['data']['text']
-        self.origin = tweet_info['includes']['users'][0]['name']
-        self.title = self.origin + '\'s tweet'
-        self.originurl = 'https://twitter.com/' + tweet_info['includes']['users'][0]['username']
+        self.author = tweet_info['includes']['users'][0]['name']
+        self.title = self.author + '\'s tweet'
+        self.author_url = 'https://twitter.com/' + tweet_info['includes']['users'][0]['username']
         self.aurl = self.url
         self.media_files = []
         picformat = ''  # 处理图片
@@ -68,7 +68,7 @@ class Twitter(object):
                 self.media_files.append(media_item)
             print(picformat)
         self.content = self.text + '<br>' + picformat
-        self.text = '<a href="' + self.url + '">@' + self.origin + '</a>: ' + self.text
+        self.text = '<a href="' + self.url + '">@' + self.author + '</a>: ' + self.text
         self.type = 'long' if util.get_html_text_length(self.text) > 200 else 'short'
 
     def get_single_tweet(self):
@@ -104,9 +104,9 @@ class Twitter(object):
             self.tweet_item_process(tweet_info)
 
     def tweet_item_process(self, tweet_info):
-        self.origin = tweet_info['origin']
-        self.title = tweet_info['origin'] + '\'s tweet'
-        self.originurl = tweet_info['originurl']
+        self.author = tweet_info['author']
+        self.title = tweet_info['author'] + '\'s tweet'
+        self.author_url = tweet_info['author_url']
         self.aurl = self.url
         self.date = tweet_info['date']
         self.content = tweet_info['content']
@@ -136,8 +136,8 @@ class Twitter(object):
                     continue
             else:
                 continue
-            tweet_info['origin'] = tweet_result['core']['user_results']['result']['legacy']['name']
-            tweet_info['originurl'] = 'https://twitter.com/' + tweet_result['core']['user_results']['result']['legacy'][
+            tweet_info['author'] = tweet_result['core']['user_results']['result']['legacy']['name']
+            tweet_info['author_url'] = 'https://twitter.com/' + tweet_result['core']['user_results']['result']['legacy'][
                 'screen_name']
             tweet_info['date'] = tweet_result['legacy']['created_at']
             tweet_info['content'] = 'created at: ' + tweet_info['date'] + '<br>'
@@ -149,7 +149,7 @@ class Twitter(object):
                 continue
             tweet_info['media_files'] += single_tweet_info['media_files']
             tweet_info['content'] += single_tweet_info['content'] + '<hr>'
-            tweet_info['text'] += '<a href=\"' + single_tweet_info['aurl'] + '">@' + single_tweet_info['origin'] + \
+            tweet_info['text'] += '<a href=\"' + single_tweet_info['aurl'] + '">@' + single_tweet_info['author'] + \
                                   '</a>: ' + single_tweet_info['text']
         return tweet_info
 
@@ -160,8 +160,8 @@ class Twitter(object):
             tweet = tweet['tweet']
         single_tweet_info['tid'] = tweet['rest_id']
         single_tweet_info['title'] = tweet['core']['user_results']['result']['legacy']['name'] + '\'s tweet'
-        single_tweet_info['origin'] = tweet['core']['user_results']['result']['legacy']['name']
-        single_tweet_info['originurl'] = 'https://twitter.com/' + \
+        single_tweet_info['author'] = tweet['core']['user_results']['result']['legacy']['name']
+        single_tweet_info['author_url'] = 'https://twitter.com/' + \
                                          tweet['core']['user_results']['result']['legacy']['screen_name']
         single_tweet_info['aurl'] = 'https://twitter.com/' + \
                                     tweet['core']['user_results']['result']['legacy']['screen_name'] + \
@@ -186,11 +186,11 @@ class Twitter(object):
 
     def tweet_process_Twitter154(self, tweet_data):
         tweet_info = {}
-        tweet_info['origin'] = tweet_data['user']['name']
-        tweet_info['originurl'] = 'https://twitter.com/' + tweet_data['user']['username']
+        tweet_info['author'] = tweet_data['user']['name']
+        tweet_info['author_url'] = 'https://twitter.com/' + tweet_data['user']['username']
         tweet_info['date'] = tweet_data['creation_date']
         tweet_info['content'] = 'created at: ' + tweet_info['date'] + '<br>'
-        tweet_info['text'] = '<a href=\"' + self.aurl + '">@' + tweet_info['origin'] + \
+        tweet_info['text'] = '<a href=\"' + self.aurl + '">@' + tweet_info['author'] + \
                              '</a>: ' + tweet_data['text']
         tweet_info['media_files'] = []
         if 'extended_entities' in tweet_data and tweet_data['extended_entities'] is not None:

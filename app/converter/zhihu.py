@@ -40,8 +40,8 @@ class Zhihu(object):
         self.aurl = ''
         self.content = ''
         self.text = ''
-        self.origin = ''
-        self.originurl = ''
+        self.author = ''
+        self.author_url = ''
         self.title = ''
         self.favurl = favurl
         self.question = ''
@@ -86,8 +86,8 @@ class Zhihu(object):
             json_data = util.get_response_json(self.api_url, headers=self.headers)
             self.title = json_data['title']
             self.content = json_data['content']
-            self.origin = json_data['author']['name']
-            self.originurl = zhihu_host + '/people/' + json_data['author']['url_token']
+            self.author = json_data['author']['name']
+            self.author_url = zhihu_host + '/people/' + json_data['author']['url_token']
             upvote = json_data['voteup_count']
             self.get_zhihu_short_text()
         elif self.method == 'html':
@@ -100,8 +100,8 @@ class Zhihu(object):
                                encoding="utf-8"), encoding='utf-8')
             self.get_zhihu_short_text()
             self.content = upvote + '<br>' + self.content
-            self.origin = selector.xpath('string(//div[contains(@class,"AuthorInfo-head")]//a)')
-            self.originurl = 'https:' + selector.xpath('string(//a[@class="UserLink-link"]/@href)')
+            self.author = selector.xpath('string(//div[contains(@class,"AuthorInfo-head")]//a)')
+            self.author_url = 'https:' + selector.xpath('string(//a[@class="UserLink-link"]/@href)')
 
     def get_zhihu_answer(self):
         self.zhihu_type = 'answer'
@@ -111,11 +111,11 @@ class Zhihu(object):
             '//div[contains(@class,"RichContent-inner")]//span[contains(@class,"RichText") and @itemprop="text"]')[0],
                                      encoding="utf-8"), encoding='utf-8')
         self.title = selector.xpath('string(//h1)')
-        self.origin = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="name"]/@content)')
-        self.originurl = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="url"]/@content)')
+        self.author = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="name"]/@content)')
+        self.author_url = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="url"]/@content)')
         self.get_zhihu_short_text()
-        if self.originurl == 'https://www.zhihu.com/people/':
-            self.originurl = ''
+        if self.author_url == 'https://www.zhihu.com/people/':
+            self.author_url = ''
         self.content = '<p>' + upvote + '</p><br>' + self.content
 
     def get_zhihu_status(self):
@@ -125,9 +125,9 @@ class Zhihu(object):
             print(self.api_url)
             # json_data = get_response_json(self.url, headers=self.headers, test=True)
             json_data = get_zhihu_json_data(self.api_url, headers=self.headers)
-            self.origin = json_data['author']['name']
-            self.originurl = zhihu_host + '/people/' + json_data['author']['url_token']
-            self.title = self.origin + '的想法'
+            self.author = json_data['author']['name']
+            self.author_url = zhihu_host + '/people/' + json_data['author']['url_token']
+            self.title = self.author + '的想法'
             self.content = json_data['content_html']
             self.get_zhihu_short_text()
             self.created = util.unix_timestamp_to_utc(json_data['created'])
@@ -159,9 +159,9 @@ class Zhihu(object):
                                        encoding="utf-8"), encoding='utf-8')
                     print(self.retweet_html)
             self.content = '点赞数：' + upvote + '<br>' + content + '<br>' + self.retweet_html + '<br>' + timestamp
-            self.origin = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="name"]/@content)')
-            self.originurl = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="url"]/@content)')
-            self.title = self.origin + '的想法'
+            self.author = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="name"]/@content)')
+            self.author_url = selector.xpath('string(//div[@class="AuthorInfo"]//meta[@itemprop="url"]/@content)')
+            self.title = self.author + '的想法'
 
     def get_zhihu_short_text(self):
         soup = BeautifulSoup(self.content, 'html.parser')
@@ -179,7 +179,7 @@ class Zhihu(object):
             self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b>' + \
                         '</a>：' + str(soup)
         else:
-            self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b> - ' + self.origin + '的' + \
+            self.text = '<a href="' + self.aurl + '"><b>' + self.title + '</b> - ' + self.author + '的' + \
                         zhihu_type_translate[self.zhihu_type] + '</a>：\n' + str(soup)
         soup = BeautifulSoup(self.text, 'html.parser')
         soup = util.format_telegram_short_text(soup)

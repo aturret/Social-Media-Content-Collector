@@ -25,8 +25,8 @@ class Douban(object):
         self.aurl = ''
         self.text = ''
         self.content = ''
-        self.origin = ''
-        self.origin_url = ''
+        self.author = ''
+        self.author_url = ''
         self.title = ''
         self.comment = ''
         self.fav_url = favurl
@@ -44,8 +44,8 @@ class Douban(object):
             'aurl': self.aurl,
             'text': self.text,
             'content': self.content,
-            'origin': self.origin,
-            'origin_url': self.origin_url,
+            'author': self.author,
+            'author_url': self.author_url,
             'title': self.title,
             'comment': self.comment,
             'fav_url': self.fav_url,
@@ -105,8 +105,8 @@ class Douban(object):
             self.type = 'short'
         douban['title'] = self.title
         douban['content'] = self.content
-        douban['origin'] = self.origin
-        douban['originurl'] = self.origin_url
+        douban['author'] = self.author
+        douban['author_url'] = self.author_url
         douban['type'] = self.type
         douban['media_files'] = self.media_files
         douban['text'] = self.text
@@ -122,16 +122,16 @@ class Douban(object):
             self.title = selector.xpath('string(//div[@id="content"]//h1)')
             self.content = str(util.etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                                encoding='utf-8')
-            self.origin = selector.xpath('string(//div[@class="content"]/a)')
-            self.origin_url = selector.xpath('string(//div[@class="content"]/a/@href)')
+            self.author = selector.xpath('string(//div[@class="content"]/a)')
+            self.author_url = selector.xpath('string(//div[@class="content"]/a/@href)')
 
     def get_douban_book_review(self, url):
         selector = util.get_selector(url, headers=self.headers)
         self.title = selector.xpath('string(//div[@id="content"]//h1//span)')
         self.content = str(util.etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
-        self.origin = selector.xpath('string(//header[@class="main-hd"]//span)')
-        self.origin_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
+        self.author = selector.xpath('string(//header[@class="main-hd"]//span)')
+        self.author_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
         self.work_title = selector.xpath('string(//header[@class="main-hd"]/a[2])')
         self.work_url = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
@@ -141,8 +141,8 @@ class Douban(object):
         self.content = str(
             util.etree.tostring(selector.xpath('//div[contains(@class,\'review-content\')]')[0], encoding="utf-8"),
             encoding='utf-8')
-        self.origin = selector.xpath('string(//header[@class="main-hd"]//span)')
-        self.origin_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
+        self.author = selector.xpath('string(//header[@class="main-hd"]//span)')
+        self.author_url = selector.xpath('string(//header[@class="main-hd"]/a/@href)')
         self.work_title = selector.xpath('string(//header[@class="main-hd"]/a[2])')
         self.work_url = selector.xpath('string(//header[@class="main-hd"]/a[2]/@href)')
 
@@ -152,9 +152,9 @@ class Douban(object):
                            encoding='utf-8').replace('<blockquote>', '').replace('</blockquote>', '').replace('>+<',
                                                                                                               '><').replace(
             '&#13;', '<br>')
-        self.origin = selector.xpath('string(//div[@class="content"]/a)')
-        self.origin_url = selector.xpath('string(//div[@class="content"]/a/@href)')
-        self.title = self.origin + '的广播'
+        self.author = selector.xpath('string(//div[@class="content"]/a)')
+        self.author_url = selector.xpath('string(//div[@class="content"]/a/@href)')
+        self.title = self.author + '的广播'
 
     def get_douban_group_article(self, url):
         selector = util.get_selector(url, headers=self.headers)
@@ -162,12 +162,13 @@ class Douban(object):
         self.title = self.title.replace('\n', '').strip()
         self.content = str(util.etree.tostring(selector.xpath('//div[@id="link-report"]')[0], encoding="utf-8"),
                            encoding='utf-8')
-        self.origin = selector.xpath('string(//span[@class="from"]//a)')
-        self.origin_url = selector.xpath('string(//span[@class="from"]//a/@href)')
+        self.author = selector.xpath('string(//span[@class="from"]//a)')
+        self.author_url = selector.xpath('string(//span[@class="from"]//a/@href)')
         self.group_name = selector.xpath('string(//div[@id="g-side-info"]//div[@class="title"]/a)')
         self.group_url = selector.xpath('string(//div[@id="g-side-info"]//div[@class="title"]/a/@href)')
 
     def douban_short_text_process(self):
+        # TODO: customize the process of short text for each douban type.
         soup = BeautifulSoup(self.content, 'html.parser')
         self.media_files = []
         for img in soup.find_all('img'):
@@ -188,7 +189,7 @@ class Douban(object):
         while '\n\n' in self.text:
             self.text = self.text.replace('\n\n', '\n')
         self.text = self.text.replace('<br/>', '\n').replace('<br>', '\n').replace('<br />', '\n')
-        self.text = '<a href="' + self.aurl + '">' + self.origin + '</a>: ' + self.text
+        self.text = '<a href="' + self.aurl + '">' + self.author + '</a>: ' + self.text
 
 # douban = Douban(favurl=myfavlist)
 # douban.get_fav_list()
