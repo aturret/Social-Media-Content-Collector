@@ -65,7 +65,8 @@ class VideoConverter(object):
                     self.ydl_opts[
                         'format'] = 'bestvideo[ext=mp4]+(258/256/140)/best'
                 else:
-                    self.ydl_opts['format'] = 'bv*[height<=480][ext=mp4]+ba/b[height<=480][ext=mp4] / wv*+ba/w'
+                    # self.ydl_opts['format'] = 'bv*[height<=480][ext=mp4]+ba/b[height<=480][ext=mp4] / wv*+ba/w'
+                    self.ydl_opts['format'] = 'bv*[height<=480][ext=mp4]+ba[ext=m4a]/b[height<=480][ext=mp4]/ wv*+ba[ext=m4a]/w'
                 self.yt_downloader = True
             with yt_dlp.YoutubeDL(self.ydl_opts) as ydl:
                 video_info = ydl.extract_info(self.url, download=self.yt_downloader, process=self.yt_downloader)
@@ -86,15 +87,15 @@ class VideoConverter(object):
         else:
             return
         self.title = meta_info['title']
-        self.origin = meta_info['author']
-        self.originurl = meta_info['author_url']
+        self.author = meta_info['author']
+        self.author_url = meta_info['author_url']
         if len(meta_info['description']) > 800:
             meta_info['description'] = meta_info['description'][:800] + '...'
         self.created = meta_info['upload_date']
         self.duration = meta_info['duration']
         self.text = \
             '<a href=\"' + self.url + '\"><b>' + self.title + '</b></a>\n' + \
-            '作者：<a href=\"' + self.originurl + '\">' + self.origin + '</a>\n' + \
+            '作者：<a href=\"' + self.author_url + '\">' + self.author + '</a>\n' + \
             '视频时长：' + self.duration + '\n' + \
             '视频上传日期：' + self.created + '\n' + \
             '播放数据：' + meta_info['playback_data'] + '\n' + \
