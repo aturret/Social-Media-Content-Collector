@@ -270,21 +270,15 @@ def get_telegraph_url(tdict, failure_limitation=5, upload_images=True):
 
 def telegraph_convert(tdict):
     res = ''
-    # try:
     metadata_dict = tdict
-    author = 'author'
-    author_url = 'author_url'
     print('content of argument:' + str(metadata_dict))
     t = TelegraphPoster(use_api=True)
-    short_name = metadata_dict[author]
-    t.create_api_token(short_name[0:14], author_name=metadata_dict[author])
-    telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict[author],
-                           text=metadata_dict['content'], author_url=metadata_dict[author_url])
+    short_name = metadata_dict['author']
+    t.create_api_token(short_name=short_name[0:14], author_name=metadata_dict['author'])
+    telegraphPost = t.post(title=metadata_dict['title'], author=metadata_dict['author'],
+                           text=metadata_dict['content'], author_url=metadata_dict['author_url'])
     print('telegraph url:' + telegraphPost['url'])
     res = telegraphPost['url']
-    # except Exception as e:
-    #     print(traceback.format_exc())
-    # finally:
     return res if res else 'nothing'
 
 
