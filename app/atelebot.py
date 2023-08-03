@@ -400,7 +400,7 @@ def media_files_packaging(media_files, caption_text='', data=None):
         print('the ' + str((media_counter + 1)) + '\'s media: ' + media['type'] + ': ' + media['url'])
         # if the url if a network url, download it
         if media['url'].startswith('http'):
-            if data and media['url'].find('doubanio.com') != -1:
+            if data and media['url'].find('doubanio.com') != -1 or media['url'].find('sina') != -1:
                 referer = data['aurl']
             else:
                 referer = None
