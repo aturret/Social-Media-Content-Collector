@@ -1,3 +1,5 @@
+**The project is now abandoned and reconstructed as [FastFetchBot](https://github.com/aturret/FastFetchBot/)**
+
 # Social-Media-Content-Collector
 
 [中文版文档](https://github.com/aturret/Social-Media-Content-Collector/wiki/%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3)
